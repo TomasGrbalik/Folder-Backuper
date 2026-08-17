@@ -34,4 +34,29 @@ public sealed class ApplicationInstanceLockTests
         using var first = ApplicationInstanceLock.Acquire(Path.Combine(Path.GetTempPath(), $"FolderBackuper-{Guid.NewGuid():N}"));
         using var second = ApplicationInstanceLock.Acquire(Path.Combine(Path.GetTempPath(), $"FolderBackuper-{Guid.NewGuid():N}"));
     }
+
+    [Fact]
+    public void Dispose_CanRunOnAnotherThreadAndReleasesTheName()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"FolderBackuper-{Guid.NewGuid():N}");
+        var first = ApplicationInstanceLock.Acquire(root);
+        Exception? disposeException = null;
+        var shutdownThread = new Thread(() =>
+        {
+            try
+            {
+                first.Dispose();
+            }
+            catch (Exception exception)
+            {
+                disposeException = exception;
+            }
+        });
+
+        shutdownThread.Start();
+        shutdownThread.Join();
+
+        Assert.Null(disposeException);
+        using var second = ApplicationInstanceLock.Acquire(root);
+    }
 }

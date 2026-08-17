@@ -8,20 +8,18 @@ namespace FolderBackuper.Infrastructure.ServiceHosting;
 
 public sealed class ApplicationInstanceLock : IDisposable
 {
-    private readonly Mutex mutex;
-    private bool ownsMutex;
+    private Mutex? mutex;
 
     private ApplicationInstanceLock(Mutex mutex)
     {
         this.mutex = mutex;
-        ownsMutex = true;
     }
 
     public static ApplicationInstanceLock Acquire(string dataRoot)
     {
         var name = GetMutexName(dataRoot);
         var security = CreateSecurity();
-        var mutex = MutexAcl.Create(initiallyOwned: true, name, out var createdNew, security);
+        var mutex = MutexAcl.Create(initiallyOwned: false, name, out var createdNew, security);
 
         if (!createdNew)
         {
@@ -41,13 +39,7 @@ public sealed class ApplicationInstanceLock : IDisposable
 
     public void Dispose()
     {
-        if (ownsMutex)
-        {
-            mutex.ReleaseMutex();
-            ownsMutex = false;
-        }
-
-        mutex.Dispose();
+        Interlocked.Exchange(ref mutex, null)?.Dispose();
         GC.SuppressFinalize(this);
     }
 
