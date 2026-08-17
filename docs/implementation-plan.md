@@ -227,6 +227,7 @@ Allow the user to configure valid jobs completely, without yet enabling unattend
 14. Implement weekday and local-time schedule value objects.
 15. Implement occurrence calculation with `TimeProvider` and `TimeZoneInfo`.
 16. Cover daylight-saving, clock-change, schedule-revision, and catch-up rules.
+    `ScheduleEffectiveFromUtc` is the durable configuration boundary owned by this milestone. Creation and schedule edits set it to the save instant, and schedule edits increment `ScheduleRevision`. Reactivation and active restoration retain the revision and advance the boundary to the action instant. Pause and archive retain both values because inactive jobs are excluded from occurrence calculation. Occurrence calculation returns only instants strictly after the boundary. Milestone 7 separately owns operational scheduler watermarks (last evaluation/satisfied occurrence and persisted next occurrence), which advance as the hosted scheduler evaluates work and are not introduced or simulated in Milestone 4.
 17. Build the single-page MudBlazor job form with focused modals.
 18. Add inline validation, unsaved-change warning, next-run preview, and retention estimate presentation.
 
@@ -247,7 +248,7 @@ Allow the user to configure valid jobs completely, without yet enabling unattend
 - Source browsing returns bounded directory-tree pages with names, types, sizes, modified times, access problems, and cancellation.
 - Preview progressively reports file count, folder count, estimated size, inaccessible content, and skipped reparse points, explains that results are informational, and does not write to source data.
 - Every agreed daylight-saving and clock-change example has a deterministic test.
-- Pausing, archiving, restoring, and reactivating update lifecycle and schedule watermark/revision state without immediately inserting runs.
+- Lifecycle actions follow the documented revision and `ScheduleEffectiveFromUtc` rules without immediately inserting runs; Milestone 7 operational watermarks do not form part of Milestone 4 job persistence.
 
 ## 9. Milestone 5: Backup Engine
 

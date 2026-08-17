@@ -64,6 +64,7 @@ public sealed class FolderBackuperDbContext(DbContextOptions<FolderBackuperDbCon
         entity.Property(x => x.SourcePath).HasMaxLength(2048);
         entity.Property(x => x.DestinationSubfolder).HasMaxLength(2048);
         entity.Property(x => x.Weekdays).HasConversion<string>().HasMaxLength(100);
+        entity.Property(x => x.ScheduleEffectiveFromUtc).IsRequired();
         entity.Property(x => x.Lifecycle).HasConversion<string>().HasMaxLength(20);
         entity.Property(x => x.DestinationOwnershipKey)
             .HasConversion(key => key.ToUpperInvariant(), key => key)

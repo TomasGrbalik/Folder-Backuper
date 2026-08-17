@@ -13,7 +13,7 @@ namespace FolderBackuper.Tests;
 public sealed class DestinationsPageTests
 {
     [Fact]
-    public async Task Page_RendersPasswordFreeManagementActionsWithoutArchiveOrBackup()
+    public async Task Page_RendersPasswordFreeManagementAndLifecycleActions()
     {
         await using var database = new TemporaryDatabase();
         await database.Initializer.InitializeAsync();
@@ -35,8 +35,8 @@ public sealed class DestinationsPageTests
         Assert.Contains("Test access", component.Markup, StringComparison.Ordinal);
         Assert.Contains("Edit", component.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain("password", component.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("archive", component.Markup, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("restore", component.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Archive", component.Markup, StringComparison.Ordinal);
+        Assert.Contains("Show archived", component.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain("back up", component.Markup, StringComparison.OrdinalIgnoreCase);
     }
 

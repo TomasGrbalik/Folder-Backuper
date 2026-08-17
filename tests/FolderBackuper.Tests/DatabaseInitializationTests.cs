@@ -19,7 +19,9 @@ public sealed class DatabaseInitializationTests
 
         Assert.True(File.Exists(database.Paths.Database));
         await using var context = await database.ContextFactory.CreateDbContextAsync();
-        Assert.Single(await context.Database.GetAppliedMigrationsAsync());
+        Assert.Equal(
+            context.Database.GetMigrations(),
+            await context.Database.GetAppliedMigrationsAsync());
         await context.Database.OpenConnectionAsync();
         Assert.Equal(1L, await ScalarAsync(context, "PRAGMA foreign_keys;"));
         Assert.Equal(5_000L, await ScalarAsync(context, "PRAGMA busy_timeout;"));

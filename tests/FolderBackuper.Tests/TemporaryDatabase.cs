@@ -34,6 +34,8 @@ internal sealed class TemporaryDatabase : IAsyncDisposable
 
     public MigrationBackupService BackupService => serviceProvider.GetRequiredService<MigrationBackupService>();
 
+    public ConfigurationMutationGate MutationGate => serviceProvider.GetRequiredService<ConfigurationMutationGate>();
+
     public RunPersistenceService RunPersistence => serviceProvider.GetRequiredService<RunPersistenceService>();
 
     public async ValueTask DisposeAsync()

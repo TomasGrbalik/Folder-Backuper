@@ -4,12 +4,20 @@
 
 <PageTitle>Destinations | Folder Backuper</PageTitle>
 
+@if (operationMessage is not null)
+{
+    <MudAlert Severity="@(operationError ? Severity.Error : Severity.Success)" CloseIcon="@Icons.Material.Filled.Close" ShowCloseIcon="true" CloseIconClicked="() => operationMessage = null">@operationMessage</MudAlert>
+}
+
 <div class="page-heading">
     <div>
         <MudText Typo="Typo.h1">Destinations</MudText>
         <MudText Class="page-lead">Verified local and network storage roots for future backup jobs.</MudText>
     </div>
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="CreateAsync">Add destination</MudButton>
+    <MudStack Row="true">
+        <MudButton Variant="@(showArchived ? Variant.Outlined : Variant.Text)" OnClick="ToggleArchivedAsync">@(showArchived ? "Show active" : "Show archived")</MudButton>
+        @if (!showArchived) { <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="CreateAsync">Add destination</MudButton> }
+    </MudStack>
 </div>
 
 @if (loading)
@@ -46,8 +54,16 @@ else
                 <MudText Typo="Typo.body2">Available: @(destination.AvailableBytes is long bytes ? FormatBytes(bytes) : "Not reported")</MudText>
                 <MudText Typo="Typo.body2">@LastTestText(destination)</MudText>
                 <div class="destination-actions">
-                    <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Outlined.Edit" OnClick="@(() => EditAsync(destination))">Edit</MudButton>
-                    <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Outlined.FactCheck" OnClick="@(() => TestAsync(destination))">Test access</MudButton>
+                    @if (destination.Lifecycle == DestinationLifecycle.Archived)
+                    {
+                        <MudButton Variant="Variant.Outlined" OnClick="@(() => RestoreAsync(destination))">Restore</MudButton>
+                    }
+                    else
+                    {
+                        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Outlined.Edit" OnClick="@(() => EditAsync(destination))">Edit</MudButton>
+                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Outlined.FactCheck" OnClick="@(() => TestAsync(destination))">Test access</MudButton>
+                        <MudButton Color="Color.Error" Variant="Variant.Text" OnClick="@(() => ArchiveAsync(destination))">Archive</MudButton>
+                    }
                 </div>
             </MudPaper>
         }
@@ -57,13 +73,34 @@ else
 @code {
     private IReadOnlyList<DestinationSummary> destinations = [];
     private bool loading = true;
+    private bool showArchived;
+    private string? operationMessage;
+    private bool operationError;
 
     protected override async Task OnInitializedAsync() => await ReloadAsync();
     private async Task ReloadAsync()
     {
         loading = true;
-        destinations = await DestinationService.ListAsync();
+        var all = await DestinationService.ListAsync(showArchived);
+        destinations = showArchived ? all.Where(x => x.Lifecycle == DestinationLifecycle.Archived).ToArray() : all;
         loading = false;
+    }
+    private async Task ToggleArchivedAsync() { showArchived = !showArchived; await ReloadAsync(); }
+    private async Task ArchiveAsync(DestinationSummary destination)
+    {
+        if (await DialogService.ShowMessageBoxAsync("Archive destination?", $"Archive {destination.Name}? It can be restored later.", yesText: "Archive", cancelText: "Cancel") != true) return;
+        await ApplyAsync(await DestinationService.ArchiveAsync(destination.Id));
+    }
+    private async Task RestoreAsync(DestinationSummary destination)
+    {
+        if (await DialogService.ShowMessageBoxAsync("Restore destination?", $"Restore {destination.Name}? It will need access verification.", yesText: "Restore", cancelText: "Cancel") != true) return;
+        await ApplyAsync(await DestinationService.RestoreAsync(destination.Id));
+    }
+    private async Task ApplyAsync(DestinationOperationResult result)
+    {
+        operationMessage = result.Message;
+        operationError = !result.Succeeded;
+        await ReloadAsync();
     }
     private async Task CreateAsync()
     {

@@ -1,3 +1,310 @@
 @page "/jobs"
+@inject JobService JobService
+@inject DestinationService DestinationService
+@inject ScheduleOccurrenceCalculator ScheduleCalculator
+@inject IDialogService DialogService
+@inject NavigationManager Navigation
+
 <PageTitle>Jobs | Folder Backuper</PageTitle>
-<PlaceholderPage Title="Jobs" Description="Backup job configuration will be implemented in Milestone 4." Icon="@Icons.Material.Filled.FolderCopy" />
+<NavigationLock ConfirmExternalNavigation="dirty" OnBeforeInternalNavigation="BeforeInternalNavigation" />
+
+@if (editing)
+{
+    <div class="page-heading compact-heading">
+        <div>
+            <MudText Typo="Typo.h1">@(editingId is null ? "New job" : "Edit job")</MudText>
+            <MudText Class="page-lead">One schedule, one source, and one owned destination folder.</MudText>
+        </div>
+        <MudButton OnClick="CancelEditAsync">Cancel</MudButton>
+    </div>
+    <MudPaper Class="job-form" Elevation="0">
+        @if (outcome is not null) { <MudAlert Severity="@(outcomeError ? Severity.Error : Severity.Success)" Dense="true">@outcome</MudAlert> }
+        <section>
+            <MudText Typo="Typo.h5">Identity and source</MudText>
+            <div class="form-grid">
+                <label class="field"><span>Job name</span><input @bind="name" @bind:after="Changed" maxlength="200" />@ErrorFor("Name")</label>
+                <label class="field field-wide"><span>Source directory</span><div class="input-action"><input @bind="sourcePath" @bind:after="Changed" /><button type="button" @onclick="BrowseSourceAsync">Browse</button></div>@ErrorFor("SourcePath")</label>
+            </div>
+            <div class="form-tools">
+                <MudButton Variant="Variant.Outlined" Disabled="@string.IsNullOrWhiteSpace(sourcePath)" OnClick="PreviewSourceAsync">Preview source</MudButton>
+                @if (previewBytes is long bytes) { <MudText Typo="Typo.body2">Preview: @FormatBytes(bytes). Retention estimate: @RetentionEstimate(bytes, retention).</MudText> }
+            </div>
+        </section>
+        <section>
+            <MudText Typo="Typo.h5">Destination</MudText>
+            <div class="form-grid">
+                <label class="field"><span>Storage root</span><select value="@destinationId" @onchange="DestinationChanged">
+                    <option value="">Choose a destination</option>
+                    @foreach (var destination in destinations) { <option value="@destination.Id">@destination.Name</option> }
+                </select>@ErrorFor("DestinationId")</label>
+                <label class="field"><span>Subfolder</span><input @bind="subfolder" @bind:after="Changed" placeholder="Finance\Weekly" />@ErrorFor("DestinationSubfolder")</label>
+            </div>
+            @if (SelectedDestination is { } selected)
+            {
+                <div class="verification-line">
+                    <MudChip T="string" Size="Size.Small" Color="@(selected.VerificationResult == DestinationVerificationResult.Succeeded ? Color.Success : Color.Warning)">@selected.VerificationResult</MudChip>
+                    <span>@selected.RootPath</span>
+                </div>
+            }
+            @if (editingId is not null)
+            { <MudButton Variant="Variant.Text" OnClick="TestEffectiveFolderAsync">Test effective folder</MudButton> }
+        </section>
+        <section>
+            <MudText Typo="Typo.h5">Schedule and retention</MudText>
+            <div class="weekday-row">
+                @foreach (var day in weekdayOptions)
+                { <label><input type="checkbox" checked="@HasDay(day.Value)" @onchange="args => ToggleDay(day.Value, (bool)(args.Value ?? false))" />@day.Label</label> }
+            </div>
+            @ErrorFor("Weekdays")
+            <div class="form-grid">
+                <label class="field"><span>Local scheduled time</span><input type="time" value="@scheduledTime.ToString("HH:mm")" @onchange="TimeChanged" /></label>
+                <label class="field"><span>Backups to retain</span><input type="number" min="1" max="100000" @bind="retention" @bind:after="Changed" />@ErrorFor("RetentionCount")</label>
+            </div>
+            <div class="schedule-summary">
+                <span>Current timezone <strong>@TimeZoneInfo.Local.DisplayName</strong></span>
+                <span>Next run <strong>@NextRunText</strong></span>
+            </div>
+            @if (editingDetails is not null)
+            { <MudText Typo="Typo.body2">Managed storage: @editingDetails.ManagedArtifactCount.ToString("N0") artifacts, @FormatBytes(editingDetails.ManagedArtifactBytes)</MudText> }
+        </section>
+        <section class="activation-section">
+            @if (editingDetails?.Lifecycle == JobLifecycle.Active)
+            {
+                <MudChip T="string" Size="Size.Small" Color="Color.Success">Currently active</MudChip>
+                <MudText Typo="Typo.caption">Use the Pause action from the jobs list to change lifecycle state.</MudText>
+            }
+            else
+            {
+                <label><input type="checkbox" @bind="activate" @bind:after="Changed" /> @(editingDetails is null ? "Activate this job" : "Activate after saving")</label>
+                <MudText Typo="Typo.caption">Activation verifies access and ownership of the effective destination folder.</MudText>
+            }
+        </section>
+        <div class="form-footer">
+            <MudButton OnClick="CancelEditAsync">Cancel</MudButton>
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="saving" OnClick="SaveAsync">@(saving ? "Saving..." : "Save job")</MudButton>
+        </div>
+    </MudPaper>
+}
+else
+{
+    <div class="page-heading">
+        <div><MudText Typo="Typo.h1">Jobs</MudText><MudText Class="page-lead">Scheduled backup definitions and their current lifecycle state.</MudText></div>
+        <MudStack Row="true">
+            <MudButton Variant="@(showArchived ? Variant.Outlined : Variant.Text)" OnClick="ToggleArchivedAsync">@(showArchived ? "Show current" : "Show archived")</MudButton>
+            @if (!showArchived) { <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="NewJob">New job</MudButton> }
+        </MudStack>
+    </div>
+    @if (outcome is not null) { <MudAlert Severity="@(outcomeError ? Severity.Error : Severity.Success)" Class="mb-4">@outcome</MudAlert> }
+    @if (loading) { <MudProgressLinear Indeterminate="true" /> }
+    else if (VisibleJobs.Count == 0)
+    {
+        <MudPaper Class="destination-empty" Elevation="0"><MudIcon Icon="@Icons.Material.Outlined.FolderCopy" Size="Size.Large" /><MudText Typo="Typo.h5">@(showArchived ? "No archived jobs" : "No jobs configured")</MudText><MudText>@(showArchived ? "Archived jobs will appear here." : "Create a job to define what should be backed up and when.")</MudText></MudPaper>
+    }
+    else
+    {
+        <div class="job-list">
+            @foreach (var job in VisibleJobs)
+            {
+                <MudPaper Class="job-card" Elevation="0">
+                    <div class="job-card-main">
+                        <div><MudText Typo="Typo.h5">@job.Name</MudText><MudText Typo="Typo.caption">@job.Lifecycle.ToString().ToUpperInvariant()</MudText></div>
+                        <MudChip T="string" Size="Size.Small" Color="@LifecycleColor(job.Lifecycle)">@job.Lifecycle</MudChip>
+                    </div>
+                    <div class="job-route"><span>@job.SourcePath</span><MudIcon Icon="@Icons.Material.Filled.ArrowForward" /><span>@DestinationName(job.DestinationId)\@job.DestinationSubfolder</span></div>
+                    <MudText Typo="Typo.body2">@WeekdayText(job.Weekdays) at @job.ScheduledTime.ToString("HH:mm") · Next: @NextRun(job)</MudText>
+                    <div class="destination-actions">
+                        @if (job.Lifecycle == JobLifecycle.Archived)
+                        { <MudButton Variant="Variant.Outlined" OnClick="() => RestoreAsync(job)">Restore</MudButton> }
+                        else
+                        {
+                            <MudButton Variant="Variant.Text" OnClick="() => EditAsync(job.Id)">Edit</MudButton>
+                            @if (job.Lifecycle == JobLifecycle.Active) { <MudButton Variant="Variant.Outlined" OnClick="() => TransitionAsync(job, JobLifecycle.Paused)">Pause</MudButton> }
+                            else { <MudButton Variant="Variant.Outlined" OnClick="() => TransitionAsync(job, JobLifecycle.Active)">Reactivate</MudButton> }
+                            <MudButton Color="Color.Error" Variant="Variant.Text" OnClick="() => ArchiveAsync(job)">Archive</MudButton>
+                        }
+                    </div>
+                </MudPaper>
+            }
+        </div>
+    }
+}
+
+@code {
+    private IReadOnlyList<JobSummary> jobs = [];
+    private IReadOnlyList<DestinationSummary> destinations = [];
+    private readonly (ScheduledWeekdays Value, string Label)[] weekdayOptions =
+    [
+        (ScheduledWeekdays.Monday, "Mon"), (ScheduledWeekdays.Tuesday, "Tue"), (ScheduledWeekdays.Wednesday, "Wed"),
+        (ScheduledWeekdays.Thursday, "Thu"), (ScheduledWeekdays.Friday, "Fri"), (ScheduledWeekdays.Saturday, "Sat"), (ScheduledWeekdays.Sunday, "Sun")
+    ];
+    private readonly Dictionary<string, string> errors = new(StringComparer.OrdinalIgnoreCase);
+    private bool loading = true, showArchived, editing, dirty, saving, activate, outcomeError;
+    private Guid? editingId;
+    private JobDetails? editingDetails;
+    private string name = "", sourcePath = "", subfolder = "", outcome = null!;
+    private Guid destinationId;
+    private ScheduledWeekdays weekdays = ScheduledWeekdays.Monday;
+    private TimeOnly scheduledTime = new(2, 0);
+    private int retention = 7;
+    private long? previewBytes;
+    private IReadOnlyList<JobSummary> VisibleJobs => jobs.Where(x => showArchived ? x.Lifecycle == JobLifecycle.Archived : x.Lifecycle != JobLifecycle.Archived).ToArray();
+    private DestinationSummary? SelectedDestination => destinations.FirstOrDefault(x => x.Id == destinationId);
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+    private async Task ReloadAsync()
+    {
+        loading = true;
+        var jobsTask = JobService.ListAsync(includeArchived: true);
+        var destinationsTask = DestinationService.ListAsync();
+        await Task.WhenAll(jobsTask, destinationsTask);
+        jobs = jobsTask.Result; destinations = destinationsTask.Result; loading = false;
+    }
+    private void NewJob() { ResetForm(); editing = true; }
+    private async Task EditAsync(Guid id)
+    {
+        var details = await JobService.GetAsync(id);
+        if (details is null) { SetOutcome("The job was not found.", true); return; }
+        editingDetails = details; editingId = id; name = details.Name; sourcePath = details.SourcePath;
+        destinationId = details.DestinationId; subfolder = details.DestinationSubfolder; weekdays = details.Weekdays;
+        scheduledTime = details.ScheduledTime; retention = details.RetentionCount; activate = details.Lifecycle == JobLifecycle.Active;
+        errors.Clear(); outcome = null!; dirty = false; editing = true;
+    }
+    private void ResetForm()
+    {
+        editingId = null; editingDetails = null; name = sourcePath = subfolder = ""; destinationId = Guid.Empty;
+        weekdays = ScheduledWeekdays.Monday; scheduledTime = new(2, 0); retention = 7; activate = false;
+        previewBytes = null; errors.Clear(); outcome = null!; dirty = false;
+    }
+    private void Changed() => dirty = true;
+    private async Task SaveAsync()
+    {
+        errors.Clear(); outcome = null!;
+        if (string.IsNullOrWhiteSpace(name)) errors["Name"] = "A job name is required.";
+        if (string.IsNullOrWhiteSpace(sourcePath)) errors["SourcePath"] = "Choose a source directory.";
+        if (destinationId == Guid.Empty) errors["DestinationId"] = "Choose a destination.";
+        if (weekdays == ScheduledWeekdays.None) errors["Weekdays"] = "Select at least one weekday.";
+        if (retention < 1) errors["RetentionCount"] = "Retention must be at least one.";
+        if (errors.Count != 0) return;
+        saving = true;
+        try
+        {
+            var command = new SaveJobCommand(name, sourcePath, destinationId, subfolder, weekdays, scheduledTime, retention, activate);
+            var result = editingId is Guid id ? await JobService.EditAsync(id, command) : await JobService.CreateAsync(command);
+            if (!result.Succeeded && result.ValidationErrors?.Any(x => x.Field == "ConfirmDestinationPathChange") == true && editingId is Guid changedId)
+            {
+                if (await DialogService.ShowMessageBoxAsync("Change job destination?", "Changing the effective folder makes existing retained artifacts unmanaged. Continue?", yesText: "Change folder", cancelText: "Keep current folder") == true)
+                    result = await JobService.EditAsync(changedId, command with { ConfirmDestinationPathChange = true });
+            }
+            if (!result.Succeeded)
+            {
+                foreach (var error in result.ValidationErrors ?? []) errors[error.Field] = error.Message;
+                SetOutcome(result.Message, true); return;
+            }
+            dirty = false; editing = false; SetOutcome(result.Message, false); await ReloadAsync();
+        }
+        catch (Exception)
+        {
+            SetOutcome("The job could not be saved. Try again or check the application logs.", true);
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+    private async Task BrowseSourceAsync()
+    {
+        var parameters = new DialogParameters { [nameof(SourceBrowserDialog.InitialPath)] = sourcePath };
+        var dialog = await DialogService.ShowAsync<SourceBrowserDialog>("Browse source", parameters, new() { FullWidth = true, MaxWidth = MaxWidth.Medium, CloseButton = true });
+        var result = await dialog.Result;
+        if (result?.Canceled == false && result.Data is string path) { sourcePath = path; Changed(); }
+    }
+    private async Task PreviewSourceAsync()
+    {
+        var parameters = new DialogParameters { [nameof(SourcePreviewDialog.Path)] = sourcePath };
+        var dialog = await DialogService.ShowAsync<SourcePreviewDialog>("Source preview", parameters, new() { FullWidth = true, MaxWidth = MaxWidth.Medium, CloseButton = true });
+        var result = await dialog.Result;
+        if (result?.Data is SourcePreviewSnapshot snapshot) previewBytes = snapshot.TotalBytes;
+    }
+    private async Task TestEffectiveFolderAsync()
+    {
+        if (dirty)
+        { SetOutcome("Save changes before testing the persisted effective folder.", true); return; }
+        try
+        {
+            var parameters = new DialogParameters { [nameof(EffectiveFolderTestDialog.JobId)] = editingId!.Value };
+            var dialog = await DialogService.ShowAsync<EffectiveFolderTestDialog>("Test effective folder", parameters,
+                new() { FullWidth = true, MaxWidth = MaxWidth.Small, CloseButton = true, BackdropClick = false });
+            await dialog.Result;
+        }
+        catch (Exception)
+        {
+            SetOutcome("The effective folder test could not be opened. Try again or check the application logs.", true);
+        }
+    }
+    private async Task TransitionAsync(JobSummary job, JobLifecycle target)
+    {
+        var verb = target == JobLifecycle.Paused ? "pause" : "reactivate";
+        if (await DialogService.ShowMessageBoxAsync($"{char.ToUpperInvariant(verb[0]) + verb[1..]} job?", $"{char.ToUpperInvariant(verb[0]) + verb[1..]} {job.Name}?", yesText: verb, cancelText: "Cancel") != true) return;
+        await ApplyLifecycleAsync(() => target == JobLifecycle.Paused
+            ? JobService.PauseAsync(job.Id)
+            : JobService.ReactivateAsync(job.Id));
+    }
+    private async Task ArchiveAsync(JobSummary job)
+    {
+        if (await DialogService.ShowMessageBoxAsync("Archive job?", $"Archive {job.Name}? Its managed files are not deleted.", yesText: "Archive", cancelText: "Cancel") != true) return;
+        await ApplyLifecycleAsync(() => JobService.ArchiveAsync(job.Id));
+    }
+    private async Task RestoreAsync(JobSummary job)
+    {
+        if (await DialogService.ShowMessageBoxAsync("Restore job?", $"Restore {job.Name}? It will activate only when its configuration and destination remain valid.", yesText: "Restore", cancelText: "Cancel") != true) return;
+        await ApplyLifecycleAsync(() => JobService.RestoreAsync(job.Id, restoreActive: true));
+    }
+    private async Task ApplyLifecycleAsync(Func<Task<JobOperationResult>> operation)
+    {
+        try
+        {
+            var result = await operation();
+            SetOutcome(result.Message, !result.Succeeded);
+            await ReloadAsync();
+        }
+        catch (Exception)
+        {
+            SetOutcome("The lifecycle change could not be completed. Try again or check the application logs.", true);
+        }
+    }
+    private async Task ToggleArchivedAsync() { showArchived = !showArchived; await ReloadAsync(); }
+    private async Task CancelEditAsync()
+    {
+        if (dirty && await DialogService.ShowMessageBoxAsync("Discard changes?", "Your unsaved job changes will be lost.", yesText: "Discard", cancelText: "Keep editing") != true) return;
+        dirty = false; editing = false;
+    }
+    private async Task BeforeInternalNavigation(LocationChangingContext context)
+    {
+        if (!dirty) return;
+        context.PreventNavigation();
+        if (await DialogService.ShowMessageBoxAsync("Leave without saving?", "Your unsaved job changes will be lost.", yesText: "Leave", cancelText: "Stay") == true)
+        { dirty = false; Navigation.NavigateTo(context.TargetLocation); }
+    }
+    private void DestinationChanged(ChangeEventArgs args) { Guid.TryParse(args.Value?.ToString(), out destinationId); Changed(); }
+    private void TimeChanged(ChangeEventArgs args) { if (TimeOnly.TryParse(args.Value?.ToString(), out var value)) scheduledTime = value; Changed(); }
+    private bool HasDay(ScheduledWeekdays day) => (weekdays & day) != 0;
+    private void ToggleDay(ScheduledWeekdays day, bool enabled) { weekdays = enabled ? weekdays | day : weekdays & ~day; Changed(); }
+    private RenderFragment ErrorFor(string field) => builder => { if (errors.TryGetValue(field, out var message)) builder.AddContent(0, message); };
+    private void SetOutcome(string message, bool error) { outcome = message; outcomeError = error; }
+    private string NextRunText => weekdays == ScheduledWeekdays.None ? "Select a weekday" : NextRun(weekdays, scheduledTime, editingDetails?.ScheduleRevision ?? 1, editingDetails?.ScheduleEffectiveFromUtc ?? DateTimeOffset.UtcNow);
+    private string NextRun(JobSummary job) => NextRun(job.Weekdays, job.ScheduledTime, job.ScheduleRevision, job.ScheduleEffectiveFromUtc);
+    private string NextRun(ScheduledWeekdays days, TimeOnly time, long revision, DateTimeOffset effective)
+    {
+        try { return ScheduleCalculator.GetNextOccurrence(new(new(days), new(time), revision, effective), TimeZoneInfo.Local).OccursAtUtc.ToLocalTime().ToString("ddd, g"); }
+        catch (ArgumentException) { return "Schedule incomplete"; }
+    }
+    private string DestinationName(Guid id) => destinations.FirstOrDefault(x => x.Id == id)?.Name ?? "Unavailable destination";
+    private static Color LifecycleColor(JobLifecycle value) => value == JobLifecycle.Active ? Color.Success : value == JobLifecycle.Paused ? Color.Warning : Color.Default;
+    private static string WeekdayText(ScheduledWeekdays value) => string.Join(", ", Enum.GetValues<ScheduledWeekdays>().Where(x => x != ScheduledWeekdays.None && value.HasFlag(x)).Select(x => x.ToString()[..3]));
+    private static string RetentionEstimate(long bytes, int count) { try { return FormatBytes(checked(bytes * (long)Math.Max(1, count))); } catch (OverflowException) { return "More than 8 EB"; } }
+    private static string FormatBytes(long value)
+    {
+        string[] units = ["B", "KB", "MB", "GB", "TB", "PB", "EB"]; var amount = (double)value; var unit = 0;
+        while (amount >= 1024 && unit < units.Length - 1) { amount /= 1024; unit++; } return $"{amount:0.#} {units[unit]}";
+    }
+}
