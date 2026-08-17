@@ -147,6 +147,49 @@ html, body {
     gap: 1rem;
 }
 
+.destination-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+    gap: 1.25rem;
+}
+
+.destination-card, .destination-empty {
+    padding: 1.5rem;
+    border: 1px solid var(--line);
+    border-top: 4px solid #315c4b;
+    background: var(--paper) !important;
+}
+
+.destination-card-head {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: .9rem;
+}
+
+.destination-path {
+    margin: 1.25rem 0 .75rem !important;
+    overflow-wrap: anywhere;
+    color: var(--forest);
+    font-family: Consolas, monospace !important;
+}
+
+.destination-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: .5rem;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+}
+
+.destination-empty {
+    display: grid;
+    max-width: 42rem;
+    justify-items: start;
+    gap: .75rem;
+}
+
 #components-reconnect-modal {
     position: fixed;
     z-index: 10000;
@@ -220,4 +263,8 @@ html, body {
     .brand-caption { display: none; }
     .main-content { padding: 1.25rem; }
     .page-heading { align-items: start; flex-direction: column; }
+    .page-heading .mud-button-root { width: 100%; }
+    .destination-card-head { grid-template-columns: auto 1fr; }
+    .destination-card-head .mud-chip { grid-column: 2; width: fit-content; }
+    .destination-actions { align-items: stretch; flex-direction: column; }
 }

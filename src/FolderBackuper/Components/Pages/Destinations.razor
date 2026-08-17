@@ -1,3 +1,103 @@
 @page "/destinations"
+@inject DestinationService DestinationService
+@inject IDialogService DialogService
+
 <PageTitle>Destinations | Folder Backuper</PageTitle>
-<PlaceholderPage Title="Destinations" Description="Local and SMB destination management will be implemented in Milestone 3." Icon="@Icons.Material.Filled.Storage" />
+
+<div class="page-heading">
+    <div>
+        <MudText Typo="Typo.h1">Destinations</MudText>
+        <MudText Class="page-lead">Verified local and network storage roots for future backup jobs.</MudText>
+    </div>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="CreateAsync">Add destination</MudButton>
+</div>
+
+@if (loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (destinations.Count == 0)
+{
+    <MudPaper Class="destination-empty" Elevation="0">
+        <MudIcon Icon="@Icons.Material.Outlined.Storage" Size="Size.Large" />
+        <MudText Typo="Typo.h5">No storage roots configured</MudText>
+        <MudText>Add a local folder or an SMB share, then verify service access.</MudText>
+    </MudPaper>
+}
+else
+{
+    <div class="destination-grid">
+        @foreach (var destination in destinations)
+        {
+            <MudPaper Class="destination-card" Elevation="0">
+                <div class="destination-card-head">
+                    <MudIcon Icon="@(destination.Type == DestinationType.Local ? Icons.Material.Outlined.Storage : Icons.Material.Outlined.Dns)" />
+                    <div>
+                        <MudText Typo="Typo.h5">@destination.Name</MudText>
+                        <MudText Typo="Typo.caption">@(destination.Type == DestinationType.Local ? "LOCAL STORAGE" : "SMB STORAGE")</MudText>
+                    </div>
+                    <MudChip T="string" Size="Size.Small" Color="@VerificationColor(destination.VerificationResult)">@destination.VerificationResult</MudChip>
+                </div>
+                <MudText Class="destination-path">@destination.RootPath</MudText>
+                @if (destination.SmbUsername is not null)
+                {
+                    <MudText Typo="Typo.body2">Account: @destination.SmbUsername</MudText>
+                }
+                <MudText Typo="Typo.body2">Available: @(destination.AvailableBytes is long bytes ? FormatBytes(bytes) : "Not reported")</MudText>
+                <MudText Typo="Typo.body2">@LastTestText(destination)</MudText>
+                <div class="destination-actions">
+                    <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Outlined.Edit" OnClick="@(() => EditAsync(destination))">Edit</MudButton>
+                    <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Outlined.FactCheck" OnClick="@(() => TestAsync(destination))">Test access</MudButton>
+                </div>
+            </MudPaper>
+        }
+    </div>
+}
+
+@code {
+    private IReadOnlyList<DestinationSummary> destinations = [];
+    private bool loading = true;
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+    private async Task ReloadAsync()
+    {
+        loading = true;
+        destinations = await DestinationService.ListAsync();
+        loading = false;
+    }
+    private async Task CreateAsync()
+    {
+        var dialog = await DialogService.ShowAsync<DestinationFormDialog>("Add destination", options: DialogOptions());
+        if ((await dialog.Result)?.Canceled == false) await ReloadAsync();
+    }
+    private async Task EditAsync(DestinationSummary destination)
+    {
+        var parameters = new DialogParameters { [nameof(DestinationFormDialog.Destination)] = destination };
+        var dialog = await DialogService.ShowAsync<DestinationFormDialog>("Edit destination", parameters, DialogOptions());
+        if ((await dialog.Result)?.Canceled == false) await ReloadAsync();
+    }
+    private async Task TestAsync(DestinationSummary destination)
+    {
+        var parameters = new DialogParameters { [nameof(DestinationTestDialog.Destination)] = destination };
+        var dialog = await DialogService.ShowAsync<DestinationTestDialog>("Test destination access", parameters, DialogOptions());
+        await dialog.Result;
+        await ReloadAsync();
+    }
+    private static DialogOptions DialogOptions() => new() { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+    private static Color VerificationColor(DestinationVerificationResult result) => result switch
+    {
+        DestinationVerificationResult.Succeeded => Color.Success,
+        DestinationVerificationResult.Failed => Color.Error,
+        _ => Color.Default
+    };
+    private static string FormatBytes(long value)
+    {
+        string[] units = ["B", "KB", "MB", "GB", "TB"];
+        var amount = (double)value; var unit = 0;
+        while (amount >= 1024 && unit < units.Length - 1) { amount /= 1024; unit++; }
+        return $"{amount:0.#} {units[unit]}";
+    }
+    private static string LastTestText(DestinationSummary destination) => destination.LastAccessedAtUtc is { } testedAt
+        ? $"Last test: {destination.LastAccessResult} on {testedAt.ToLocalTime():g}"
+        : "Last test: Not attempted";
+}
