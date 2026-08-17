@@ -24,6 +24,8 @@ public sealed class ApplicationPathsTests
         Assert.Equal(Path.TrimEndingDirectorySeparator(Path.GetFullPath(root)), paths.Root);
         Assert.Equal(Path.Combine(paths.Root, "config"), paths.Config);
         Assert.Equal(Path.Combine(paths.Root, "data"), paths.Data);
+        Assert.Equal(Path.Combine(paths.Data, "folder-backuper.db"), paths.Database);
+        Assert.Equal(Path.Combine(paths.Data, "migrations"), paths.MigrationBackups);
         Assert.Equal(Path.Combine(paths.Root, "staging"), paths.Staging);
         Assert.Equal(Path.Combine(paths.Root, "logs"), paths.Logs);
     }

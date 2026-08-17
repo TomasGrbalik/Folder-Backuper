@@ -2,7 +2,7 @@
 
 Folder Backuper is a Windows service and localhost web application for creating scheduled ZIP backups of local folders to local or SMB storage.
 
-The production foundation is a .NET 10 Blazor Interactive Server application with MudBlazor. The retained [Milestone 0 diagnostic harness](research/milestone-0/README.md) records the Windows and NAS compatibility evidence and is not part of the shipping application.
+The production foundation is a .NET 10 Blazor Interactive Server application with MudBlazor and durable EF Core SQLite persistence. The retained [Milestone 0 diagnostic harness](research/milestone-0/README.md) records the Windows and NAS compatibility evidence and is not part of the shipping application.
 
 ## Requirements
 
@@ -30,7 +30,7 @@ dotnet run --project src/FolderBackuper/FolderBackuper.csproj -- --FolderBackupe
 
 Open `http://localhost:5180`. Kestrel always binds to IPv4 and IPv6 loopback; configuration cannot enable remote binding.
 
-The same settings can be supplied through environment variables as `FolderBackuper__DataRoot` and `FolderBackuper__Port`. Without an override, application data is stored under `C:\ProgramData\FolderBackuper` in `config`, `data`, `staging`, and `logs` directories.
+The same settings can be supplied through environment variables as `FolderBackuper__DataRoot` and `FolderBackuper__Port`. Without an override, application data is stored under `C:\ProgramData\FolderBackuper` in `config`, `data`, `staging`, and `logs` directories. The SQLite database is `data\folder-backuper.db`; validated pre-migration backups are retained in `data\migrations`.
 
 Only one process can use a data root. A machine-wide mutex rejects a second service or console process even when it runs in another Windows session. Different development data roots can run independently.
 
@@ -40,4 +40,4 @@ Only one process can use a data root. A machine-wide mutex rejects a second serv
 dotnet publish src/FolderBackuper/FolderBackuper.csproj -c Release -r win-x64 --self-contained true
 ```
 
-Installer packaging is scheduled for Milestone 10. See the [Milestone 1 acceptance checklist](docs/milestone-1-acceptance.md) for temporary service-validation commands.
+Installer packaging is scheduled for Milestone 10. See the [Milestone 2 acceptance checklist](docs/milestone-2-acceptance.md) for persistence and temporary service-validation commands.
