@@ -11,6 +11,10 @@ public sealed record ApplicationPaths(
 {
     public const string DataRootConfigurationKey = "FolderBackuper:DataRoot";
 
+    public string Database => Path.Combine(Data, "folder-backuper.db");
+
+    public string MigrationBackups => Path.Combine(Data, "migrations");
+
     public static ApplicationPaths Resolve(IConfiguration configuration) =>
         Resolve(configuration[DataRootConfigurationKey]);
 
@@ -52,6 +56,7 @@ public sealed record ApplicationPaths(
     {
         Directory.CreateDirectory(Config);
         Directory.CreateDirectory(Data);
+        Directory.CreateDirectory(MigrationBackups);
         Directory.CreateDirectory(Staging);
         Directory.CreateDirectory(Logs);
     }

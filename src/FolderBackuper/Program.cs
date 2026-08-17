@@ -1,4 +1,5 @@
 using FolderBackuper.Components;
+using FolderBackuper.Infrastructure.Database;
 using FolderBackuper.Infrastructure.ServiceHosting;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
@@ -53,6 +54,8 @@ try
 
     builder.Services.AddWindowsService(options => options.ServiceName = "Folder Backuper");
     builder.Services.AddSingleton(paths);
+    builder.Services.AddSingleton(TimeProvider.System);
+    builder.Services.AddFolderBackuperDatabase(paths);
     builder.Services.AddRazorComponents().AddInteractiveServerComponents();
     builder.Services.AddMudServices();
     builder.Services.PostConfigure<HostFilteringOptions>(LoopbackHosting.ConfigureHostFiltering);
@@ -61,6 +64,7 @@ try
     builder.WebHost.UseUrls(LoopbackHosting.GetUrls(port));
 
     var app = builder.Build();
+    await app.Services.GetRequiredService<DatabaseInitializer>().InitializeAsync();
     app.UseHostFiltering();
     app.UseMiddleware<SecurityHeadersMiddleware>();
     app.UseAntiforgery();
