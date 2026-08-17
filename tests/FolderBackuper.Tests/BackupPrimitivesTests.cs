@@ -11,7 +11,7 @@ public sealed class BackupPrimitivesTests
         var value = new ArchiveOwnership(Guid.NewGuid(), Guid.NewGuid());
         Assert.True(ArchiveOwnership.TryParse(value.Format(), out var parsed));
         Assert.Equal(value, parsed);
-        Assert.False(ArchiveOwnership.TryParse("FolderBackuper-Archive;v=2;installation=x;run=x", out _));
+        Assert.False(ArchiveOwnership.TryParse("FolderBackuper:v2;installation=x;run=x", out _));
     }
 
     [Fact]

@@ -4,7 +4,7 @@ namespace FolderBackuper.Features.Backups;
 
 public sealed record ArchiveOwnership(Guid InstallationId, Guid RunId)
 {
-    private const string Prefix = "FolderBackuper-Archive;v=1;";
+    private const string Prefix = "FolderBackuper:v1;";
 
     public string Format() => $"{Prefix}installation={InstallationId:D};run={RunId:D}";
 
@@ -42,12 +42,24 @@ public sealed record BackupProblem(
     string? Path = null,
     int? NativeErrorCode = null);
 
+public sealed record BackupCopyProgress(
+    long FilesProcessed,
+    long BytesProcessed,
+    long ArchiveBytes,
+    string? CurrentRelativePath);
+
 public static class ArchivePathLayout
 {
-    public static string CreateEntryName(string topLevelFolder, string relativePath, bool directory)
+    public static string CreateTopLevelName(string topLevelFolder)
     {
         var top = SanitizeSegment(topLevelFolder);
         if (string.IsNullOrEmpty(top)) throw new ArgumentException("Top-level folder is invalid.", nameof(topLevelFolder));
+        return top + "/";
+    }
+
+    public static string CreateEntryName(string topLevelFolder, string relativePath, bool directory)
+    {
+        var top = CreateTopLevelName(topLevelFolder).TrimEnd('/');
         var path = ValidateRelative(relativePath);
         var result = top + "/" + path;
         return directory ? result.TrimEnd('/') + "/" : result;
