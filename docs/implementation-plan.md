@@ -65,22 +65,22 @@ Prove the environment-specific assumptions that could force architectural change
 
 1. Create a minimal .NET 10 Windows test harness.
 2. Protect and unprotect a sample secret through machine-scope DPAPI under the intended service identity.
-3. Authenticate to a Windows SMB share using network-only impersonation.
-4. Authenticate to the intended standalone NAS using credentials entered independently of the logged-in user.
-5. Exercise create, write, flush, read, rename, and delete operations through impersonation.
-6. Verify whether directory and file identity APIs return stable values on local storage, Windows SMB, and the intended NAS.
-7. Validate final-path resolution through local junctions, mount points, and symbolic links.
-8. Verify application ownership-marker behavior through alternate SMB names or aliases available in the test environment.
-9. Confirm that a UNC destination hosted by the backup PC can be detected and rejected.
-10. Verify `ZipArchive.Comment` round-trips the installation and run identifiers.
-11. Start a minimal ASP.NET Core application as `LocalSystem` and confirm loopback Kestrel and MudBlazor assets load without an interactive login.
+3. Authenticate to the intended standalone NAS using network-only impersonation and credentials entered independently of the logged-in user.
+4. Exercise create, write, flush, read, rename, and delete operations through impersonation.
+5. Verify whether directory and file identity APIs return stable values on local storage and the intended NAS.
+6. Validate final-path resolution through local junctions and symbolic links. A dedicated volume mount-point fixture is not required for Milestone 0; mount-point handling remains part of the production path implementation and tests in Milestone 3.
+7. Verify application ownership-marker behavior through alternate SMB names or aliases available in the test environment.
+8. Confirm that a UNC destination hosted by the backup PC can be detected and rejected.
+9. Verify `ZipArchive.Comment` round-trips the installation and run identifiers.
+10. Start a minimal ASP.NET Core application as `LocalSystem` and confirm loopback Kestrel and MudBlazor assets load without an interactive login.
+11. Read representative local source data as `LocalSystem` and confirm the probe does not change source permissions or metadata intentionally.
 
 If network-only impersonation fails against the intended NAS, validate deviceless `WNetAddConnection2` as the fallback and update the technical design before continuing.
 
 ### Deliverables
 
 - Repeatable Windows-only integration tests or a retained diagnostic harness.
-- Recorded NAS and Windows-share compatibility results.
+- Recorded NAS compatibility results.
 - Confirmed SMB access mechanism.
 - Confirmed physical-identity and ownership-marker strategy.
 - Any required architecture amendment.
@@ -89,7 +89,7 @@ If network-only impersonation fails against the intended NAS, validate deviceles
 
 - The service identity can read representative local source data without changing its permissions.
 - Explicit credentials can access and mutate only the intended SMB test destination.
-- Secrets survive service restart and remain undecryptable after copying to a different machine context.
+- Machine-scope secrets survive process and service restarts on the backup PC.
 - Local physical-path aliases are detected.
 - The intended NAS supports the selected transfer and finalization operations.
 - No unresolved finding requires replacing the selected filesystem or SMB approach.

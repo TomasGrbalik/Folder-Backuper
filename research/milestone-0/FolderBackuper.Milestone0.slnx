@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/FolderBackuper.Milestone0/FolderBackuper.Milestone0.csproj" />
+  <Project Path="tests/FolderBackuper.Milestone0.Tests/FolderBackuper.Milestone0.Tests.csproj" />
+</Solution>

@@ -1,0 +1,13 @@
+{
+  "sourceReadPath": "C:\\Milestone0\\RepresentativeSource",
+  "webPort": 5180,
+  "maximumSourceFiles": 1000,
+  "localHostAliases": [],
+  "nas": {
+    "uncRoot": "\\\\nas\\folder-backuper-probe",
+    "username": "probe-user",
+    "domain": "NAS",
+    "aliases": [],
+    "deniedControlPath": null
+  }
+}
