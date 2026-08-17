@@ -125,6 +125,26 @@ public sealed class ZipArchiveServiceTests : IDisposable
         Assert.Empty(Directory.GetFiles(staging));
     }
 
+    [Fact]
+    public async Task CreateAndValidate_HandlesThousandsOfFiles()
+    {
+        const int fileCount = 2000;
+        for (var index = 0; index < fileCount; index++)
+        {
+            await File.WriteAllTextAsync(Path.Combine(source, $"file-{index:D4}.txt"), index.ToString());
+        }
+        var manifest = AssertManifest(await new SourceManifestBuilder().BuildAsync(source));
+        var ownership = new ArchiveOwnership(Guid.NewGuid(), Guid.NewGuid());
+        var service = new ZipArchiveService();
+
+        var result = await service.CreateAsync(source, staging, "source", manifest, ownership);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(fileCount, manifest.FileCount);
+        Assert.Empty(await service.ValidateAsync(
+            result.StagingPath!, "source", manifest, ownership, RunPhase.Compressing));
+    }
+
     private static BackupManifest AssertManifest(SourceManifestScanResult result)
     {
         Assert.True(result.CanProceed);
