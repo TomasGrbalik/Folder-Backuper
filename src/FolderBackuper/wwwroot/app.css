@@ -1,0 +1,223 @@
+:root {
+    color-scheme: light;
+    --ink: #22332d;
+    --forest: #18352d;
+    --paper: #fffdf7;
+    --line: #d5d0c4;
+    --amber: #d89045;
+}
+
+html, body {
+    min-height: 100%;
+    margin: 0;
+    background: #f2f0e9;
+}
+
+.app-bar {
+    border-bottom: 3px solid var(--amber);
+}
+
+.brand-lockup {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin-left: .75rem;
+}
+
+.brand-mark {
+    width: 1.85rem;
+    height: 1.85rem;
+    border: 2px solid #f8f2e7;
+    border-radius: 50% 50% 50% 8px;
+    transform: rotate(-12deg);
+    box-shadow: inset 0 0 0 5px var(--forest), inset 0 0 0 7px var(--amber);
+}
+
+.brand-caption {
+    opacity: .68;
+    letter-spacing: .14em;
+}
+
+.service-status {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-size: .78rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.service-status > span, .health-pulse {
+    width: .6rem;
+    height: .6rem;
+    border-radius: 50%;
+    background: #75b798;
+    box-shadow: 0 0 0 4px rgb(117 183 152 / 15%);
+}
+
+.app-drawer {
+    border-right: 1px solid var(--line) !important;
+}
+
+.nav-shell {
+    display: flex;
+    min-height: calc(100vh - 67px);
+    flex-direction: column;
+    padding: 1.5rem .75rem 1rem;
+}
+
+.nav-heading {
+    padding: 0 1rem .75rem;
+    letter-spacing: .16em !important;
+}
+
+.nav-note {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin: auto .75rem 0;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+    color: #64736d;
+    font-size: .78rem;
+}
+
+.main-content {
+    min-height: calc(100vh - 64px);
+    padding: clamp(1.5rem, 4vw, 4rem);
+}
+
+.page-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 2rem;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--line);
+}
+
+.page-heading h1 {
+    color: var(--forest);
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    line-height: 1.05;
+}
+
+.page-lead {
+    max-width: 44rem;
+    margin-top: .75rem !important;
+    color: #63716c;
+}
+
+.foundation-badge {
+    flex: none;
+    padding: .55rem .8rem;
+    border: 1px solid var(--amber);
+    color: #8b5729;
+    font: 600 .72rem/1 "Segoe UI", sans-serif;
+    letter-spacing: .12em;
+}
+
+.feature-card, .metric-card, .placeholder-card, .error-panel {
+    height: 100%;
+    padding: clamp(1.5rem, 3vw, 2.5rem);
+    border: 1px solid var(--line);
+    background: var(--paper) !important;
+}
+
+.feature-card {
+    border-top: 4px solid #315c4b;
+}
+
+.metric-card {
+    border-top: 4px solid var(--amber);
+}
+
+.health-line {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin: 1.5rem 0 .75rem;
+    font: 600 1.3rem Georgia, serif;
+}
+
+.placeholder-card, .error-panel {
+    display: grid;
+    max-width: 46rem;
+    gap: 1rem;
+}
+
+#components-reconnect-modal {
+    position: fixed;
+    z-index: 10000;
+    inset: 0;
+    place-items: center;
+    background: rgb(24 53 45 / 82%);
+    backdrop-filter: blur(4px);
+}
+
+#components-reconnect-modal.components-reconnect-show,
+#components-reconnect-modal.components-reconnect-failed,
+#components-reconnect-modal.components-reconnect-rejected {
+    display: grid;
+}
+
+#components-reconnect-modal.components-reconnect-hide {
+    display: none;
+}
+
+.reconnect-card {
+    display: grid;
+    width: min(28rem, calc(100vw - 2rem));
+    gap: 1rem;
+    padding: 2rem;
+    border-top: 4px solid var(--amber);
+    background: var(--paper);
+    color: var(--ink);
+    box-shadow: 0 1.5rem 5rem rgb(0 0 0 / 30%);
+}
+
+.reconnect-card > div {
+    gap: .35rem;
+}
+
+.reconnect-card > .components-reconnect-show,
+.reconnect-card > .components-reconnect-failed,
+.reconnect-card > .components-reconnect-rejected {
+    display: none;
+}
+
+.components-reconnect-show .components-reconnect-show,
+.components-reconnect-failed .components-reconnect-failed,
+.components-reconnect-rejected .components-reconnect-rejected {
+    display: grid;
+}
+
+.reconnect-spinner {
+    width: 2rem;
+    height: 2rem;
+    border: 3px solid #d5d0c4;
+    border-top-color: #315c4b;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.reconnect-card button {
+    width: fit-content;
+    margin-top: .75rem;
+    padding: .6rem 1rem;
+    border: 0;
+    border-radius: 4px;
+    background: #315c4b;
+    color: white;
+    cursor: pointer;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 600px) {
+    .service-status { display: none; }
+    .brand-caption { display: none; }
+    .main-content { padding: 1.25rem; }
+    .page-heading { align-items: start; flex-direction: column; }
+}
