@@ -116,9 +116,15 @@ public sealed class DestinationArchiveService(
                     partialCreated = false;
                     return new(finalPath, finalFileName, expectedLength, stopwatch.Elapsed, true, validation);
                 }
-                catch (OperationCanceledException) when (!commitStarted)
+                catch (OperationCanceledException exception) when (!commitStarted)
                 {
-                    CleanupPartial(partialPath, partialCreated, null);
+                    var cleanupProblems = new List<BackupProblem>();
+                    CleanupPartial(partialPath, partialCreated, cleanupProblems);
+                    if (cleanupProblems.Count > 0)
+                    {
+                        throw new BackupOperationCanceledException(
+                            cleanupProblems.AsReadOnly(), exception, cancellationToken);
+                    }
                     throw;
                 }
                 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or Win32Exception or ArgumentException)

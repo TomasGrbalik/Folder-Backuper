@@ -125,9 +125,14 @@ public sealed class ZipArchiveService
             progress?.Invoke(new(manifest.FileCount, manifest.SourceBytes, length, null));
             return new(stagingPath, length, stopwatch.Elapsed, []);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException exception)
         {
-            Cleanup(stagingPath, created, null);
+            var cleanupProblems = new List<BackupProblem>();
+            Cleanup(stagingPath, created, cleanupProblems);
+            if (cleanupProblems.Count > 0)
+            {
+                throw new BackupOperationCanceledException(cleanupProblems.AsReadOnly(), exception, cancellationToken);
+            }
             throw;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException or ArgumentException)

@@ -48,6 +48,15 @@ public sealed record BackupCopyProgress(
     long ArchiveBytes,
     string? CurrentRelativePath);
 
+public sealed class BackupOperationCanceledException(
+    IReadOnlyList<BackupProblem> cleanupProblems,
+    OperationCanceledException innerException,
+    CancellationToken cancellationToken)
+    : OperationCanceledException("The backup was cancelled and cleanup was incomplete.", innerException, cancellationToken)
+{
+    public IReadOnlyList<BackupProblem> CleanupProblems { get; } = cleanupProblems;
+}
+
 public static class ArchivePathLayout
 {
     public static string CreateTopLevelName(string topLevelFolder)

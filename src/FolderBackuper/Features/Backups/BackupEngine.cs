@@ -173,6 +173,13 @@ public sealed class BackupEngine(
                 ? RunOutcome.SuccessfulWithWarnings
                 : RunOutcome.Successful;
         }
+        catch (BackupOperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
+        {
+            problems.AddRange(exception.CleanupProblems);
+            problems.Add(new(BackupProblemSeverity.Error, BackupProblemCategory.Cancelled,
+                CurrentPhase(request.RunId), "Cancel backup", "The backup was cancelled."));
+            outcome = RunOutcome.Cancelled;
+        }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             problems.Add(new(BackupProblemSeverity.Error, BackupProblemCategory.Cancelled,
