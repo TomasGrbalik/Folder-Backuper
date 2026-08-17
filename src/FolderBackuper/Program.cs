@@ -1,5 +1,8 @@
 using FolderBackuper.Components;
+using FolderBackuper.Features.Destinations;
 using FolderBackuper.Infrastructure.Database;
+using FolderBackuper.Infrastructure.Filesystem;
+using FolderBackuper.Infrastructure.Security;
 using FolderBackuper.Infrastructure.ServiceHosting;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
@@ -38,6 +41,7 @@ try
     var paths = ApplicationPaths.Resolve(builder.Configuration);
     instanceLock = ApplicationInstanceLock.Acquire(paths.Root);
     paths.CreateDirectories();
+    new AppDataAclService(paths).Apply();
 
     builder.Host.UseSerilog((context, services, configuration) => configuration
         .ReadFrom.Configuration(context.Configuration)
@@ -54,7 +58,15 @@ try
 
     builder.Services.AddWindowsService(options => options.ServiceName = "Folder Backuper");
     builder.Services.AddSingleton(paths);
+    builder.Services.AddSingleton<AppDataAclService>();
     builder.Services.AddSingleton(TimeProvider.System);
+    builder.Services.AddSingleton<ISecretProtector, DpapiSecretProtector>();
+    builder.Services.AddSingleton<INetworkImpersonator, NetworkOnlyImpersonator>();
+    builder.Services.AddSingleton<ILocalHostUncDetector, LocalHostUncDetector>();
+    builder.Services.AddSingleton<IDestinationAdapter, LocalDestinationAdapter>();
+    builder.Services.AddSingleton<IDestinationAdapter, SmbDestinationAdapter>();
+    builder.Services.AddSingleton<OwnershipMarkerService>();
+    builder.Services.AddScoped<DestinationService>();
     builder.Services.AddFolderBackuperDatabase(paths);
     builder.Services.AddRazorComponents().AddInteractiveServerComponents();
     builder.Services.AddMudServices();

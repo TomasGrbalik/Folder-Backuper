@@ -26,6 +26,7 @@ public enum DestinationAccessResult
     Unavailable,
     InvalidPath,
     AccessDenied,
+    AuthenticationFailed,
     CleanupFailed,
     Failed
 }
