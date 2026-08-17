@@ -1,0 +1,73 @@
+@inherits LayoutComponentBase
+
+<MudThemeProvider Theme="Theme" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="0" Class="app-bar">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="ToggleDrawer" />
+        <div class="brand-lockup">
+            <span class="brand-mark" aria-hidden="true"></span>
+            <div>
+                <MudText Typo="Typo.h6">Folder Backuper</MudText>
+                <MudText Typo="Typo.caption" Class="brand-caption">LOCAL BACKUP CONTROL</MudText>
+            </div>
+        </div>
+        <MudSpacer />
+        <div class="service-status"><span></span> Service online</div>
+    </MudAppBar>
+
+    <MudDrawer @bind-Open="drawerOpen" Elevation="0" ClipMode="DrawerClipMode.Always" Breakpoint="Breakpoint.Md" Class="app-drawer">
+        <NavMenu />
+    </MudDrawer>
+
+    <MudMainContent Class="main-content">
+        <ErrorBoundary @ref="errorBoundary">
+            <ChildContent>
+                @Body
+            </ChildContent>
+            <ErrorContent Context="exception">
+                <MudPaper Class="error-panel" Elevation="0">
+                    <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Size="Size.Large" />
+                    <MudText Typo="Typo.h5">This view could not be displayed</MudText>
+                    <MudText>Try the operation again. The backup service continues running independently of this page.</MudText>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Recover">Try again</MudButton>
+                </MudPaper>
+            </ErrorContent>
+        </ErrorBoundary>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private bool drawerOpen = true;
+    private ErrorBoundary? errorBoundary;
+
+    private static readonly MudTheme Theme = new()
+    {
+        PaletteLight = new PaletteLight
+        {
+            Primary = "#315c4b",
+            Secondary = "#d89045",
+            Background = "#f2f0e9",
+            Surface = "#fffdf7",
+            AppbarBackground = "#18352d",
+            AppbarText = "#f8f2e7",
+            DrawerBackground = "#e7e3d8",
+            DrawerText = "#22332d"
+        },
+        LayoutProperties = new LayoutProperties { DefaultBorderRadius = "10px" },
+        Typography = new Typography
+        {
+            Default = new DefaultTypography { FontFamily = ["Segoe UI", "sans-serif"] },
+            H1 = new H1Typography { FontFamily = ["Georgia", "serif"], FontWeight = "600" },
+            H2 = new H2Typography { FontFamily = ["Georgia", "serif"], FontWeight = "600" },
+            H3 = new H3Typography { FontFamily = ["Georgia", "serif"], FontWeight = "600" }
+        }
+    };
+
+    private void ToggleDrawer() => drawerOpen = !drawerOpen;
+
+    private void Recover() => errorBoundary?.Recover();
+}

@@ -1,0 +1,30 @@
+@page "/"
+@attribute [StreamRendering]
+
+<PageTitle>Dashboard | Folder Backuper</PageTitle>
+
+<header class="page-heading">
+    <div>
+        <MudText Typo="Typo.overline">System overview</MudText>
+        <MudText Typo="Typo.h2" HtmlTag="h1">Your backup workspace</MudText>
+        <MudText Class="page-lead">The foundation is ready. Create destinations and jobs in the next milestones.</MudText>
+    </div>
+    <div class="foundation-badge">FOUNDATION / M1</div>
+</header>
+
+<MudGrid Spacing="3">
+    <MudItem xs="12" md="7">
+        <MudPaper Class="feature-card" Elevation="0">
+            <MudText Typo="Typo.overline">Service health</MudText>
+            <div class="health-line"><span class="health-pulse"></span><strong>Application online</strong></div>
+            <MudText>The Windows service host, local web interface, and application data paths are available.</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" md="5">
+        <MudPaper Class="metric-card" Elevation="0">
+            <MudText Typo="Typo.overline">Scheduled work</MudText>
+            <MudText Typo="Typo.h3">No jobs yet</MudText>
+            <MudText Color="Color.Secondary">Job management arrives in Milestone 4.</MudText>
+        </MudPaper>
+    </MudItem>
+</MudGrid>

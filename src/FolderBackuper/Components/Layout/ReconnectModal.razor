@@ -1,0 +1,19 @@
+<div id="components-reconnect-modal" class="components-reconnect-hide" role="status" aria-live="polite">
+    <div class="reconnect-card">
+        <div class="reconnect-spinner" aria-hidden="true"></div>
+        <div class="components-reconnect-show">
+            <strong>Reconnecting to the backup service</strong>
+            <span>The page will resume when the local service is available.</span>
+        </div>
+        <div class="components-reconnect-failed">
+            <strong>Connection could not be restored</strong>
+            <span>Start the Folder Backuper service, then retry.</span>
+            <button type="button" onclick="Blazor.reconnect()">Retry</button>
+        </div>
+        <div class="components-reconnect-rejected">
+            <strong>The service restarted</strong>
+            <span>Reload to establish a new session.</span>
+            <button type="button" onclick="location.reload()">Reload</button>
+        </div>
+    </div>
+</div>
