@@ -1,4 +1,5 @@
 using FolderBackuper.Components;
+using FolderBackuper.Features.Backups;
 using FolderBackuper.Features.Destinations;
 using FolderBackuper.Features.Jobs;
 using FolderBackuper.Infrastructure.Database;
@@ -68,6 +69,7 @@ try
     builder.Services.AddSingleton<IDestinationAdapter, LocalDestinationAdapter>();
     builder.Services.AddSingleton<IDestinationAdapter, SmbDestinationAdapter>();
     builder.Services.AddJobCoreServices();
+    builder.Services.AddBackupEngine();
     builder.Services.AddSingleton<SourceBrowser>();
     builder.Services.AddSingleton<SourcePreview>();
     builder.Services.AddSingleton<ScheduleOccurrenceCalculator>();

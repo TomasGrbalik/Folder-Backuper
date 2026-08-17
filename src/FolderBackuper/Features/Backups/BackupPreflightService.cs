@@ -30,6 +30,12 @@ public sealed class BackupPreflightService(
         var sources = configuredSourcePaths.Append(job.SourcePath)
             .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
 
+        if (job.Lifecycle == JobLifecycle.Archived)
+        {
+            problems.Add(Problem(BackupProblemCategory.SourceUnavailable, RunPhase.Scanning,
+                "Validate job lifecycle", "An archived job cannot be executed.", job.SourcePath));
+        }
+
         string? source = null;
         try
         {
