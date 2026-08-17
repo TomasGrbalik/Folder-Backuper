@@ -21,11 +21,26 @@ public sealed record ArchiveOwnership(Guid InstallationId, Guid RunId)
 
 public enum BackupProblemCategory
 {
-    SourceUnavailable, SourceInaccessible, SourceChanged,
+    SourceUnavailable, SourceInaccessible, SourceChanged, SkippedReparsePoint,
     StagingUnavailable, StagingInaccessible, StagingInsufficientSpace,
     DestinationUnavailable, DestinationInaccessible, DestinationInsufficientSpace,
     InvalidArchive, InvalidPath, CleanupFailed, Cancelled, GeneralIo
 }
+
+public enum BackupProblemSeverity
+{
+    Warning,
+    Error
+}
+
+public sealed record BackupProblem(
+    BackupProblemSeverity Severity,
+    BackupProblemCategory Category,
+    RunPhase Phase,
+    string Operation,
+    string Message,
+    string? Path = null,
+    int? NativeErrorCode = null);
 
 public static class ArchivePathLayout
 {

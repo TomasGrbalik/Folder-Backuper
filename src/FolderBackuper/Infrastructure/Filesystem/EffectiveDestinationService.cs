@@ -31,6 +31,15 @@ public sealed class EffectiveDestinationService(
         string? subfolder,
         string? localSourcePath = null,
         bool create = false,
+        CancellationToken cancellationToken = default) =>
+        await ResolveAgainstSourcesAsync(destination, subfolder,
+            localSourcePath is null ? [] : [localSourcePath], create, cancellationToken);
+
+    public async Task<EffectiveDestinationOutcome> ResolveAgainstSourcesAsync(
+        Destination destination,
+        string? subfolder,
+        IEnumerable<string> localSourcePaths,
+        bool create = false,
         CancellationToken cancellationToken = default)
     {
         var relative = WindowsPath.Relative(subfolder);
@@ -70,8 +79,8 @@ public sealed class EffectiveDestinationService(
 
                 var resolvedRoot = PathOverlap.ResolveProjected(root);
                 var projectedEffective = PathOverlap.ResolveProjected(effective);
-                var resolvedSource = localSourcePath is null ? null : PathOverlap.ResolveExisting(localSourcePath);
-                var safetyFailure = ValidatePhysicalPaths(resolvedRoot, projectedEffective, resolvedSource);
+                var resolvedSources = localSourcePaths.Select(PathOverlap.ResolveProjected).ToArray();
+                var safetyFailure = ValidatePhysicalPaths(resolvedRoot, projectedEffective, resolvedSources);
                 if (safetyFailure is not null)
                 {
                     return safetyFailure;
@@ -82,7 +91,7 @@ public sealed class EffectiveDestinationService(
                     Directory.CreateDirectory(effective);
                     resolvedRoot = PathOverlap.ResolveExisting(root);
                     projectedEffective = PathOverlap.ResolveExisting(effective);
-                    safetyFailure = ValidatePhysicalPaths(resolvedRoot, projectedEffective, resolvedSource);
+                    safetyFailure = ValidatePhysicalPaths(resolvedRoot, projectedEffective, resolvedSources);
                     if (safetyFailure is not null) return safetyFailure;
                 }
 
@@ -98,7 +107,7 @@ public sealed class EffectiveDestinationService(
                     $"PATH:{destination.Type}:{projectedEffective.ToUpperInvariant()}");
             }, cancellationToken));
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or Win32Exception)
+        catch (Exception exception) when (exception is ArgumentException or IOException or UnauthorizedAccessException or Win32Exception or NotSupportedException)
         {
             return new(EffectiveDestinationResult.AccessFailed, "The effective destination could not be accessed.");
         }
@@ -115,7 +124,7 @@ public sealed class EffectiveDestinationService(
     private static EffectiveDestinationOutcome? ValidatePhysicalPaths(
         string resolvedRoot,
         string projectedEffective,
-        string? resolvedSource)
+        IReadOnlyCollection<string> resolvedSources)
     {
         if (!PathOverlap.IsSameOrDescendant(projectedEffective, resolvedRoot))
         {
@@ -123,9 +132,9 @@ public sealed class EffectiveDestinationService(
                 "The effective destination resolves outside its destination root.");
         }
 
-        if (resolvedSource is not null &&
-            (PathOverlap.Overlaps(resolvedRoot, resolvedSource) ||
-             PathOverlap.Overlaps(projectedEffective, resolvedSource)))
+        if (resolvedSources.Any(source =>
+                PathOverlap.Overlaps(resolvedRoot, source) ||
+                PathOverlap.Overlaps(projectedEffective, source)))
         {
             return new(EffectiveDestinationResult.SourceOverlap,
                 "The destination root or effective destination overlaps the source folder.");
