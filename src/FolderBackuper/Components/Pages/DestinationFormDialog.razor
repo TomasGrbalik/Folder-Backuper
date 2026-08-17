@@ -1,4 +1,5 @@
 @inject DestinationService DestinationService
+@inject IDialogService DialogService
 
 <MudDialog>
     <DialogContent>
@@ -48,8 +49,24 @@
         try
         {
             var command = new SaveDestinationCommand(name, type, rootPath, username, password);
-            if (Destination is null) await DestinationService.CreateAsync(command);
-            else await DestinationService.EditAsync(Destination.Id, command);
+            if (Destination is null)
+            {
+                await DestinationService.CreateAsync(command);
+            }
+            else
+            {
+                var result = await DestinationService.EditAsync(Destination.Id, command);
+                if (!result.Succeeded && result.Status == DestinationOperationStatus.ValidationFailed &&
+                    result.Message.Contains("confirmation", StringComparison.OrdinalIgnoreCase))
+                {
+                    var confirmed = await DialogService.ShowMessageBoxAsync("Change storage root?",
+                        "Changing this root pauses affected jobs and makes retained artifacts unmanaged. Continue?",
+                        yesText: "Change root", cancelText: "Keep current root");
+                    if (confirmed == true)
+                        result = await DestinationService.EditAsync(Destination.Id, command with { ConfirmRootPathChange = true });
+                }
+                if (!result.Succeeded) { error = result.Message; return; }
+            }
             Dialog.Close(DialogResult.Ok(true));
         }
         catch (Exception exception) when (exception is ArgumentException or InvalidOperationException) { error = exception.Message; }

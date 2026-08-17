@@ -1,9 +1,11 @@
 using FolderBackuper.Components;
 using FolderBackuper.Features.Destinations;
+using FolderBackuper.Features.Jobs;
 using FolderBackuper.Infrastructure.Database;
 using FolderBackuper.Infrastructure.Filesystem;
 using FolderBackuper.Infrastructure.Security;
 using FolderBackuper.Infrastructure.ServiceHosting;
+using FolderBackuper.Infrastructure.Scheduling;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.HostFiltering;
@@ -65,7 +67,10 @@ try
     builder.Services.AddSingleton<ILocalHostUncDetector, LocalHostUncDetector>();
     builder.Services.AddSingleton<IDestinationAdapter, LocalDestinationAdapter>();
     builder.Services.AddSingleton<IDestinationAdapter, SmbDestinationAdapter>();
-    builder.Services.AddSingleton<OwnershipMarkerService>();
+    builder.Services.AddJobCoreServices();
+    builder.Services.AddSingleton<SourceBrowser>();
+    builder.Services.AddSingleton<SourcePreview>();
+    builder.Services.AddSingleton<ScheduleOccurrenceCalculator>();
     builder.Services.AddScoped<DestinationService>();
     builder.Services.AddFolderBackuperDatabase(paths);
     builder.Services.AddRazorComponents().AddInteractiveServerComponents();

@@ -18,10 +18,10 @@ public static class PathOverlap
 
     public static string? FindDestinationOverlap(string destination, IEnumerable<string> sources)
     {
-        var destinationPath = ResolveExisting(destination);
+        var destinationPath = ResolveProjected(destination);
         foreach (var source in sources)
         {
-            var sourcePath = ResolveExisting(source);
+            var sourcePath = ResolveProjected(source);
             if (Overlaps(destination, source) || Overlaps(destinationPath, sourcePath))
             {
                 return source;
@@ -31,7 +31,7 @@ public static class PathOverlap
         return null;
     }
 
-    private static string ResolveExisting(string path)
+    public static string ResolveProjected(string path)
     {
         var current = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
         var missingSegments = new Stack<string>();
@@ -40,7 +40,7 @@ public static class PathOverlap
             var parent = Directory.GetParent(current);
             if (parent is null)
             {
-                return path;
+                throw new DirectoryNotFoundException("No existing ancestor could be resolved.");
             }
 
             missingSegments.Push(Path.GetFileName(current));
@@ -54,5 +54,16 @@ public static class PathOverlap
         }
 
         return resolved;
+    }
+
+    public static string ResolveExisting(string path)
+    {
+        var fullPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
+        if (!Directory.Exists(fullPath))
+        {
+            throw new DirectoryNotFoundException($"The directory '{fullPath}' does not exist.");
+        }
+
+        return WindowsFilesystemInterop.GetFinalPath(fullPath);
     }
 }

@@ -1,0 +1,125 @@
+@inject SourceBrowser SourceBrowser
+@implements IDisposable
+
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.body2" Class="source-note">Choose a local directory. Reparse points are shown but cannot be opened or selected.</MudText>
+        @if (currentPath is null)
+        {
+            <div class="source-list">
+                @foreach (var root in roots)
+                {
+                    <button class="source-entry" @onclick="() => OpenAsync(root.FullPath)">
+                        <MudIcon Icon="@Icons.Material.Outlined.Storage" />
+                        <span><strong>@root.Name</strong><small>@root.FullPath · @root.DriveType</small></span>
+                    </button>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="source-toolbar">
+                <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward" Disabled="loading" OnClick="UpAsync" />
+                <code>@currentPath</code>
+            </div>
+            @if (loading) { <MudProgressLinear Indeterminate="true" /> }
+            @if (problem is not null) { <MudAlert Severity="Severity.Warning" Dense="true">@problem</MudAlert> }
+            <div class="source-list">
+                @foreach (var entry in entries)
+                {
+                    var disabled = entry.EntryType != SourceEntryType.Directory || entry.IsReparsePoint || entry.AccessProblem is not null;
+                    <button class="source-entry" disabled="@disabled" @onclick="() => OpenAsync(entry.FullPath)">
+                        <MudIcon Icon="@(entry.EntryType == SourceEntryType.Directory ? Icons.Material.Outlined.Folder : Icons.Material.Outlined.Description)" />
+                        <span><strong>@entry.Name</strong><small>@EntryDetail(entry)</small></span>
+                    </button>
+                }
+            </div>
+            <div class="source-pager">
+                <MudButton Disabled="@(offset == 0 || loading)" OnClick="PreviousAsync">Back</MudButton>
+                <MudText Typo="Typo.caption">Entries @(offset + 1)-@(offset + entries.Count)</MudText>
+                <MudButton Disabled="@(nextContinuation is null || loading)" OnClick="NextAsync">Next</MudButton>
+            </div>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="@(currentPath is null || loading)" OnClick="Select">Select this directory</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = null!;
+    [Parameter] public string? InitialPath { get; set; }
+    private IReadOnlyList<SourceRoot> roots = [];
+    private IReadOnlyList<SourceEntry> entries = [];
+    private string? currentPath;
+    private string? problem;
+    private int offset;
+    private string? continuation;
+    private string? nextContinuation;
+    private readonly List<string?> continuationHistory = [];
+    private readonly CancellationTokenSource lifetime = new();
+    private bool loading;
+    private bool disposed;
+
+    protected override async Task OnInitializedAsync()
+    {
+        roots = SourceBrowser.GetRoots();
+        if (!string.IsNullOrWhiteSpace(InitialPath) && Directory.Exists(InitialPath)) await OpenAsync(InitialPath);
+    }
+
+    private async Task OpenAsync(string path)
+    {
+        offset = 0; continuation = null; continuationHistory.Clear();
+        await BrowseAsync(path);
+    }
+    private async Task BrowseAsync(string path)
+    {
+        loading = true; problem = null;
+        try
+        {
+            var result = await SourceBrowser.BrowseAsync(new(path, 50, Continuation: continuation), lifetime.Token);
+            if (disposed) return;
+            currentPath = result.Path; entries = result.Entries; nextContinuation = result.Continuation; problem = result.AccessProblem;
+        }
+        catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
+        { problem = exception.Message; }
+        finally { loading = false; }
+    }
+    private async Task UpAsync()
+    {
+        var parent = currentPath is null ? null : Directory.GetParent(currentPath);
+        if (parent is null) { currentPath = null; entries = []; return; }
+        await OpenAsync(parent.FullName);
+    }
+    private async Task PreviousAsync()
+    {
+        if (continuationHistory.Count == 0) return;
+        continuation = continuationHistory[^1]; continuationHistory.RemoveAt(continuationHistory.Count - 1);
+        offset = Math.Max(0, offset - 50); await BrowseAsync(currentPath!);
+    }
+    private async Task NextAsync()
+    {
+        if (nextContinuation is null) return;
+        continuationHistory.Add(continuation); continuation = nextContinuation; offset += entries.Count;
+        await BrowseAsync(currentPath!);
+    }
+    private void Select() => Dialog.Close(DialogResult.Ok(currentPath));
+    private void Cancel() => Dialog.Cancel();
+    public void Dispose()
+    {
+        if (disposed) return;
+        disposed = true;
+        lifetime.Cancel();
+        lifetime.Dispose();
+    }
+    private static string EntryDetail(SourceEntry entry)
+    {
+        if (entry.AccessProblem is not null) return entry.AccessProblem;
+        var flags = entry.IsReparsePoint ? "Reparse point · unavailable" : entry.EntryType.ToString();
+        var size = entry.FileSize is long bytes ? $" · {bytes:N0} bytes" : "";
+        var modified = entry.ModifiedTime is { } time ? $" · {time.ToLocalTime():g}" : "";
+        return flags + size + modified;
+    }
+}

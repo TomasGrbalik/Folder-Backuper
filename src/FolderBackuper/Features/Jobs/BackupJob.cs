@@ -33,6 +33,7 @@ public sealed class BackupJob
     public ScheduledWeekdays Weekdays { get; set; }
     public TimeOnly ScheduledTime { get; set; }
     public long ScheduleRevision { get; set; } = 1;
+    public DateTimeOffset ScheduleEffectiveFromUtc { get; set; } = DateTimeOffset.UtcNow;
     public int RetentionCount { get; set; } = 1;
     public JobLifecycle Lifecycle { get; private set; } = JobLifecycle.Paused;
     public required string DestinationOwnershipKey { get; set; }

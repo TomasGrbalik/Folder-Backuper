@@ -17,6 +17,7 @@ public static class DatabaseServiceCollectionExtensions
             .AddInterceptors(provider.GetRequiredService<SqliteConnectionInterceptor>()));
         services.AddSingleton<MigrationBackupService>();
         services.AddSingleton<DatabaseInitializer>();
+        services.AddSingleton<ConfigurationMutationGate>();
         services.AddSingleton<RunPersistenceService>();
         return services;
     }

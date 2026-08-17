@@ -17,16 +17,45 @@ public sealed class OwnershipMarkerService
     {
         var expected = Content(installationId, jobId);
         var path = Path.Combine(directory, MarkerName);
+        cancellationToken.ThrowIfCancellationRequested();
+        var created = false;
+        FilesystemIdentity? createdIdentity = null;
         try
         {
-            await using var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous | FileOptions.WriteThrough);
-            await stream.WriteAsync(Encoding.UTF8.GetBytes(expected), cancellationToken);
-            await stream.FlushAsync(cancellationToken);
+            await using var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.Read, 4096, FileOptions.Asynchronous | FileOptions.WriteThrough);
+            created = true;
+            createdIdentity = WindowsFilesystemInterop.GetIdentity(path);
+            // Once CreateNew succeeds, finish atomically from the caller's perspective rather than
+            // allowing cancellation to leave a truncated ownership marker.
+            await stream.WriteAsync(Encoding.UTF8.GetBytes(expected), CancellationToken.None);
+            await stream.FlushAsync(CancellationToken.None);
             return new(OwnershipMarkerResult.Claimed, "The destination folder was claimed.");
         }
-        catch (IOException) when (File.Exists(path))
+        catch (IOException) when (!created && File.Exists(path))
         {
             return await VerifyAsync(directory, installationId, jobId, cancellationToken);
+        }
+        catch when (created)
+        {
+            try
+            {
+                if (File.Exists(path))
+                {
+                    using var handle = WindowsFilesystemInterop.OpenReadDeleteHandle(path);
+                    if (WindowsFilesystemInterop.GetIdentity(path) != createdIdentity)
+                    {
+                        return new(OwnershipMarkerResult.CleanupFailed,
+                            "The incomplete ownership marker was replaced and was not removed.");
+                    }
+                    WindowsFilesystemInterop.MarkForDeletion(handle);
+                }
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+            {
+                return new(OwnershipMarkerResult.CleanupFailed,
+                    "An incomplete ownership marker could not be removed.");
+            }
+            throw;
         }
     }
 

@@ -1,0 +1,39 @@
+@inject JobService JobService
+
+<MudDialog>
+    <DialogContent>
+        @if (testing)
+        {
+            <MudStack AlignItems="AlignItems.Center"><MudProgressCircular Indeterminate="true" /><MudText>Verifying ownership, write, readback, and cleanup...</MudText></MudStack>
+        }
+        else if (outcome is not null)
+        {
+            <MudAlert Severity="@(outcome.Succeeded ? Severity.Success : Severity.Error)">@outcome.Message</MudAlert>
+        }
+        else { <MudAlert Severity="Severity.Error">The job or destination no longer exists.</MudAlert> }
+    </DialogContent>
+    <DialogActions><MudButton Disabled="testing" Color="Color.Primary" OnClick="Close">Close</MudButton></DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = null!;
+    [Parameter, EditorRequired] public Guid JobId { get; set; }
+    private JobOperationResult? outcome;
+    private bool testing = true;
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            outcome = await JobService.TestDestinationAsync(JobId);
+        }
+        catch (Exception)
+        {
+            outcome = new(JobOperationStatus.Failed, "The effective folder test could not be completed. Try again or check the application logs.");
+        }
+        finally
+        {
+            testing = false;
+        }
+    }
+    private void Close() => Dialog.Close();
+}

@@ -1,0 +1,72 @@
+@inject SourcePreview SourcePreview
+@implements IDisposable
+
+<MudDialog>
+    <DialogContent>
+        <MudAlert Severity="Severity.Info" Dense="true">This preview is informational only. It reads metadata without copying, changing, or writing files; the source will be rechecked during backup.</MudAlert>
+        <MudText Class="source-preview-path">@Path</MudText>
+        @if (snapshot is null) { <MudProgressLinear Indeterminate="true" /> }
+        else
+        {
+            <div class="preview-metrics">
+                <span><strong>@snapshot.FileCount.ToString("N0")</strong> files</span>
+                <span><strong>@snapshot.FolderCount.ToString("N0")</strong> folders</span>
+                <span><strong>@FormatBytes(snapshot.TotalBytes)</strong> source data</span>
+                <span><strong>@snapshot.InaccessibleEntryCount.ToString("N0")</strong> inaccessible</span>
+                <span><strong>@snapshot.SkippedReparsePointCount.ToString("N0")</strong> reparse points skipped</span>
+            </div>
+            @if (!snapshot.IsComplete) { <MudProgressLinear Indeterminate="true" Class="mt-3" /> }
+            @foreach (var issue in snapshot.InaccessibleEntrySamples)
+            { <MudText Typo="Typo.caption" Color="Color.Warning">@issue.Path: @issue.Problem</MudText> }
+        }
+        @if (error is not null) { <MudAlert Severity="Severity.Error">@error</MudAlert> }
+    </DialogContent>
+    <DialogActions>
+        @if (snapshot?.IsComplete != true && error is null) { <MudButton OnClick="CancelScan">Cancel scan</MudButton> }
+        <MudButton Color="Color.Primary" Disabled="@(snapshot is null)" OnClick="Close">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = null!;
+    [Parameter, EditorRequired] public string Path { get; set; } = "";
+    private readonly CancellationTokenSource cancellation = new();
+    private SourcePreviewSnapshot? snapshot;
+    private string? error;
+    private bool disposed;
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await foreach (var item in SourcePreview.InspectAsync(Path, cancellationToken: cancellation.Token))
+            {
+                if (disposed) return;
+                snapshot = item;
+                await InvokeAsync(() => { if (!disposed) StateHasChanged(); });
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
+        { if (!disposed) error = exception.Message; }
+    }
+    private void CancelScan() { if (!disposed) cancellation.Cancel(); }
+    private void Close()
+    {
+        CancelScan();
+        Dialog.Close(snapshot is null ? DialogResult.Ok(true) : DialogResult.Ok(snapshot));
+    }
+    public void Dispose()
+    {
+        if (disposed) return;
+        disposed = true;
+        cancellation.Cancel();
+        cancellation.Dispose();
+    }
+    private static string FormatBytes(long value)
+    {
+        string[] units = ["B", "KB", "MB", "GB", "TB", "PB"];
+        var amount = (double)value; var unit = 0;
+        while (amount >= 1024 && unit < units.Length - 1) { amount /= 1024; unit++; }
+        return $"{amount:0.#} {units[unit]}";
+    }
+}

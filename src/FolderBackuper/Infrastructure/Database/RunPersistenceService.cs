@@ -3,7 +3,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FolderBackuper.Infrastructure.Database;
 
-public sealed class RunPersistenceService(IDbContextFactory<FolderBackuperDbContext> contextFactory)
+public sealed class RunPersistenceService(
+    IDbContextFactory<FolderBackuperDbContext> contextFactory,
+    ConfigurationMutationGate mutationGate)
 {
     public async Task CreateAsync(
         BackupRun run,
@@ -21,14 +23,18 @@ public sealed class RunPersistenceService(IDbContextFactory<FolderBackuperDbCont
             throw new InvalidOperationException("The run and scheduled occurrence must belong to the same job.");
         }
 
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-        context.Runs.Add(run);
-        if (occurrence is not null)
+        await mutationGate.ExecuteRunStateChangeAsync(async ct =>
         {
-            occurrence.RunId = run.Id;
-            context.ScheduledOccurrences.Add(occurrence);
-        }
+            await using var context = await contextFactory.CreateDbContextAsync(ct);
+            context.Runs.Add(run);
+            if (occurrence is not null)
+            {
+                occurrence.RunId = run.Id;
+                context.ScheduledOccurrences.Add(occurrence);
+            }
 
-        await context.SaveChangesAsync(cancellationToken);
+            await context.SaveChangesAsync(ct);
+            return true;
+        }, cancellationToken);
     }
 }
