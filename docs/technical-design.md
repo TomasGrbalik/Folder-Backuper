@@ -601,7 +601,7 @@ Containment combines conservative case-insensitive lexical comparison with handl
 
 ### 12.4 Windows filesystem interop
 
-`System.IO` remains the data-transfer API. A small isolated Windows interop component uses safe handles around `CreateFileW`, `GetFinalPathNameByHandleW`, and `GetFileInformationByHandleEx` to obtain final paths, volume identity, directory/file identity, and reparse information that public `System.IO` APIs do not expose completely.
+`System.IO` remains the data-transfer API. A small isolated Windows interop component uses safe handles around `CreateFileW`, `GetFinalPathNameByHandleW`, and `GetFileInformationByHandleEx` to obtain final paths, volume identity, directory/file identity, and reparse information that public `System.IO` APIs do not expose completely. When an SMB server rejects `FileIdInfo` with unsupported-function errors, identity lookup falls back to `GetFileInformationByHandle`; Milestone 0 confirmed that fallback returns stable, distinct file and directory identities on the intended NAS.
 
 Interop accepts only validated absolute paths, owns every native handle through `SafeFileHandle`, maps native errors to structured categories, and has Windows-specific tests. No general native filesystem abstraction is introduced.
 
@@ -617,7 +617,7 @@ Passwords:
 - Are never returned to the browser after saving.
 - Remain unchanged during editing unless a replacement is submitted.
 - Are never included in logs, run history, exception messages, or email.
-- Cannot be decrypted after moving the database to another Windows machine.
+- Are validated for recovery after process and service restarts on the backup PC.
 
 Application-data ACLs are the primary control preventing other local processes from obtaining the encrypted values. Machine entropy may provide context separation but is not treated as an independent secret when stored on the same machine.
 
@@ -627,7 +627,7 @@ SMB operations use Windows network-only logon credentials and execute through sc
 
 The scope covers only destination testing, directory creation, transfer, validation, retention, inventory checks, and cleanup for that destination. Handles are closed before impersonation ends.
 
-This avoids mapped drives and persistent session-wide SMB connections. Integration tests must validate the approach against representative Windows shares and the intended standalone NAS.
+This avoids mapped drives and persistent session-wide SMB connections. Integration tests must validate the approach against the intended standalone NAS.
 
 If a target NAS is incompatible, a deviceless `WNetAddConnection2` connection is the documented fallback. That fallback requires serialized connection management and explicit handling of Windows error 1219 credential conflicts.
 
@@ -661,7 +661,7 @@ Each active or paused job folder contains a small application ownership marker c
 
 Activation, reactivation, destination testing for a job, and manual queueing verify this marker. If another job owns it, the operation is rejected even when different UNC aliases or DFS paths reached the same folder. When a job releases a folder through archive or confirmed path change, the application removes only its own verified marker. Failure to remove it is reported and may require manual destination cleanup before reuse.
 
-Directory identity remains an early collision check, while the marker is the authoritative alias-resistant ownership check at the destination.
+Directory identity remains an early collision check, while the marker is the authoritative alias-resistant ownership check at the destination. The intended NAS uses the `GetFileInformationByHandle` fallback for this early check because it rejects `FileIdInfo` with Windows error 87.
 
 ### 13.6 Artifact inventory
 
@@ -781,7 +781,6 @@ The database and filesystem cannot participate in one atomic transaction. The de
 
 ### 17.3 Environment tests
 
-- SMB impersonation against a Windows share.
 - SMB impersonation against the intended NAS.
 - Wrong credentials, unavailable server, permission denial, disconnect during transfer, and cleanup.
 - Windows service startup without an interactive user.

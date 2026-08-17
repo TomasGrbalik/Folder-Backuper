@@ -1,0 +1,47 @@
+@page "/"
+@rendermode InteractiveServer
+@implements IDisposable
+@inject ServiceProbeState ProbeState
+
+<PageTitle>Folder Backuper Milestone 0</PageTitle>
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+    <MudText Typo="Typo.h3" GutterBottom="true">Milestone 0 Service Probe</MudText>
+    <MudAlert Severity="@Severity" Variant="Variant.Outlined">@ProbeState.Status</MudAlert>
+    <MudPaper Class="pa-6 mt-6" Elevation="1">
+        <MudText Typo="Typo.body1">Interactive Server circuit check: @_clickCount</MudText>
+        <MudButton Class="mt-4" Variant="Variant.Filled" Color="Color.Primary" OnClick="Increment">Test interaction</MudButton>
+    </MudPaper>
+    @if (ProbeState.Report is { } report)
+    {
+        <MudTable Items="report.Results" Class="mt-6" Dense="true">
+            <HeaderContent>
+                <MudTh>Probe</MudTh>
+                <MudTh>Status</MudTh>
+                <MudTh>Summary</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Probe">@context.Name</MudTd>
+                <MudTd DataLabel="Status">@context.Status</MudTd>
+                <MudTd DataLabel="Summary">@context.Summary</MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+</MudContainer>
+
+@code {
+    private int _clickCount;
+    private Severity Severity => ProbeState.Report?.Succeeded is false ? Severity.Warning : Severity.Info;
+
+    protected override void OnInitialized() => ProbeState.Changed += OnChanged;
+
+    private void Increment() => _clickCount++;
+
+    private void OnChanged() => _ = InvokeAsync(StateHasChanged);
+
+    public void Dispose() => ProbeState.Changed -= OnChanged;
+}
