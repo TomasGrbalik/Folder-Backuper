@@ -84,6 +84,7 @@ try
 
     var app = builder.Build();
     await app.Services.GetRequiredService<DatabaseInitializer>().InitializeAsync();
+    await app.Services.GetRequiredService<BackupRecoveryService>().RecoverAsync();
     app.UseHostFiltering();
     app.UseMiddleware<SecurityHeadersMiddleware>();
     app.UseAntiforgery();
