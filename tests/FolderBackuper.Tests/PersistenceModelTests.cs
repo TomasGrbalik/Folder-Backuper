@@ -81,6 +81,49 @@ public sealed class PersistenceModelTests
     }
 
     [Fact]
+    public async Task DurableExecutionState_RoundTripsPathsAndDestinationSnapshot()
+    {
+        await using var database = new TemporaryDatabase();
+        await database.Initializer.InitializeAsync();
+        var destination = DatabaseInitializationTests.Destination("Primary");
+        var job = DatabaseInitializationTests.Job(destination.Id, "Documents");
+        var run = Run(job, destination);
+        run.StagingPath = @"C:\ProgramData\FolderBackuper\staging\run.zip.part";
+        run.DestinationPartialPath = @"D:\Backups\Documents\backup.zip.partial";
+
+        await using (var context = await database.ContextFactory.CreateDbContextAsync())
+        {
+            context.AddRange(destination, job, run);
+            await context.SaveChangesAsync();
+        }
+
+        await using var inspection = await database.ContextFactory.CreateDbContextAsync();
+        var stored = await inspection.Runs.SingleAsync();
+        Assert.Equal(destination.Id, stored.DestinationId);
+        Assert.Equal(run.StagingPath, stored.StagingPath);
+        Assert.Equal(run.DestinationPartialPath, stored.DestinationPartialPath);
+    }
+
+    [Fact]
+    public async Task ActiveRunIndex_AllowsOnlyOneNonTerminalQueuedOrRunningRunPerJob()
+    {
+        await using var database = new TemporaryDatabase();
+        await database.Initializer.InitializeAsync();
+        var destination = DatabaseInitializationTests.Destination("Primary");
+        var job = DatabaseInitializationTests.Job(destination.Id, "Documents");
+        var first = Run(job, destination);
+        first.AdvanceTo(RunPhase.Queued, DateTimeOffset.UtcNow);
+        var second = Run(job, destination);
+        second.AdvanceTo(RunPhase.Queued, DateTimeOffset.UtcNow);
+
+        await using var context = await database.ContextFactory.CreateDbContextAsync();
+        context.AddRange(destination, job, first);
+        await context.SaveChangesAsync();
+        context.Add(second);
+        await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
+    }
+
+    [Fact]
     public async Task OwnershipKey_IsUniqueForActiveAndPausedJobsButReusableAfterArchive()
     {
         await using var database = new TemporaryDatabase();
@@ -218,6 +261,7 @@ public sealed class PersistenceModelTests
         RunTrigger trigger = RunTrigger.Manual) => new()
         {
             JobId = job.Id,
+            DestinationId = destination.Id,
             JobName = job.Name,
             SourcePath = job.SourcePath,
             DestinationName = destination.Name,

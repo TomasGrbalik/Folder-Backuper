@@ -88,6 +88,7 @@ public sealed class FolderBackuperDbContext(DbContextOptions<FolderBackuperDbCon
         });
         entity.HasKey(x => x.Id);
         entity.Property(x => x.JobName).HasMaxLength(200);
+        entity.Property(x => x.DestinationId).IsRequired();
         entity.Property(x => x.SourcePath).HasMaxLength(2048);
         entity.Property(x => x.DestinationName).HasMaxLength(200);
         entity.Property(x => x.DestinationType).HasConversion<string>().HasMaxLength(20);
@@ -104,6 +105,17 @@ public sealed class FolderBackuperDbContext(DbContextOptions<FolderBackuperDbCon
         entity.Property(x => x.NotificationErrorSummary).HasMaxLength(2000);
         entity.HasIndex(x => new { x.JobId, x.Outcome });
         entity.HasIndex(x => new { x.QueuedAtUtc, x.Id });
+        entity.Property(x => x.StagingPath).HasMaxLength(2048);
+        entity.Property(x => x.DestinationPartialPath).HasMaxLength(2048);
+        entity.HasIndex(x => new { x.Phase, x.QueuedAtUtc, x.Id })
+            .HasFilter("Outcome IS NULL AND Phase <> 'Planned'");
+        entity.HasIndex(x => new { x.JobId, x.Phase, x.QueuedAtUtc, x.Id })
+            .HasFilter("Outcome IS NULL AND Phase <> 'Planned'");
+        entity.HasIndex(x => new { x.Phase, x.Id })
+            .HasFilter("Outcome IS NULL");
+        entity.HasIndex(x => x.JobId)
+            .IsUnique()
+            .HasFilter("Outcome IS NULL AND Phase <> 'Planned'");
         entity.HasOne(x => x.Job)
             .WithMany()
             .HasForeignKey(x => x.JobId)

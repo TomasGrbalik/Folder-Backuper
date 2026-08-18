@@ -34,6 +34,7 @@ public sealed class BackupRun
     public Guid Id { get; init; } = Guid.NewGuid();
     public Guid JobId { get; init; }
     public BackupJob? Job { get; set; }
+    public Guid DestinationId { get; init; }
     public required string JobName { get; init; }
     public required string SourcePath { get; init; }
     public required string DestinationName { get; init; }
@@ -54,6 +55,8 @@ public sealed class BackupRun
     public DateTimeOffset? CancellationRequestedAtUtc { get; private set; }
     public DateTimeOffset? FinalCommitStartedAtUtc { get; private set; }
     public DateTimeOffset? FinalCommittedAtUtc { get; private set; }
+    public string? StagingPath { get; set; }
+    public string? DestinationPartialPath { get; set; }
     public long FileCount { get; set; }
     public long DirectoryCount { get; set; }
     public long SourceBytes { get; set; }
