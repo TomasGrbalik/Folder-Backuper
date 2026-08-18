@@ -1,3 +1,133 @@
 @page "/history"
+@inject RunQueryService Runs
+@inject JobService JobService
+@inject IDialogService DialogService
+
 <PageTitle>History | Folder Backuper</PageTitle>
-<PlaceholderPage Title="History" Description="Durable run history will be introduced with persistence and execution." Icon="@Icons.Material.Filled.History" />
+
+<div class="page-heading">
+    <div>
+        <MudText Typo="Typo.h1">History</MudText>
+        <MudText Class="page-lead">Permanent record of every run attempt. This history cannot be cleared.</MudText>
+    </div>
+</div>
+
+<div class="history-filters">
+    <MudSelect T="Guid?" Value="jobFilter" ValueChanged="OnJobFilterChanged" Label="Job" Dense="true" Clearable="true" Class="filter-control">
+        <MudSelectItem T="Guid?" Value="@((Guid?)null)">All jobs</MudSelectItem>
+        @foreach (var job in jobs)
+        {
+            <MudSelectItem T="Guid?" Value="@job.Id">@job.Name</MudSelectItem>
+        }
+    </MudSelect>
+    <MudSelect T="RunStatusFilter" Value="statusFilter" ValueChanged="OnStatusFilterChanged" Label="Status" Dense="true" Class="filter-control">
+        @foreach (var status in Enum.GetValues<RunStatusFilter>())
+        {
+            <MudSelectItem T="RunStatusFilter" Value="@status">@StatusText(status)</MudSelectItem>
+        }
+    </MudSelect>
+</div>
+
+<MudTable T="RunHistoryRow" ServerData="LoadAsync" @ref="table" Hover="true" Dense="true" Class="history-table"
+          OnRowClick="OpenDetailsAsync" RowsPerPage="RunQueryService.DefaultPageSize">
+    <HeaderContent>
+        <MudTh>Job</MudTh>
+        <MudTh>Trigger</MudTh>
+        <MudTh>Status</MudTh>
+        <MudTh>Started</MudTh>
+        <MudTh>Duration</MudTh>
+        <MudTh>Archive</MudTh>
+        <MudTh>Problems</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Job">@context.JobName</MudTd>
+        <MudTd DataLabel="Trigger">@MonitoringDisplay.TriggerLabel(context.Trigger)</MudTd>
+        <MudTd DataLabel="Status">
+            <MudChip T="string" Size="Size.Small" Color="@MonitoringDisplay.StatusColor(context.Outcome, context.Phase)">@MonitoringDisplay.StatusLabel(context.Outcome, context.Phase)</MudChip>
+        </MudTd>
+        <MudTd DataLabel="Started">@DisplayFormat.LocalDateTime(context.StartedAtUtc)</MudTd>
+        <MudTd DataLabel="Duration">@DisplayFormat.Duration(context.Duration)</MudTd>
+        <MudTd DataLabel="Archive">
+            @if (context.ArtifactState is { } artifactState)
+            {
+                <MudChip T="string" Size="Size.Small" Color="@MonitoringDisplay.ArtifactColor(artifactState)">@MonitoringDisplay.ArtifactLabel(artifactState)</MudChip>
+            }
+            else
+            {
+                <span>—</span>
+            }
+        </MudTd>
+        <MudTd DataLabel="Problems">@context.ProblemCount.ToString("N0")</MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText>No runs match the selected filters.</MudText>
+    </NoRecordsContent>
+    <PagerContent>
+        <MudTablePager PageSizeOptions="new[] { 50, 100, 200 }" />
+    </PagerContent>
+</MudTable>
+
+@code {
+    [SupplyParameterFromQuery(Name = "job")] private Guid? JobQuery { get; set; }
+
+    private MudTable<RunHistoryRow>? table;
+    private IReadOnlyList<JobSummary> jobs = [];
+    private Guid? jobFilter;
+    private RunStatusFilter statusFilter = RunStatusFilter.All;
+
+    protected override async Task OnInitializedAsync()
+    {
+        jobs = await JobService.ListAsync(includeArchived: true);
+        if (JobQuery is { } job && jobs.Any(x => x.Id == job))
+        {
+            jobFilter = job;
+        }
+    }
+
+    private async Task<TableData<RunHistoryRow>> LoadAsync(TableState state, CancellationToken cancellationToken)
+    {
+        var page = await Runs.ListHistoryAsync(
+            new RunHistoryFilter(jobFilter, statusFilter), state.Page, state.PageSize, cancellationToken);
+        return new TableData<RunHistoryRow> { Items = page.Rows, TotalItems = page.TotalCount };
+    }
+
+    private async Task OnJobFilterChanged(Guid? value)
+    {
+        jobFilter = value;
+        if (table is not null)
+        {
+            await table.ReloadServerData();
+        }
+    }
+
+    private async Task OnStatusFilterChanged(RunStatusFilter value)
+    {
+        statusFilter = value;
+        if (table is not null)
+        {
+            await table.ReloadServerData();
+        }
+    }
+
+    private async Task OpenDetailsAsync(TableRowClickEventArgs<RunHistoryRow> args)
+    {
+        if (args.Item is null)
+        {
+            return;
+        }
+
+        var parameters = new DialogParameters { [nameof(RunDetailsDialog.RunId)] = args.Item.RunId };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true, CloseButton = true };
+        await DialogService.ShowAsync<RunDetailsDialog>("Run details", parameters, options);
+    }
+
+    private static string StatusText(RunStatusFilter status) => status switch
+    {
+        RunStatusFilter.All => "All statuses",
+        RunStatusFilter.Successful => "Successful",
+        RunStatusFilter.Warnings => "With warnings",
+        RunStatusFilter.Failed => "Failed",
+        RunStatusFilter.Cancelled => "Cancelled",
+        _ => status.ToString()
+    };
+}

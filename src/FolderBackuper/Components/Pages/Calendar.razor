@@ -1,3 +1,238 @@
 @page "/calendar"
+@using System.Globalization
+@inject CalendarEntryService CalendarEntries
+@inject JobService JobService
+@inject IDialogService DialogService
+
 <PageTitle>Calendar | Folder Backuper</PageTitle>
-<PlaceholderPage Title="Calendar" Description="Scheduled backup occurrences will appear here in a later milestone." Icon="@Icons.Material.Filled.CalendarMonth" />
+
+<div class="page-heading">
+    <div>
+        <MudText Typo="Typo.h1">Calendar</MudText>
+        <MudText Class="page-lead">Past run attempts and future planned runs together.</MudText>
+    </div>
+    <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small">
+        <MudButton Color="@(agenda ? Color.Default : Color.Primary)" OnClick="() => agenda = false">Month</MudButton>
+        <MudButton Color="@(agenda ? Color.Primary : Color.Default)" OnClick="() => agenda = true">Agenda</MudButton>
+    </MudButtonGroup>
+</div>
+
+<div class="calendar-toolbar">
+    <div class="calendar-nav">
+        <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft" OnClick="() => ShiftMonthAsync(-1)" aria-label="Previous month" />
+        <MudText Typo="Typo.h5">@MonthLabel</MudText>
+        <MudIconButton Icon="@Icons.Material.Filled.ChevronRight" OnClick="() => ShiftMonthAsync(1)" aria-label="Next month" />
+        <MudButton Size="Size.Small" OnClick="GoTodayAsync">Today</MudButton>
+    </div>
+    <div class="history-filters">
+        <MudSelect T="Guid?" Value="jobFilter" ValueChanged="OnJobFilterChanged" Label="Job" Dense="true" Clearable="true" Class="filter-control">
+            <MudSelectItem T="Guid?" Value="@((Guid?)null)">All jobs</MudSelectItem>
+            @foreach (var job in jobs)
+            {
+                <MudSelectItem T="Guid?" Value="@job.Id">@job.Name</MudSelectItem>
+            }
+        </MudSelect>
+        <MudSelect T="RunStatusFilter" Value="statusFilter" ValueChanged="OnStatusFilterChanged" Label="Status" Dense="true" Class="filter-control">
+            @foreach (var status in Enum.GetValues<RunStatusFilter>())
+            {
+                <MudSelectItem T="RunStatusFilter" Value="@status">@StatusText(status)</MudSelectItem>
+            }
+        </MudSelect>
+    </div>
+</div>
+
+@if (loading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (agenda)
+{
+    @if (entries.Count == 0)
+    {
+        <MudPaper Class="placeholder-card" Elevation="0"><MudText>No entries this month for the selected filters.</MudText></MudPaper>
+    }
+    else
+    {
+        <div class="agenda-list">
+            @foreach (var day in entries.GroupBy(x => x.LocalDate).OrderBy(x => x.Key))
+            {
+                <div class="agenda-day">
+                    <MudText Typo="Typo.subtitle2">@day.Key.ToString("D", CultureInfo.CurrentCulture)</MudText>
+                    @foreach (var entry in day.OrderBy(x => x.LocalTime))
+                    {
+                        <div class="agenda-entry @(entry.IsPlanned ? "planned" : "")" @onclick="() => OpenEntryAsync(entry)">
+                            <span class="agenda-time">@entry.LocalTime.ToString("t", CultureInfo.CurrentCulture)</span>
+                            <MudChip T="string" Size="Size.Small" Color="@EntryColor(entry)">@EntryLabel(entry)</MudChip>
+                            <span class="agenda-job">@entry.JobName</span>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+}
+else
+{
+    <div class="calendar-grid">
+        @foreach (var name in WeekdayHeaders)
+        {
+            <div class="calendar-weekday">@name</div>
+        }
+        @foreach (var day in gridDays)
+        {
+            <div class="calendar-cell @(day.Month == month.Month ? "" : "outside") @(day == Today ? "today" : "")">
+                <div class="calendar-date">@day.Day</div>
+                @if (entriesByDate.TryGetValue(day, out var dayEntries))
+                {
+                    @foreach (var entry in dayEntries.OrderBy(x => x.LocalTime))
+                    {
+                        <button type="button" class="calendar-entry @(entry.IsPlanned ? "planned" : "")" @onclick="() => OpenEntryAsync(entry)" title="@EntryTitle(entry)">
+                            <span class="entry-dot entry-@EntryColorName(entry)"></span>
+                            <span class="entry-text">@entry.JobName</span>
+                        </button>
+                    }
+                }
+            </div>
+        }
+    </div>
+    <div class="calendar-legend">
+        <span><span class="entry-dot entry-success"></span> Successful</span>
+        <span><span class="entry-dot entry-warning"></span> Warnings</span>
+        <span><span class="entry-dot entry-error"></span> Failed / missing</span>
+        <span><span class="entry-dot entry-default"></span> Cancelled</span>
+        <span><span class="entry-dot entry-info"></span> Planned / running</span>
+    </div>
+}
+
+@code {
+    private bool agenda;
+    private bool loading = true;
+    private DateOnly month = DateOnly.FromDateTime(DateTime.Today).AddDays(1 - DateTime.Today.Day);
+    private IReadOnlyList<JobSummary> jobs = [];
+    private Guid? jobFilter;
+    private RunStatusFilter statusFilter = RunStatusFilter.All;
+    private IReadOnlyList<CalendarEntry> entries = [];
+    private Dictionary<DateOnly, List<CalendarEntry>> entriesByDate = new();
+    private List<DateOnly> gridDays = new();
+
+    private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
+    private string MonthLabel => month.ToString("MMMM yyyy", CultureInfo.CurrentCulture);
+    private static DayOfWeek FirstDay => CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek;
+
+    private static IEnumerable<string> WeekdayHeaders
+    {
+        get
+        {
+            var names = CultureInfo.CurrentCulture.DateTimeFormat.AbbreviatedDayNames;
+            for (var i = 0; i < 7; i++)
+            {
+                yield return names[((int)FirstDay + i) % 7];
+            }
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        jobs = await JobService.ListAsync(includeArchived: true);
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        loading = true;
+        BuildGrid();
+
+        var zone = TimeZoneInfo.Local;
+        var fromUtc = ToUtc(gridDays[0], zone);
+        var throughUtc = ToUtc(gridDays[^1].AddDays(1), zone);
+        entries = await CalendarEntries.GetEntriesAsync(fromUtc, throughUtc, new RunHistoryFilter(jobFilter, statusFilter));
+        entriesByDate = entries.GroupBy(x => x.LocalDate).ToDictionary(x => x.Key, x => x.ToList());
+        loading = false;
+    }
+
+    private void BuildGrid()
+    {
+        var start = month;
+        while (start.DayOfWeek != FirstDay)
+        {
+            start = start.AddDays(-1);
+        }
+
+        var lastOfMonth = month.AddMonths(1).AddDays(-1);
+        gridDays = new List<DateOnly>();
+        for (var day = start; day <= lastOfMonth || gridDays.Count % 7 != 0; day = day.AddDays(1))
+        {
+            gridDays.Add(day);
+        }
+    }
+
+    private static DateTimeOffset ToUtc(DateOnly localDate, TimeZoneInfo zone)
+    {
+        var unspecified = DateTime.SpecifyKind(localDate.ToDateTime(TimeOnly.MinValue), DateTimeKind.Unspecified);
+        return new DateTimeOffset(TimeZoneInfo.ConvertTimeToUtc(unspecified, zone), TimeSpan.Zero);
+    }
+
+    private async Task ShiftMonthAsync(int delta)
+    {
+        month = month.AddMonths(delta);
+        await ReloadAsync();
+    }
+
+    private async Task GoTodayAsync()
+    {
+        month = DateOnly.FromDateTime(DateTime.Today).AddDays(1 - DateTime.Today.Day);
+        await ReloadAsync();
+    }
+
+    private async Task OnJobFilterChanged(Guid? value)
+    {
+        jobFilter = value;
+        await ReloadAsync();
+    }
+
+    private async Task OnStatusFilterChanged(RunStatusFilter value)
+    {
+        statusFilter = value;
+        await ReloadAsync();
+    }
+
+    private async Task OpenEntryAsync(CalendarEntry entry)
+    {
+        if (entry.RunId is not { } runId)
+        {
+            return;
+        }
+
+        var parameters = new DialogParameters { [nameof(RunDetailsDialog.RunId)] = runId };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true, CloseButton = true };
+        await DialogService.ShowAsync<RunDetailsDialog>("Run details", parameters, options);
+    }
+
+    private static Color EntryColor(CalendarEntry entry) =>
+        entry.IsPlanned ? Color.Info : MonitoringDisplay.StatusColor(entry.Outcome, entry.Phase);
+
+    private static string EntryLabel(CalendarEntry entry) =>
+        entry.IsPlanned ? "Planned" : MonitoringDisplay.StatusLabel(entry.Outcome, entry.Phase);
+
+    private static string EntryTitle(CalendarEntry entry) =>
+        $"{entry.JobName} — {EntryLabel(entry)} at {entry.LocalTime.ToString("t", CultureInfo.CurrentCulture)}";
+
+    private static string EntryColorName(CalendarEntry entry) => EntryColor(entry) switch
+    {
+        Color.Success => "success",
+        Color.Warning => "warning",
+        Color.Error => "error",
+        Color.Info => "info",
+        _ => "default"
+    };
+
+    private static string StatusText(RunStatusFilter status) => status switch
+    {
+        RunStatusFilter.All => "All statuses",
+        RunStatusFilter.Successful => "Successful",
+        RunStatusFilter.Warnings => "With warnings",
+        RunStatusFilter.Failed => "Failed",
+        RunStatusFilter.Cancelled => "Cancelled",
+        _ => status.ToString()
+    };
+}

@@ -1,30 +1,219 @@
 @page "/"
-@attribute [StreamRendering]
+@inject DashboardQueryService DashboardQueries
+@inject DestinationService DestinationService
+@inject BackupExecutionService BackupExecution
+@inject BackupRetentionService Retention
+@inject NavigationManager Navigation
 
 <PageTitle>Dashboard | Folder Backuper</PageTitle>
 
-<header class="page-heading">
+<div class="page-heading">
     <div>
-        <MudText Typo="Typo.overline">System overview</MudText>
-        <MudText Typo="Typo.h2" HtmlTag="h1">Your backup workspace</MudText>
-        <MudText Class="page-lead">Destinations and scheduled job definitions are ready for safe configuration.</MudText>
+        <MudText Typo="Typo.h1">Dashboard</MudText>
+        <MudText Class="page-lead">Backup health, active work, and per-job status at a glance.</MudText>
     </div>
-    <div class="foundation-badge">CONFIGURATION / M4</div>
-</header>
+    <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Refresh" OnClick="ReloadAsync">Refresh</MudButton>
+</div>
 
-<MudGrid Spacing="3">
-    <MudItem xs="12" md="7">
-        <MudPaper Class="feature-card" Elevation="0">
-            <MudText Typo="Typo.overline">Service health</MudText>
-            <div class="health-line"><span class="health-pulse"></span><strong>Application online</strong></div>
-            <MudText>The Windows service host, local web interface, and application data paths are available.</MudText>
-        </MudPaper>
-    </MudItem>
-    <MudItem xs="12" md="5">
-        <MudPaper Class="metric-card" Elevation="0">
-            <MudText Typo="Typo.overline">Scheduled work</MudText>
-            <MudText Typo="Typo.h3">Configure jobs</MudText>
-            <MudText Color="Color.Secondary">Execution becomes available after the backup engine milestone.</MudText>
-        </MudPaper>
-    </MudItem>
-</MudGrid>
+@if (operationMessage is not null)
+{
+    <MudAlert Severity="@(operationError ? Severity.Error : Severity.Success)" Class="mb-3"
+              ShowCloseIcon="true" CloseIconClicked="() => operationMessage = null">@operationMessage</MudAlert>
+}
+
+@if (loading || view is null)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else
+{
+    @if (view.FailureCount > 0)
+    {
+        <MudAlert Severity="Severity.Error" Class="mb-2">@view.FailureCount job(s) reported a failed last run.</MudAlert>
+    }
+    @if (view.WarningCount > 0)
+    {
+        <MudAlert Severity="Severity.Warning" Class="mb-2">@view.WarningCount job(s) completed their last run with warnings.</MudAlert>
+    }
+    @if (view.NotificationFailureCount > 0)
+    {
+        <MudAlert Severity="Severity.Warning" Class="mb-2">@view.NotificationFailureCount job(s) have an unresolved notification delivery result.</MudAlert>
+    }
+
+    <section class="dashboard-section">
+        <MudText Typo="Typo.h5">Active backup</MudText>
+        @if (view.ActiveRun is { } active)
+        {
+            <ActiveRunPanel Run="active" OnChanged="ReloadAsync" />
+        }
+        else
+        {
+            <MudPaper Class="dashboard-idle" Elevation="0">
+                <MudIcon Icon="@Icons.Material.Outlined.CheckCircle" Color="Color.Success" />
+                <MudText>No backup is running right now.</MudText>
+            </MudPaper>
+        }
+    </section>
+
+    @if (view.Queue.Count > 0)
+    {
+        <section class="dashboard-section">
+            <MudText Typo="Typo.h5">Queued (@view.Queue.Count)</MudText>
+            <MudList T="string" Dense="true" Class="queue-list">
+                @foreach (var queued in view.Queue)
+                {
+                    <MudListItem T="string" Icon="@Icons.Material.Outlined.Schedule">
+                        <strong>@queued.JobName</strong> — @MonitoringDisplay.TriggerLabel(queued.Trigger),
+                        due @DisplayFormat.LocalDateTime(queued.DueAtUtc)
+                    </MudListItem>
+                }
+            </MudList>
+        </section>
+    }
+
+    <section class="dashboard-section">
+        <MudText Typo="Typo.h5">Jobs</MudText>
+        @if (view.Jobs.Count == 0)
+        {
+            <MudPaper Class="destination-empty" Elevation="0">
+                <MudIcon Icon="@Icons.Material.Outlined.FolderCopy" Size="Size.Large" />
+                <MudText Typo="Typo.h5">No jobs configured</MudText>
+                <MudText>Create a job to schedule backups.</MudText>
+            </MudPaper>
+        }
+        else
+        {
+            <div class="dashboard-grid">
+                @foreach (var job in view.Jobs)
+                {
+                    <MudPaper Class="dashboard-card" Elevation="0">
+                        <div class="dashboard-card-head">
+                            <MudText Typo="Typo.h6">@job.JobName</MudText>
+                            <MudChip T="string" Size="Size.Small" Color="@MonitoringDisplay.OutcomeColor(job.LastOutcome)">
+                                @(job.LastOutcome is null ? "No runs yet" : MonitoringDisplay.OutcomeLabel(job.LastOutcome))
+                            </MudChip>
+                        </div>
+                        <dl class="dashboard-facts">
+                            <div><dt>Last run</dt><dd>@DisplayFormat.LocalDateTime(job.LastRunAtUtc)</dd></div>
+                            <div><dt>Last success</dt><dd>@DisplayFormat.LocalDateTime(job.LastSuccessAtUtc)</dd></div>
+                            <div><dt>Next run</dt><dd>@(job.Lifecycle == JobLifecycle.Active ? DisplayFormat.LocalDateTime(job.NextRunAtUtc, "Not scheduled") : "Paused")</dd></div>
+                        </dl>
+                        <div class="dashboard-storage">
+                            <MudText Typo="Typo.body2">
+                                <strong>@DisplayFormat.Bytes(job.ManagedArtifactBytes)</strong>
+                                across @job.ManagedArtifactCount of @job.RetentionCount retained backup(s)
+                            </MudText>
+                            <MudText Typo="Typo.caption">
+                                Latest: @DisplayFormat.Bytes(job.LatestArtifactBytes, "—") ·
+                                Confirmed: @DisplayFormat.LocalDateTime(job.StorageConfirmedAtUtc, "never")
+                                @if (job.StorageStale) { <MudChip T="string" Size="Size.Small" Color="Color.Warning">stale</MudChip> }
+                            </MudText>
+                            @if (job.MissingArtifactCount > 0)
+                            {
+                                <MudText Typo="Typo.caption" Color="Color.Error">@job.MissingArtifactCount archive(s) found missing</MudText>
+                            }
+                            @if (job.UnmanagedArtifactCount > 0)
+                            {
+                                <MudText Typo="Typo.caption" Color="Color.Warning">@job.UnmanagedArtifactCount unmanaged historical archive(s)</MudText>
+                            }
+                            @if (job.LastNotificationState is not null)
+                            {
+                                <MudText Typo="Typo.caption">
+                                    Notification: <MudChip T="string" Size="Size.Small" Color="@MonitoringDisplay.NotificationColor(job.LastNotificationState)">@MonitoringDisplay.NotificationLabel(job.LastNotificationState)</MudChip>
+                                </MudText>
+                            }
+                        </div>
+                        <div class="dashboard-card-actions">
+                            @if (job.Lifecycle != JobLifecycle.Archived)
+                            {
+                                <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary"
+                                           Disabled="@(busyJobId == job.JobId)" OnClick="() => RunNowAsync(job.JobId)">Run now</MudButton>
+                            }
+                            <MudButton Size="Size.Small" Variant="Variant.Text"
+                                       Disabled="@(busyJobId == job.JobId)" OnClick="() => RefreshStorageAsync(job.JobId)">Refresh storage</MudButton>
+                            <MudButton Size="Size.Small" Variant="Variant.Text" OnClick="() => ViewHistory(job.JobId)">History</MudButton>
+                        </div>
+                    </MudPaper>
+                }
+            </div>
+        }
+    </section>
+
+    <section class="dashboard-section">
+        <MudText Typo="Typo.h5">Destinations</MudText>
+        <MudList T="string" Dense="true" Class="queue-list">
+            @foreach (var destination in destinations)
+            {
+                <MudListItem T="string" Icon="@(destination.Type == DestinationType.Local ? Icons.Material.Outlined.Storage : Icons.Material.Outlined.Dns)">
+                    <strong>@destination.Name</strong> —
+                    <MudChip T="string" Size="Size.Small" Color="@VerificationColor(destination.VerificationResult)">@destination.VerificationResult</MudChip>
+                    @if (destination.LastAccessedAtUtc is { } accessed)
+                    {
+                        <span>Last access: @destination.LastAccessResult on @DisplayFormat.LocalDateTime(accessed)</span>
+                    }
+                    else
+                    {
+                        <span>Last access: Not attempted</span>
+                    }
+                </MudListItem>
+            }
+        </MudList>
+    </section>
+
+    <section class="dashboard-section quick-actions">
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.FolderCopy" Href="jobs">Jobs</MudButton>
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Storage" Href="destinations">Destinations</MudButton>
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.CalendarMonth" Href="calendar">Calendar</MudButton>
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.History" Href="history">History</MudButton>
+    </section>
+}
+
+@code {
+    private DashboardView? view;
+    private IReadOnlyList<DestinationSummary> destinations = [];
+    private bool loading = true;
+    private Guid? busyJobId;
+    private string? operationMessage;
+    private bool operationError;
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+
+    private async Task ReloadAsync()
+    {
+        loading = true;
+        view = await DashboardQueries.GetAsync();
+        destinations = await DestinationService.ListAsync(includeArchived: false);
+        loading = false;
+    }
+
+    private async Task RunNowAsync(Guid jobId)
+    {
+        busyJobId = jobId;
+        var outcome = await BackupExecution.RunNowAsync(jobId);
+        operationError = outcome.Status != ManualRunEnqueueStatus.Queued;
+        operationMessage = outcome.Message;
+        busyJobId = null;
+        await ReloadAsync();
+    }
+
+    private async Task RefreshStorageAsync(Guid jobId)
+    {
+        busyJobId = jobId;
+        var result = await Retention.ReconcileInventoryAsync(jobId);
+        operationError = !result.DestinationReachable;
+        operationMessage = result.DestinationReachable
+            ? $"Storage confirmed: {result.Checked} archive(s) checked, {result.MarkedMissing} found missing."
+            : "The destination was unavailable; the last confirmed storage figures are unchanged.";
+        busyJobId = null;
+        await ReloadAsync();
+    }
+
+    private void ViewHistory(Guid jobId) => Navigation.NavigateTo($"history?job={jobId}");
+
+    private static Color VerificationColor(DestinationVerificationResult result) => result switch
+    {
+        DestinationVerificationResult.Succeeded => Color.Success,
+        DestinationVerificationResult.Failed => Color.Error,
+        _ => Color.Default
+    };
+}
