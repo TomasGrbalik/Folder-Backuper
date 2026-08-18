@@ -12,6 +12,10 @@ public static class BackupServiceCollectionExtensions
         services.AddSingleton<DestinationArchiveService>();
         services.AddSingleton<DestinationAccessRecorder>();
         services.AddSingleton<BackupEngine>();
+        services.AddSingleton<BackupExecutionQueue>();
+        services.AddSingleton<BackupCancellationRegistry>();
+        services.AddSingleton<BackupExecutionService>();
+        services.AddHostedService<BackupExecutionWorker>();
         return services;
     }
 }

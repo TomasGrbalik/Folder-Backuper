@@ -150,6 +150,7 @@ public sealed class RunPersistenceService(
             await using var context = await contextFactory.CreateDbContextAsync(ct);
             var run = await context.Runs.SingleAsync(item => item.Id == intent.RunId, ct);
             run.DestinationPartialPath = intent.PartialPath;
+            run.AdvanceTo(RunPhase.Finalizing, timeProvider.GetUtcNow());
             run.BeginFinalCommit(timeProvider.GetUtcNow());
             context.BackupArtifacts.Add(new BackupArtifact
             {

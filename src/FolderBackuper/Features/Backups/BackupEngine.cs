@@ -35,7 +35,8 @@ public sealed class BackupEngine(
     DestinationAccessRecorder accessRecorder,
     BackupProgressRegistry progressRegistry,
     ApplicationPaths applicationPaths,
-    TimeProvider timeProvider)
+    TimeProvider timeProvider,
+    RunPersistenceService? runPersistence = null)
 {
     public async Task<BackupEngineResult> ExecuteAsync(
         BackupEngineRequest request,
@@ -112,6 +113,7 @@ public sealed class BackupEngine(
             Publish(request.RunId, RunPhase.Scanning, stopwatch.Elapsed, true, manifest);
 
             var compressionThroughput = new RollingThroughput(timeProvider);
+            await PersistPhaseAsync(RunPhase.Compressing, cancellationToken);
             Publish(request.RunId, RunPhase.Compressing, stopwatch.Elapsed, true, manifest);
             var localArchive = await zipArchives.CreateAsync(
                 sourcePath,
@@ -141,6 +143,7 @@ public sealed class BackupEngine(
             Publish(request.RunId, RunPhase.Transferring, stopwatch.Elapsed, true, manifest,
                 archiveBytes: archiveBytes);
             var transferThroughput = new RollingThroughput(timeProvider);
+            await PersistPhaseAsync(RunPhase.Transferring, cancellationToken);
             var destinationResult = await destinationArchives.TransferAsync(
                 effectiveDestinations.Adapter(destination.Type),
                 effectiveDestinations.Configuration(destination),
@@ -250,6 +253,9 @@ public sealed class BackupEngine(
         }
 
         bool HasErrors() => problems.Any(problem => problem.Severity == BackupProblemSeverity.Error);
+
+        Task PersistPhaseAsync(RunPhase phase, CancellationToken token) =>
+            runPersistence?.AdvancePhaseAsync(request.RunId, phase, token) ?? Task.CompletedTask;
     }
 
     private void PublishCompression(

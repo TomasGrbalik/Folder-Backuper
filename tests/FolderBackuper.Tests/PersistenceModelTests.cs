@@ -273,7 +273,6 @@ public sealed class PersistenceModelTests
         await database.RunPersistence.ClaimNextAsync();
         await database.RunPersistence.AdvancePhaseAsync(runId, RunPhase.Compressing);
         await database.RunPersistence.AdvancePhaseAsync(runId, RunPhase.Transferring);
-        await database.RunPersistence.AdvancePhaseAsync(runId, RunPhase.Finalizing);
         var coordinator = new DurableBackupCommitCoordinator(database.RunPersistence);
         var intent = new BackupCommitIntent(runId, @"D:\backup\run.zip.partial", @"D:\backup",
             "run.zip", 42, clock.GetUtcNow(), "volume:file");
