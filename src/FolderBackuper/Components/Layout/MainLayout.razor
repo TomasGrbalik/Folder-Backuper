@@ -1,15 +1,17 @@
 @inherits LayoutComponentBase
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
 
-<MudThemeProvider Theme="Theme" />
+<MudThemeProvider @ref="themeProvider" Theme="Theme" @bind-IsDarkMode="isDarkMode" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
 <MudLayout>
     <MudAppBar Elevation="0" Class="app-bar">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="ToggleDrawer" />
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="ToggleDrawer" aria-label="Toggle navigation" />
         <div class="brand-lockup">
-            <span class="brand-mark" aria-hidden="true"></span>
+            <span class="brand-mark" aria-hidden="true"><MudIcon Icon="@Icons.Material.Filled.Shield" /></span>
             <div>
                 <MudText Typo="Typo.h6">Folder Backuper</MudText>
                 <MudText Typo="Typo.caption" Class="brand-caption">LOCAL BACKUP CONTROL</MudText>
@@ -17,6 +19,14 @@
         </div>
         <MudSpacer />
         <div class="service-status"><span></span> Service online</div>
+        <div class="theme-toggle" role="group" aria-label="Theme">
+            <button type="button" class="@(isDarkMode ? "" : "active")" @onclick="() => SetThemeAsync(false)">
+                <MudIcon Icon="@Icons.Material.Filled.LightMode" /> Light
+            </button>
+            <button type="button" class="@(isDarkMode ? "active" : "")" @onclick="() => SetThemeAsync(true)">
+                <MudIcon Icon="@Icons.Material.Filled.DarkMode" /> Dark
+            </button>
+        </div>
     </MudAppBar>
 
     <MudDrawer @bind-Open="drawerOpen" Elevation="0" ClipMode="DrawerClipMode.Always" Breakpoint="Breakpoint.Md" Class="app-drawer">
@@ -43,31 +53,123 @@
 @code {
     private bool drawerOpen = true;
     private ErrorBoundary? errorBoundary;
+    private MudThemeProvider themeProvider = null!;
+    private bool isDarkMode;
+    private bool hasOverride;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        var stored = await JS.InvokeAsync<string?>("localStorage.getItem", "fb-theme");
+        if (stored is "dark" or "light")
+        {
+            hasOverride = true;
+            isDarkMode = stored == "dark";
+        }
+        else
+        {
+            isDarkMode = await themeProvider.GetSystemDarkModeAsync();
+            await themeProvider.WatchSystemDarkModeAsync(OnSystemPreferenceChanged);
+        }
+
+        await ApplyThemeAttributeAsync();
+        StateHasChanged();
+    }
+
+    private async Task OnSystemPreferenceChanged(bool systemDark)
+    {
+        if (hasOverride)
+        {
+            return;
+        }
+
+        isDarkMode = systemDark;
+        await ApplyThemeAttributeAsync();
+        StateHasChanged();
+    }
+
+    private async Task SetThemeAsync(bool dark)
+    {
+        hasOverride = true;
+        isDarkMode = dark;
+        await JS.InvokeVoidAsync("localStorage.setItem", "fb-theme", dark ? "dark" : "light");
+        await ApplyThemeAttributeAsync();
+    }
+
+    private ValueTask ApplyThemeAttributeAsync() =>
+        JS.InvokeVoidAsync("fbSetTheme", isDarkMode ? "dark" : "light");
+
+    private void ToggleDrawer() => drawerOpen = !drawerOpen;
+
+    private void Recover() => errorBoundary?.Recover();
 
     private static readonly MudTheme Theme = new()
     {
         PaletteLight = new PaletteLight
         {
-            Primary = "#315c4b",
-            Secondary = "#d89045",
-            Background = "#f2f0e9",
-            Surface = "#fffdf7",
-            AppbarBackground = "#18352d",
-            AppbarText = "#f8f2e7",
-            DrawerBackground = "#e7e3d8",
-            DrawerText = "#22332d"
+            Primary = "#06727C",
+            PrimaryContrastText = "#F8FDFD",
+            Secondary = "#3370C7",
+            Tertiary = "#06727C",
+            Background = "#F5F7F9",
+            Surface = "#FFFFFF",
+            AppbarBackground = "#FFFFFF",
+            AppbarText = "#1F252B",
+            DrawerBackground = "#FFFFFF",
+            DrawerText = "#1F252B",
+            TextPrimary = "#1F252B",
+            TextSecondary = "#60656B",
+            ActionDefault = "#60656B",
+            Success = "#33854A",
+            Warning = "#C38300",
+            Error = "#C53637",
+            Info = "#3370C7",
+            LinesDefault = "#DDE0E3",
+            LinesInputs = "#C7CBCF",
+            TableLines = "#DDE0E3",
+            Divider = "#DDE0E3"
         },
-        LayoutProperties = new LayoutProperties { DefaultBorderRadius = "10px" },
+        PaletteDark = new PaletteDark
+        {
+            Primary = "#48B0B6",
+            PrimaryContrastText = "#051214",
+            Secondary = "#6AA7F4",
+            Tertiary = "#48B0B6",
+            Background = "#101316",
+            Surface = "#1A1E22",
+            AppbarBackground = "#16191D",
+            AppbarText = "#EEF0F3",
+            DrawerBackground = "#1A1E22",
+            DrawerText = "#EEF0F3",
+            TextPrimary = "#EEF0F3",
+            TextSecondary = "#A6AAAE",
+            ActionDefault = "#A6AAAE",
+            Success = "#68CA80",
+            Warning = "#EBB854",
+            Error = "#EA6A64",
+            Info = "#6AA7F4",
+            LinesDefault = "#303539",
+            LinesInputs = "#3A3F44",
+            TableLines = "#303539",
+            Divider = "#303539"
+        },
+        LayoutProperties = new LayoutProperties { DefaultBorderRadius = "9px" },
         Typography = new Typography
         {
-            Default = new DefaultTypography { FontFamily = ["Segoe UI", "sans-serif"] },
-            H1 = new H1Typography { FontFamily = ["Georgia", "serif"], FontWeight = "600" },
-            H2 = new H2Typography { FontFamily = ["Georgia", "serif"], FontWeight = "600" },
-            H3 = new H3Typography { FontFamily = ["Georgia", "serif"], FontWeight = "600" }
+            Default = new DefaultTypography
+            {
+                FontFamily = ["Segoe UI Variable Text", "Segoe UI", "system-ui", "sans-serif"]
+            },
+            H1 = new H1Typography { FontFamily = ["Segoe UI Variable Text", "Segoe UI", "system-ui", "sans-serif"], FontWeight = "650" },
+            H2 = new H2Typography { FontFamily = ["Segoe UI Variable Text", "Segoe UI", "system-ui", "sans-serif"], FontWeight = "650" },
+            H3 = new H3Typography { FontFamily = ["Segoe UI Variable Text", "Segoe UI", "system-ui", "sans-serif"], FontWeight = "650" },
+            H4 = new H4Typography { FontFamily = ["Segoe UI Variable Text", "Segoe UI", "system-ui", "sans-serif"], FontWeight = "650" },
+            H5 = new H5Typography { FontFamily = ["Segoe UI Variable Text", "Segoe UI", "system-ui", "sans-serif"], FontWeight = "650" },
+            H6 = new H6Typography { FontFamily = ["Segoe UI Variable Text", "Segoe UI", "system-ui", "sans-serif"], FontWeight = "650" }
         }
     };
-
-    private void ToggleDrawer() => drawerOpen = !drawerOpen;
-
-    private void Recover() => errorBoundary?.Recover();
 }
