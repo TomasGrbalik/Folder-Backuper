@@ -1,22 +1,35 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using FolderBackuper.Features.Destinations;
+using FolderBackuper.Infrastructure.Database;
 using FolderBackuper.Infrastructure.Filesystem;
 
 namespace FolderBackuper.Features.Backups;
 
 public interface IBackupCommitCoordinator
 {
-    ValueTask BeginCommitAsync(Guid runId, CancellationToken cancellationToken);
+    ValueTask BeginCommitAsync(BackupCommitIntent intent, CancellationToken cancellationToken);
+    ValueTask MarkCommittedAsync(Guid runId, CancellationToken cancellationToken);
 }
 
 public sealed class DirectBackupCommitCoordinator : IBackupCommitCoordinator
 {
-    public ValueTask BeginCommitAsync(Guid runId, CancellationToken cancellationToken)
+    public ValueTask BeginCommitAsync(BackupCommitIntent intent, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         return ValueTask.CompletedTask;
     }
+
+    public ValueTask MarkCommittedAsync(Guid runId, CancellationToken cancellationToken) => ValueTask.CompletedTask;
+}
+
+public sealed class DurableBackupCommitCoordinator(RunPersistenceService runs) : IBackupCommitCoordinator
+{
+    public ValueTask BeginCommitAsync(BackupCommitIntent intent, CancellationToken cancellationToken) =>
+        new(runs.BeginFinalCommitAsync(intent, cancellationToken));
+
+    public ValueTask MarkCommittedAsync(Guid runId, CancellationToken cancellationToken) =>
+        new(runs.MarkFinalCommittedAsync(runId, cancellationToken));
 }
 
 public sealed record BackupTransferProgress(long BytesTransferred, long TotalBytes);
@@ -110,10 +123,36 @@ public sealed class DestinationArchiveService(
                     var finalPath = Path.Combine(effectiveDestinationPath, finalFileName);
                     ValidateContainment(configuration.RootPath, effectiveDestinationPath, finalPath);
 
-                    await commitCoordinator.BeginCommitAsync(ownership.RunId, cancellationToken);
+                    string? filesystemIdentity = null;
+                    try
+                    {
+                        filesystemIdentity = WindowsFilesystemInterop.GetIdentity(partialPath).ToString();
+                    }
+                    catch (IOException)
+                    {
+                        // NAS providers may not expose a stable file identity; length and ZIP ownership remain required.
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        // NAS providers may not expose a stable file identity; length and ZIP ownership remain required.
+                    }
+                    catch (Win32Exception)
+                    {
+                        // NAS providers may not expose a stable file identity; length and ZIP ownership remain required.
+                    }
+
+                    await commitCoordinator.BeginCommitAsync(new(
+                        ownership.RunId,
+                        partialPath,
+                        effectiveDestinationPath,
+                        finalFileName,
+                        expectedLength,
+                        archiveInstant,
+                        filesystemIdentity), cancellationToken);
                     commitStarted = true;
                     File.Move(partialPath, finalPath, overwrite: false);
                     partialCreated = false;
+                    await commitCoordinator.MarkCommittedAsync(ownership.RunId, CancellationToken.None);
                     return new(finalPath, finalFileName, expectedLength, stopwatch.Elapsed, true, validation);
                 }
                 catch (OperationCanceledException exception) when (!commitStarted)

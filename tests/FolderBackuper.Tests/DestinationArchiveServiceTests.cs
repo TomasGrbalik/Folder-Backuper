@@ -126,11 +126,13 @@ public sealed class DestinationArchiveServiceTests : IDisposable
     private sealed class CancellingCommitCoordinator(CancellationTokenSource cancellation)
         : IBackupCommitCoordinator
     {
-        public ValueTask BeginCommitAsync(Guid runId, CancellationToken cancellationToken)
+        public ValueTask BeginCommitAsync(BackupCommitIntent intent, CancellationToken cancellationToken)
         {
             cancellation.Cancel();
             cancellationToken.ThrowIfCancellationRequested();
             return ValueTask.CompletedTask;
         }
+
+        public ValueTask MarkCommittedAsync(Guid runId, CancellationToken cancellationToken) => ValueTask.CompletedTask;
     }
 }

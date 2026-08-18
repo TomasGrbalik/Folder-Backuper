@@ -255,6 +255,49 @@ public sealed class PersistenceModelTests
     }
 
     [Fact]
+    public async Task DurableCommit_CreatesPendingArtifactBeforeRenameAndMarksItRetainedAfterward()
+    {
+        var clock = new TestTimeProvider(new DateTimeOffset(2026, 8, 18, 12, 0, 0, TimeSpan.Zero));
+        await using var database = new TemporaryDatabase(clock);
+        await database.Initializer.InitializeAsync();
+        var destination = DatabaseInitializationTests.Destination("Primary");
+        var job = DatabaseInitializationTests.Job(destination.Id, "Documents");
+        await using (var context = await database.ContextFactory.CreateDbContextAsync())
+        {
+            context.AddRange(destination, job);
+            await context.SaveChangesAsync();
+        }
+
+        var queued = await database.RunPersistence.EnqueueManualAsync(job.Id);
+        var runId = queued.RunId!.Value;
+        await database.RunPersistence.ClaimNextAsync();
+        await database.RunPersistence.AdvancePhaseAsync(runId, RunPhase.Compressing);
+        await database.RunPersistence.AdvancePhaseAsync(runId, RunPhase.Transferring);
+        await database.RunPersistence.AdvancePhaseAsync(runId, RunPhase.Finalizing);
+        var coordinator = new DurableBackupCommitCoordinator(database.RunPersistence);
+        var intent = new BackupCommitIntent(runId, @"D:\backup\run.zip.partial", @"D:\backup",
+            "run.zip", 42, clock.GetUtcNow(), "volume:file");
+
+        await coordinator.BeginCommitAsync(intent, CancellationToken.None);
+
+        await using (var inspection = await database.ContextFactory.CreateDbContextAsync())
+        {
+            var pending = await inspection.Runs.Include(item => item.Artifact).SingleAsync();
+            Assert.NotNull(pending.FinalCommitStartedAtUtc);
+            Assert.Equal(ArtifactState.PendingFinalization, pending.Artifact!.State);
+            Assert.Equal(intent.PartialPath, pending.DestinationPartialPath);
+        }
+
+        await coordinator.MarkCommittedAsync(runId, CancellationToken.None);
+
+        await using var completedInspection = await database.ContextFactory.CreateDbContextAsync();
+        var completed = await completedInspection.Runs.Include(item => item.Artifact).SingleAsync();
+        Assert.NotNull(completed.FinalCommittedAtUtc);
+        Assert.Null(completed.DestinationPartialPath);
+        Assert.Equal(ArtifactState.Retained, completed.Artifact!.State);
+    }
+
+    [Fact]
     public async Task OwnershipKey_IsUniqueForActiveAndPausedJobsButReusableAfterArchive()
     {
         await using var database = new TemporaryDatabase();

@@ -8,7 +8,7 @@ public static class BackupServiceCollectionExtensions
         services.AddSingleton<SourceManifestBuilder>();
         services.AddSingleton<BackupPreflightService>();
         services.AddSingleton<ZipArchiveService>();
-        services.AddSingleton<IBackupCommitCoordinator, DirectBackupCommitCoordinator>();
+        services.AddSingleton<IBackupCommitCoordinator, DurableBackupCommitCoordinator>();
         services.AddSingleton<DestinationArchiveService>();
         services.AddSingleton<DestinationAccessRecorder>();
         services.AddSingleton<BackupEngine>();

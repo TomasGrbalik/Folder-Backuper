@@ -19,6 +19,15 @@ public sealed record ArchiveOwnership(Guid InstallationId, Guid RunId)
     }
 }
 
+public sealed record BackupCommitIntent(
+    Guid RunId,
+    string PartialPath,
+    string EffectiveDestinationPath,
+    string FinalFileName,
+    long ExpectedLength,
+    DateTimeOffset CreatedAtUtc,
+    string? FileSystemIdentity);
+
 public enum BackupProblemCategory
 {
     SourceUnavailable, SourceInaccessible, SourceChanged, SkippedReparsePoint,

@@ -143,6 +143,48 @@ public sealed class RunPersistenceService(
         }, cancellationToken);
     }
 
+    public async Task BeginFinalCommitAsync(BackupCommitIntent intent, CancellationToken cancellationToken = default)
+    {
+        await mutationGate.ExecuteRunStateChangeAsync(async ct =>
+        {
+            await using var context = await contextFactory.CreateDbContextAsync(ct);
+            var run = await context.Runs.SingleAsync(item => item.Id == intent.RunId, ct);
+            run.DestinationPartialPath = intent.PartialPath;
+            run.BeginFinalCommit(timeProvider.GetUtcNow());
+            context.BackupArtifacts.Add(new BackupArtifact
+            {
+                RunId = run.Id,
+                DestinationName = run.DestinationName,
+                DestinationRootPath = run.DestinationRootPath,
+                EffectivePath = intent.EffectiveDestinationPath,
+                FinalFileName = intent.FinalFileName,
+                Size = intent.ExpectedLength,
+                CreatedAtUtc = intent.CreatedAtUtc,
+                OwnershipRunId = run.Id,
+                OwnershipExpectedLength = intent.ExpectedLength,
+                OwnershipCreatedAtUtc = intent.CreatedAtUtc,
+                OwnershipFileSystemIdentity = intent.FileSystemIdentity
+            });
+            await context.SaveChangesAsync(ct);
+            return true;
+        }, cancellationToken);
+    }
+
+    public async Task MarkFinalCommittedAsync(Guid runId, CancellationToken cancellationToken = default)
+    {
+        await mutationGate.ExecuteRunStateChangeAsync(async ct =>
+        {
+            await using var context = await contextFactory.CreateDbContextAsync(ct);
+            var run = await context.Runs.Include(item => item.Artifact)
+                .SingleAsync(item => item.Id == runId, ct);
+            run.MarkFinalCommitted(timeProvider.GetUtcNow());
+            run.Artifact!.MarkRetained(timeProvider.GetUtcNow());
+            run.DestinationPartialPath = null;
+            await context.SaveChangesAsync(ct);
+            return true;
+        }, cancellationToken);
+    }
+
     public async Task CompleteAsync(
         Guid runId,
         RunOutcome outcome,
