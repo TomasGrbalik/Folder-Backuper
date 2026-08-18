@@ -34,6 +34,13 @@ public sealed class BackupJob
     public TimeOnly ScheduledTime { get; set; }
     public long ScheduleRevision { get; set; } = 1;
     public DateTimeOffset ScheduleEffectiveFromUtc { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? ScheduleEvaluatedThroughUtc { get; set; }
+    public long? LastSatisfiedScheduleRevision { get; set; }
+    public DateOnly? LastSatisfiedScheduledLocalDate { get; set; }
+    public DateTimeOffset? NextOccurrenceAtUtc { get; set; }
+    public DateOnly? NextOccurrenceLocalDate { get; set; }
+    public string? NextOccurrenceTimeZoneId { get; set; }
+    public int? NextOccurrenceUtcOffsetMinutes { get; set; }
     public int RetentionCount { get; set; } = 1;
     public JobLifecycle Lifecycle { get; private set; } = JobLifecycle.Paused;
     public required string DestinationOwnershipKey { get; set; }
@@ -67,6 +74,31 @@ public sealed class BackupJob
         JobLifecycle.Archived => JobLifecycle.Paused,
         _ => throw InvalidTransition(nameof(JobLifecycle.Paused))
     };
+
+    public void BeginScheduling(DateTimeOffset boundaryUtc, bool resetSatisfied = false)
+    {
+        ScheduleEvaluatedThroughUtc = boundaryUtc;
+        ClearNextOccurrence();
+        if (resetSatisfied)
+        {
+            LastSatisfiedScheduleRevision = null;
+            LastSatisfiedScheduledLocalDate = null;
+        }
+    }
+
+    public void StopScheduling()
+    {
+        ScheduleEvaluatedThroughUtc = null;
+        ClearNextOccurrence();
+    }
+
+    private void ClearNextOccurrence()
+    {
+        NextOccurrenceAtUtc = null;
+        NextOccurrenceLocalDate = null;
+        NextOccurrenceTimeZoneId = null;
+        NextOccurrenceUtcOffsetMinutes = null;
+    }
 
     private InvalidOperationException InvalidTransition(string target) =>
         new($"Job {Id} cannot transition from {Lifecycle} to {target}.");

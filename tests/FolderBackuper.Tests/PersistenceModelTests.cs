@@ -493,6 +493,7 @@ public sealed class PersistenceModelTests
             RegionalCulture = "en-US",
             TimeZoneId = "UTC",
             Trigger = trigger,
+            DueAtUtc = DateTimeOffset.UtcNow,
             QueuedAtUtc = DateTimeOffset.UtcNow
         };
 
@@ -502,6 +503,7 @@ public sealed class PersistenceModelTests
         ScheduleRevision = 1,
         ScheduledLocalDate = new DateOnly(2026, 8, 17),
         ScheduledLocalTime = new TimeOnly(1, 30),
+        OccursAtUtc = new DateTimeOffset(2026, 8, 17, 1, 30, 0, TimeSpan.Zero),
         TimeZoneId = "UTC",
         UtcOffsetMinutes = 0
     };

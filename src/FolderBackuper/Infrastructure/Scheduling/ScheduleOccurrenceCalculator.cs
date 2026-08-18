@@ -56,6 +56,18 @@ public sealed class ScheduleOccurrenceCalculator(TimeProvider timeProvider)
         return missed;
     }
 
+    public ScheduleOccurrence ResolveOccurrence(
+        WeeklySchedule schedule,
+        TimeZoneInfo currentMachineTimeZone,
+        DateOnly localDate)
+    {
+        ArgumentNullException.ThrowIfNull(schedule);
+        ArgumentNullException.ThrowIfNull(currentMachineTimeZone);
+        if (!schedule.Weekdays.Contains(localDate.DayOfWeek))
+            throw new ArgumentException("The local date is not selected by the schedule.", nameof(localDate));
+        return CreateOccurrence(schedule, currentMachineTimeZone, localDate);
+    }
+
     public ScheduleOccurrence? FindLatestMissedOccurrence(
         WeeklySchedule schedule,
         TimeZoneInfo currentMachineTimeZone,

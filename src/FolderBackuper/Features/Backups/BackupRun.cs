@@ -49,6 +49,7 @@ public sealed class BackupRun
     public required string RegionalCulture { get; init; }
     public required string TimeZoneId { get; init; }
     public RunTrigger Trigger { get; init; }
+    public DateTimeOffset DueAtUtc { get; init; }
     public DateTimeOffset QueuedAtUtc { get; init; }
     public DateTimeOffset? StartedAtUtc { get; private set; }
     public DateTimeOffset? CompletedAtUtc { get; private set; }
@@ -179,6 +180,7 @@ public sealed class ScheduledOccurrence
     public long ScheduleRevision { get; init; }
     public DateOnly ScheduledLocalDate { get; init; }
     public TimeOnly ScheduledLocalTime { get; init; }
+    public DateTimeOffset OccursAtUtc { get; init; }
     public required string TimeZoneId { get; init; }
     public int UtcOffsetMinutes { get; init; }
     public Guid? RunId { get; set; }

@@ -65,6 +65,7 @@ public sealed class FolderBackuperDbContext(DbContextOptions<FolderBackuperDbCon
         entity.Property(x => x.DestinationSubfolder).HasMaxLength(2048);
         entity.Property(x => x.Weekdays).HasConversion<string>().HasMaxLength(100);
         entity.Property(x => x.ScheduleEffectiveFromUtc).IsRequired();
+        entity.Property(x => x.NextOccurrenceTimeZoneId).HasMaxLength(200);
         entity.Property(x => x.Lifecycle).HasConversion<string>().HasMaxLength(20);
         entity.Property(x => x.DestinationOwnershipKey)
             .HasConversion(key => key.ToUpperInvariant(), key => key)
@@ -106,12 +107,12 @@ public sealed class FolderBackuperDbContext(DbContextOptions<FolderBackuperDbCon
         entity.Property(x => x.ErrorSummary).HasMaxLength(2000);
         entity.Property(x => x.NotificationErrorSummary).HasMaxLength(2000);
         entity.HasIndex(x => new { x.JobId, x.Outcome });
-        entity.HasIndex(x => new { x.QueuedAtUtc, x.Id });
+        entity.HasIndex(x => new { x.DueAtUtc, x.QueuedAtUtc, x.Id });
         entity.Property(x => x.StagingPath).HasMaxLength(2048);
         entity.Property(x => x.DestinationPartialPath).HasMaxLength(2048);
-        entity.HasIndex(x => new { x.Phase, x.QueuedAtUtc, x.Id })
+        entity.HasIndex(x => new { x.Phase, x.DueAtUtc, x.QueuedAtUtc, x.Id })
             .HasFilter("Outcome IS NULL AND Phase <> 'Planned'");
-        entity.HasIndex(x => new { x.JobId, x.Phase, x.QueuedAtUtc, x.Id })
+        entity.HasIndex(x => new { x.JobId, x.Phase, x.DueAtUtc, x.QueuedAtUtc, x.Id })
             .HasFilter("Outcome IS NULL AND Phase <> 'Planned'");
         entity.HasIndex(x => new { x.Phase, x.Id })
             .HasFilter("Outcome IS NULL");

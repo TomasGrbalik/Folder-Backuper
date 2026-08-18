@@ -1,6 +1,7 @@
 using FolderBackuper.Features.Backups;
 using FolderBackuper.Features.Destinations;
 using FolderBackuper.Features.Jobs;
+using FolderBackuper.Infrastructure.Scheduling;
 using Microsoft.EntityFrameworkCore;
 
 namespace FolderBackuper.Infrastructure.Database;
@@ -33,7 +34,7 @@ public sealed class RunPersistenceService(
             }
 
             var now = timeProvider.GetUtcNow();
-            var run = Snapshot(job, job.Destination, now);
+            var run = CreateSnapshot(job, job.Destination, RunTrigger.Manual, now, now);
             run.AdvanceTo(RunPhase.Queued, now);
             context.Runs.Add(run);
             try
@@ -60,7 +61,7 @@ public sealed class RunPersistenceService(
                 var candidate = await context.Runs.FromSqlRaw("""
                     SELECT * FROM Runs
                     WHERE Outcome IS NULL AND Phase = 'Queued' AND CancellationRequestedAtUtc IS NULL
-                    ORDER BY QueuedAtUtc, Id
+                    ORDER BY DueAtUtc, QueuedAtUtc, Id
                     LIMIT 1
                     """).AsNoTracking().SingleOrDefaultAsync(ct);
                 if (candidate is null) return null;
@@ -303,7 +304,13 @@ public sealed class RunPersistenceService(
         }
     }
 
-    private static BackupRun Snapshot(BackupJob job, Destination destination, DateTimeOffset now) => new()
+    internal static BackupRun CreateSnapshot(
+        BackupJob job,
+        Destination destination,
+        RunTrigger trigger,
+        DateTimeOffset dueAtUtc,
+        DateTimeOffset queuedAtUtc,
+        ScheduleOccurrence? occurrence = null) => new()
     {
         JobId = job.Id,
         DestinationId = destination.Id,
@@ -319,9 +326,10 @@ public sealed class RunPersistenceService(
         ScheduledTime = job.ScheduledTime,
         RetentionCount = job.RetentionCount,
         RegionalCulture = "",
-        TimeZoneId = TimeZoneInfo.Local.Id,
-        Trigger = RunTrigger.Manual,
-        QueuedAtUtc = now
+        TimeZoneId = occurrence?.TimeZoneId ?? TimeZoneInfo.Local.Id,
+        Trigger = trigger,
+        DueAtUtc = dueAtUtc,
+        QueuedAtUtc = queuedAtUtc
     };
 }
 

@@ -102,7 +102,11 @@ public sealed class JobService(
         try
         {
             job.DestinationOwnershipKey = verification.Outcome!.OwnershipKey!;
-            if (command.Activate) job.Activate();
+            if (command.Activate)
+            {
+                job.Activate();
+                job.BeginScheduling(now, resetSatisfied: true);
+            }
             await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
             context.Jobs.Add(job);
             await context.SaveChangesAsync(cancellationToken);
@@ -209,6 +213,10 @@ public sealed class JobService(
             {
                 job.ScheduleRevision++;
                 job.ScheduleEffectiveFromUtc = now;
+                if (job.Lifecycle == JobLifecycle.Active || command.Activate)
+                    job.BeginScheduling(now, resetSatisfied: true);
+                else
+                    job.StopScheduling();
             }
             if (command.Activate && job.Lifecycle == JobLifecycle.Paused)
             {
@@ -220,6 +228,7 @@ public sealed class JobService(
                     job.DestinationOwnershipKey = acquired!.OwnershipKey!;
                 }
                 job.Activate();
+                job.BeginScheduling(now, resetSatisfied: scheduleChanged);
             }
 
             if (pathChanged)
@@ -298,12 +307,14 @@ public sealed class JobService(
             job.DestinationOwnershipKey = verified.Outcome!.OwnershipKey!;
             job.Activate();
             job.ScheduleEffectiveFromUtc = now;
+            job.BeginScheduling(now);
         }
         else if (target == JobLifecycle.Paused)
         {
             if (job.Lifecycle != JobLifecycle.Active)
                 return new(JobOperationStatus.InvalidTransition, "Only an active job can be paused.");
             job.Pause();
+            job.StopScheduling();
         }
         else
         {
@@ -318,6 +329,7 @@ public sealed class JobService(
                     "The destination ownership marker could not be verified and released; the job was not archived.");
             markerReleased = released.Result == OwnershipMarkerResult.Released;
             job.Archive();
+            job.StopScheduling();
         }
 
         job.UpdatedAtUtc = now;
@@ -372,6 +384,7 @@ public sealed class JobService(
         {
             job.Activate();
             job.ScheduleEffectiveFromUtc = now;
+            job.BeginScheduling(now);
         }
         job.UpdatedAtUtc = now;
         try

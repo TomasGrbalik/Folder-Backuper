@@ -3,6 +3,7 @@ using System;
 using FolderBackuper.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FolderBackuper.Infrastructure.Database.Migrations
 {
     [DbContext(typeof(FolderBackuperDbContext))]
-    partial class FolderBackuperDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260818085509_AddDurableScheduling")]
+    partial class AddDurableScheduling
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.0");
