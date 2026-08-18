@@ -297,6 +297,37 @@ public sealed class PersistenceModelTests
     }
 
     [Fact]
+    public async Task Recovery_FailsInterruptedPreCommitRunAndDeletesOnlyRecordedPaths()
+    {
+        await using var database = new TemporaryDatabase();
+        await database.Initializer.InitializeAsync();
+        var destination = DatabaseInitializationTests.Destination("Primary");
+        var job = DatabaseInitializationTests.Job(destination.Id, "Documents");
+        await using (var context = await database.ContextFactory.CreateDbContextAsync())
+        {
+            context.AddRange(destination, job);
+            await context.SaveChangesAsync();
+        }
+
+        var queued = await database.RunPersistence.EnqueueManualAsync(job.Id);
+        var runId = queued.RunId!.Value;
+        await database.RunPersistence.ClaimNextAsync();
+        var staging = Path.Combine(database.Paths.Staging, "interrupted.zip.tmp");
+        await File.WriteAllBytesAsync(staging, [1, 2, 3]);
+        await database.RunPersistence.RecordStagingPathAsync(runId, staging);
+        var unknown = Path.Combine(database.Paths.Staging, "unknown.zip.tmp");
+        await File.WriteAllBytesAsync(unknown, [4, 5, 6]);
+        var recovery = new BackupRecoveryService(database.ContextFactory, database.RunPersistence, null!);
+
+        await recovery.RecoverAsync();
+
+        Assert.False(File.Exists(staging));
+        Assert.True(File.Exists(unknown));
+        await using var inspection = await database.ContextFactory.CreateDbContextAsync();
+        Assert.Equal(RunOutcome.Failed, (await inspection.Runs.FindAsync(runId))!.Outcome);
+    }
+
+    [Fact]
     public async Task OwnershipKey_IsUniqueForActiveAndPausedJobsButReusableAfterArchive()
     {
         await using var database = new TemporaryDatabase();
