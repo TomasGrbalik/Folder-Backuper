@@ -61,6 +61,7 @@ try
 
     builder.Services.AddWindowsService(options => options.ServiceName = "Folder Backuper");
     builder.Services.AddSingleton(paths);
+    builder.Services.AddSingleton<StartupRecoveryBarrier>();
     builder.Services.AddSingleton<AppDataAclService>();
     builder.Services.AddSingleton(TimeProvider.System);
     builder.Services.AddSingleton<ISecretProtector, DpapiSecretProtector>();
@@ -73,6 +74,10 @@ try
     builder.Services.AddSingleton<SourceBrowser>();
     builder.Services.AddSingleton<SourcePreview>();
     builder.Services.AddSingleton<ScheduleOccurrenceCalculator>();
+    builder.Services.AddSingleton<IMachineTimeZoneProvider, MachineTimeZoneProvider>();
+    builder.Services.AddSingleton<BackupScheduler>();
+    builder.Services.AddSingleton<CalendarOccurrenceService>();
+    builder.Services.AddHostedService<BackupSchedulerWorker>();
     builder.Services.AddScoped<DestinationService>();
     builder.Services.AddFolderBackuperDatabase(paths);
     builder.Services.AddRazorComponents().AddInteractiveServerComponents();
@@ -85,6 +90,7 @@ try
     var app = builder.Build();
     await app.Services.GetRequiredService<DatabaseInitializer>().InitializeAsync();
     await app.Services.GetRequiredService<BackupRecoveryService>().RecoverAsync();
+    app.Services.GetRequiredService<StartupRecoveryBarrier>().Complete();
     app.UseHostFiltering();
     app.UseMiddleware<SecurityHeadersMiddleware>();
     app.UseAntiforgery();

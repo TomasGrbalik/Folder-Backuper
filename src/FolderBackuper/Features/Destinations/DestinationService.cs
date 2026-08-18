@@ -272,6 +272,7 @@ public sealed class DestinationService
                 if (job.Lifecycle == JobLifecycle.Active)
                 {
                     job.Pause();
+                    job.StopScheduling();
                     pausedCount++;
                 }
                 if (rootChanged) job.DestinationOwnershipKey = replacementKeys[job.Id];

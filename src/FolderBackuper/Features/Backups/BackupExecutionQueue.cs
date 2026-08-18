@@ -1,6 +1,7 @@
 using System.Threading.Channels;
 using FolderBackuper.Infrastructure.Database;
 using FolderBackuper.Infrastructure.Filesystem;
+using FolderBackuper.Infrastructure.ServiceHosting;
 using FolderBackuper.Features.Settings;
 using Microsoft.Extensions.Hosting;
 
@@ -61,10 +62,12 @@ public sealed class BackupExecutionWorker(
     BackupEngine engine,
     BackupRetentionService retention,
     BackupRecoveryService recovery,
+    StartupRecoveryBarrier startupRecovery,
     TimeProvider timeProvider) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await startupRecovery.WaitAsync(stoppingToken);
         queue.Signal(); // Durable rows may predate this process.
         while (!stoppingToken.IsCancellationRequested)
         {
