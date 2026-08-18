@@ -1,5 +1,4 @@
 @page "/jobs"
-@using FolderBackuper.Features.Backups
 @inject JobService JobService
 @inject DestinationService DestinationService
 @inject ScheduleOccurrenceCalculator ScheduleCalculator
@@ -29,7 +28,7 @@
             </div>
             <div class="form-tools">
                 <MudButton Variant="Variant.Outlined" Disabled="@string.IsNullOrWhiteSpace(sourcePath)" OnClick="PreviewSourceAsync">Preview source</MudButton>
-                @if (previewBytes is long bytes) { <MudText Typo="Typo.body2">Preview: @FormatBytes(bytes). Retention estimate: @RetentionEstimate(bytes, retention).</MudText> }
+                @if (previewBytes is long bytes) { <MudText Typo="Typo.body2">Preview: @DisplayFormat.Bytes(bytes). Retention estimate: @RetentionEstimate(bytes, retention).</MudText> }
             </div>
         </section>
         <section>
@@ -67,7 +66,7 @@
                 <span>Next run <strong>@NextRunText</strong></span>
             </div>
             @if (editingDetails is not null)
-            { <MudText Typo="Typo.body2">Managed storage: @editingDetails.ManagedArtifactCount.ToString("N0") artifacts, @FormatBytes(editingDetails.ManagedArtifactBytes)</MudText> }
+            { <MudText Typo="Typo.body2">Managed storage: @editingDetails.ManagedArtifactCount.ToString("N0") artifacts, @DisplayFormat.Bytes(editingDetails.ManagedArtifactBytes)</MudText> }
         </section>
         <section class="activation-section">
             @if (editingDetails?.Lifecycle == JobLifecycle.Active)
@@ -311,10 +310,5 @@ else
     private string DestinationName(Guid id) => destinations.FirstOrDefault(x => x.Id == id)?.Name ?? "Unavailable destination";
     private static Color LifecycleColor(JobLifecycle value) => value == JobLifecycle.Active ? Color.Success : value == JobLifecycle.Paused ? Color.Warning : Color.Default;
     private static string WeekdayText(ScheduledWeekdays value) => string.Join(", ", Enum.GetValues<ScheduledWeekdays>().Where(x => x != ScheduledWeekdays.None && value.HasFlag(x)).Select(x => x.ToString()[..3]));
-    private static string RetentionEstimate(long bytes, int count) { try { return FormatBytes(checked(bytes * (long)Math.Max(1, count))); } catch (OverflowException) { return "More than 8 EB"; } }
-    private static string FormatBytes(long value)
-    {
-        string[] units = ["B", "KB", "MB", "GB", "TB", "PB", "EB"]; var amount = (double)value; var unit = 0;
-        while (amount >= 1024 && unit < units.Length - 1) { amount /= 1024; unit++; } return $"{amount:0.#} {units[unit]}";
-    }
+    private static string RetentionEstimate(long bytes, int count) { try { return DisplayFormat.Bytes(checked(bytes * (long)Math.Max(1, count))); } catch (OverflowException) { return "More than 8 EB"; } }
 }

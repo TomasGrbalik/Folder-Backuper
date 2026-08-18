@@ -51,7 +51,7 @@ else
                 {
                     <MudText Typo="Typo.body2">Account: @destination.SmbUsername</MudText>
                 }
-                <MudText Typo="Typo.body2">Available: @(destination.AvailableBytes is long bytes ? FormatBytes(bytes) : "Not reported")</MudText>
+                <MudText Typo="Typo.body2">Available: @DisplayFormat.Bytes(destination.AvailableBytes)</MudText>
                 <MudText Typo="Typo.body2">@LastTestText(destination)</MudText>
                 <div class="destination-actions">
                     @if (destination.Lifecycle == DestinationLifecycle.Archived)
@@ -127,14 +127,7 @@ else
         DestinationVerificationResult.Failed => Color.Error,
         _ => Color.Default
     };
-    private static string FormatBytes(long value)
-    {
-        string[] units = ["B", "KB", "MB", "GB", "TB"];
-        var amount = (double)value; var unit = 0;
-        while (amount >= 1024 && unit < units.Length - 1) { amount /= 1024; unit++; }
-        return $"{amount:0.#} {units[unit]}";
-    }
     private static string LastTestText(DestinationSummary destination) => destination.LastAccessedAtUtc is { } testedAt
-        ? $"Last test: {destination.LastAccessResult} on {testedAt.ToLocalTime():g}"
+        ? $"Last test: {destination.LastAccessResult} on {DisplayFormat.LocalDateTime(testedAt)}"
         : "Last test: Not attempted";
 }

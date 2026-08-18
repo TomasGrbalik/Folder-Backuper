@@ -11,7 +11,7 @@
             <div class="preview-metrics">
                 <span><strong>@snapshot.FileCount.ToString("N0")</strong> files</span>
                 <span><strong>@snapshot.FolderCount.ToString("N0")</strong> folders</span>
-                <span><strong>@FormatBytes(snapshot.TotalBytes)</strong> source data</span>
+                <span><strong>@DisplayFormat.Bytes(snapshot.TotalBytes)</strong> source data</span>
                 <span><strong>@snapshot.InaccessibleEntryCount.ToString("N0")</strong> inaccessible</span>
                 <span><strong>@snapshot.SkippedReparsePointCount.ToString("N0")</strong> reparse points skipped</span>
             </div>
@@ -61,12 +61,5 @@
         disposed = true;
         cancellation.Cancel();
         cancellation.Dispose();
-    }
-    private static string FormatBytes(long value)
-    {
-        string[] units = ["B", "KB", "MB", "GB", "TB", "PB"];
-        var amount = (double)value; var unit = 0;
-        while (amount >= 1024 && unit < units.Length - 1) { amount /= 1024; unit++; }
-        return $"{amount:0.#} {units[unit]}";
     }
 }
