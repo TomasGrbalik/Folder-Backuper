@@ -118,6 +118,31 @@ public sealed class DestinationArchiveServiceTests : IDisposable
         Assert.DoesNotContain(Directory.GetFiles(destination), path => path.EndsWith(".partial", StringComparison.Ordinal));
     }
 
+    [Theory]
+    [InlineData(BackupFaultPoint.AfterPartialIntentPersisted, false, false)]
+    [InlineData(BackupFaultPoint.AfterPartialFileCreated, true, false)]
+    [InlineData(BackupFaultPoint.AfterCommitIntentPersisted, true, false)]
+    [InlineData(BackupFaultPoint.AfterFinalRename, false, true)]
+    public async Task TransferFaults_ExposeEveryDurableRecoveryWindow(
+        BackupFaultPoint faultPoint,
+        bool partialExists,
+        bool finalExists)
+    {
+        var fixture = await CreateStagingArchiveAsync();
+        var coordinator = new FailingCommittedCoordinator(failCommitted: false);
+        var service = new DestinationArchiveService(new ZipArchiveService(), coordinator,
+            new ThrowingFaultInjector(faultPoint));
+
+        await Assert.ThrowsAsync<InjectedBackupFaultException>(() => service.TransferAsync(
+            new LocalDestinationAdapter(), Configuration(), destination, fixture.Path, "Accounting",
+            "source", fixture.Manifest, fixture.Ownership, DateTimeOffset.UtcNow));
+
+        Assert.Equal(partialExists,
+            Directory.GetFiles(destination).Any(path => path.EndsWith(".partial", StringComparison.Ordinal)));
+        Assert.Equal(finalExists,
+            Directory.GetFiles(destination).Any(path => path.EndsWith(".zip", StringComparison.Ordinal)));
+    }
+
     private DestinationArchiveService Service() =>
         new(new ZipArchiveService(), new DirectBackupCommitCoordinator());
 
@@ -158,7 +183,7 @@ public sealed class DestinationArchiveServiceTests : IDisposable
         public ValueTask MarkFinalizationFailedAsync(Guid runId, CancellationToken cancellationToken) => ValueTask.CompletedTask;
     }
 
-    private sealed class FailingCommittedCoordinator : IBackupCommitCoordinator
+    private sealed class FailingCommittedCoordinator(bool failCommitted = true) : IBackupCommitCoordinator
     {
         public BackupCommitIntent? Intent { get; private set; }
         public ValueTask RecordPartialIntentAsync(Guid runId, string partialPath, CancellationToken cancellationToken) =>
@@ -169,8 +194,19 @@ public sealed class DestinationArchiveServiceTests : IDisposable
             return ValueTask.CompletedTask;
         }
         public ValueTask MarkCommittedAsync(Guid runId, CancellationToken cancellationToken) =>
-            ValueTask.FromException(new IOException("Injected persistence failure."));
+            failCommitted
+                ? ValueTask.FromException(new IOException("Injected persistence failure."))
+                : ValueTask.CompletedTask;
         public ValueTask MarkFinalizationFailedAsync(Guid runId, CancellationToken cancellationToken) =>
             ValueTask.CompletedTask;
+    }
+
+    private sealed class ThrowingFaultInjector(BackupFaultPoint target) : IBackupFaultInjector
+    {
+        public ValueTask HitAsync(BackupFaultPoint point, Guid runId, CancellationToken cancellationToken)
+        {
+            if (point == target) throw new InjectedBackupFaultException(point);
+            return ValueTask.CompletedTask;
+        }
     }
 }

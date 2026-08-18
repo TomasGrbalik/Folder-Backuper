@@ -59,6 +59,7 @@ public sealed class BackupEngine(
         var transferDuration = TimeSpan.Zero;
         var outcome = RunOutcome.Failed;
         var destinationAccessed = false;
+        var crashInjected = false;
         var destinationAccessResult = DestinationAccessResult.Failed;
         string? destinationAccessError = null;
 
@@ -261,6 +262,7 @@ public sealed class BackupEngine(
         }
         catch (InjectedBackupFaultException)
         {
+            crashInjected = true;
             throw;
         }
         catch (Exception exception)
@@ -270,7 +272,7 @@ public sealed class BackupEngine(
         }
         finally
         {
-            if (stagingPath is not null && File.Exists(stagingPath))
+            if (!crashInjected && stagingPath is not null && File.Exists(stagingPath))
             {
                 try
                 {

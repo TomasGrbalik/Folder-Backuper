@@ -159,8 +159,10 @@ public sealed class BackupEngineTests : IAsyncLifetime
         Assert.True(File.Exists(result.FinalPath));
     }
 
-    [Fact]
-    public async Task FaultAfterStagingIntent_PersistsPathBeforeCreatingFile()
+    [Theory]
+    [InlineData(BackupFaultPoint.AfterStagingIntentPersisted, false)]
+    [InlineData(BackupFaultPoint.AfterStagingFileCreated, true)]
+    public async Task StagingFaults_LeaveDurableIntentForRecovery(BackupFaultPoint faultPoint, bool fileExists)
     {
         var queued = await database.RunPersistence.EnqueueManualAsync(job.Id);
         var run = await database.RunPersistence.ClaimNextAsync();
@@ -173,7 +175,7 @@ public sealed class BackupEngineTests : IAsyncLifetime
             currentDestination.RootPath = Path.Combine(database.Paths.Root, "mutated-destination");
             await mutation.SaveChangesAsync();
         }
-        var injector = new ThrowingFaultInjector(BackupFaultPoint.AfterStagingIntentPersisted);
+        var injector = new ThrowingFaultInjector(faultPoint);
 
         await Assert.ThrowsAsync<InjectedBackupFaultException>(() =>
             DurableEngine(new BackupProgressRegistry(minimumInterval: TimeSpan.Zero), injector).ExecuteAsync(
@@ -182,7 +184,7 @@ public sealed class BackupEngineTests : IAsyncLifetime
         await using var context = await database.ContextFactory.CreateDbContextAsync();
         var stored = await context.Runs.AsNoTracking().SingleAsync();
         Assert.NotNull(stored.StagingPath);
-        Assert.False(File.Exists(stored.StagingPath));
+        Assert.Equal(fileExists, File.Exists(stored.StagingPath));
         Assert.Null(stored.Outcome);
     }
 
