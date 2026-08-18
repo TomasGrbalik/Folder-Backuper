@@ -1,6 +1,7 @@
 using Bunit;
 using FolderBackuper.Components.Pages;
 using FolderBackuper.Features.Destinations;
+using FolderBackuper.Features.Backups;
 using FolderBackuper.Features.Jobs;
 using FolderBackuper.Features.Settings;
 using FolderBackuper.Infrastructure.Filesystem;
@@ -35,12 +36,16 @@ public sealed class JobsPageTests
         context.Services.AddSingleton(jobService);
         context.Services.AddSingleton(destinationService);
         context.Services.AddSingleton(new ScheduleOccurrenceCalculator(TimeProvider.System));
+        context.Services.AddSingleton(database.RunPersistence);
+        context.Services.AddSingleton<BackupExecutionQueue>();
+        context.Services.AddSingleton<BackupCancellationRegistry>();
+        context.Services.AddSingleton<BackupExecutionService>();
         var component = context.Render<Jobs>();
 
         component.WaitForAssertion(() => Assert.Contains("Documents", component.Markup, StringComparison.Ordinal));
         Assert.Contains("Reactivate", component.Markup, StringComparison.Ordinal);
         Assert.Contains("Archive", component.Markup, StringComparison.Ordinal);
-        Assert.DoesNotContain("Run now", component.Markup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Run now", component.Markup, StringComparison.OrdinalIgnoreCase);
 
         component.FindAll("button").Single(x => x.TextContent.Contains("New job", StringComparison.Ordinal)).Click();
         component.WaitForAssertion(() => Assert.Contains("Local scheduled time", component.Markup, StringComparison.Ordinal));
