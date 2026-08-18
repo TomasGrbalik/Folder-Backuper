@@ -124,6 +124,104 @@ public sealed class PersistenceModelTests
     }
 
     [Fact]
+    public async Task ManualEnqueue_CreatesAnImmutableQueuedSnapshot()
+    {
+        var clock = new TestTimeProvider(new DateTimeOffset(2026, 8, 18, 12, 0, 0, TimeSpan.Zero));
+        await using var database = new TemporaryDatabase(clock);
+        await database.Initializer.InitializeAsync();
+        var destination = DatabaseInitializationTests.Destination("Primary");
+        var job = DatabaseInitializationTests.Job(destination.Id, "Documents");
+        await using (var context = await database.ContextFactory.CreateDbContextAsync())
+        {
+            context.AddRange(destination, job);
+            await context.SaveChangesAsync();
+        }
+
+        var outcome = await database.RunPersistence.EnqueueManualAsync(job.Id);
+
+        Assert.Equal(ManualRunEnqueueStatus.Queued, outcome.Status);
+        await using var inspection = await database.ContextFactory.CreateDbContextAsync();
+        var run = await inspection.Runs.SingleAsync();
+        Assert.Equal(outcome.RunId, run.Id);
+        Assert.Equal(RunPhase.Queued, run.Phase);
+        Assert.Equal(clock.GetUtcNow(), run.QueuedAtUtc);
+        Assert.Equal(job.Name, run.JobName);
+        Assert.Equal(destination.Id, run.DestinationId);
+    }
+
+    [Fact]
+    public async Task ManualEnqueue_RejectsAnotherActiveRunForTheSameJob()
+    {
+        await using var database = new TemporaryDatabase();
+        await database.Initializer.InitializeAsync();
+        var destination = DatabaseInitializationTests.Destination("Primary");
+        var job = DatabaseInitializationTests.Job(destination.Id, "Documents");
+        await using (var context = await database.ContextFactory.CreateDbContextAsync())
+        {
+            context.AddRange(destination, job);
+            await context.SaveChangesAsync();
+        }
+
+        var first = await database.RunPersistence.EnqueueManualAsync(job.Id);
+        var second = await database.RunPersistence.EnqueueManualAsync(job.Id);
+
+        Assert.Equal(ManualRunEnqueueStatus.Queued, first.Status);
+        Assert.Equal(ManualRunEnqueueStatus.Busy, second.Status);
+    }
+
+    [Fact]
+    public async Task ClaimNext_ClaimsTheOldestQueuedRunAndSkipsCancelledWork()
+    {
+        var clock = new TestTimeProvider(new DateTimeOffset(2026, 8, 18, 12, 0, 0, TimeSpan.Zero));
+        await using var database = new TemporaryDatabase(clock);
+        await database.Initializer.InitializeAsync();
+        var destination = DatabaseInitializationTests.Destination("Primary");
+        var firstJob = DatabaseInitializationTests.Job(destination.Id, "First");
+        var secondJob = DatabaseInitializationTests.Job(destination.Id, "Second");
+        await using (var context = await database.ContextFactory.CreateDbContextAsync())
+        {
+            context.AddRange(destination, firstJob, secondJob);
+            await context.SaveChangesAsync();
+        }
+
+        var first = await database.RunPersistence.EnqueueManualAsync(firstJob.Id);
+        clock.Advance(TimeSpan.FromMinutes(1));
+        var second = await database.RunPersistence.EnqueueManualAsync(secondJob.Id);
+        await database.RunPersistence.RequestCancellationAsync(first.RunId!.Value);
+
+        var claimed = await database.RunPersistence.ClaimNextAsync();
+
+        Assert.Equal(second.RunId, claimed?.Id);
+        Assert.Equal(RunPhase.Scanning, claimed?.Phase);
+        await using var inspection = await database.ContextFactory.CreateDbContextAsync();
+        var cancelled = await inspection.Runs.FindAsync(first.RunId!.Value);
+        Assert.Equal(RunOutcome.Cancelled, cancelled!.Outcome);
+    }
+
+    [Fact]
+    public async Task Cancellation_IsPersistedUntilTheFinalCommitWindowCloses()
+    {
+        await using var database = new TemporaryDatabase();
+        await database.Initializer.InitializeAsync();
+        var destination = DatabaseInitializationTests.Destination("Primary");
+        var job = DatabaseInitializationTests.Job(destination.Id, "Documents");
+        await using (var context = await database.ContextFactory.CreateDbContextAsync())
+        {
+            context.AddRange(destination, job);
+            await context.SaveChangesAsync();
+        }
+
+        var queued = await database.RunPersistence.EnqueueManualAsync(job.Id);
+        var claimed = await database.RunPersistence.ClaimNextAsync();
+        var outcome = await database.RunPersistence.RequestCancellationAsync(claimed!.Id);
+
+        Assert.Equal(RunCancellationStatus.Requested, outcome.Status);
+        await using var inspection = await database.ContextFactory.CreateDbContextAsync();
+        var stored = await inspection.Runs.FindAsync(queued.RunId!.Value);
+        Assert.NotNull(stored!.CancellationRequestedAtUtc);
+    }
+
+    [Fact]
     public async Task OwnershipKey_IsUniqueForActiveAndPausedJobsButReusableAfterArchive()
     {
         await using var database = new TemporaryDatabase();
