@@ -53,6 +53,7 @@ public sealed class BackupExecutionWorker(
     BackupCancellationRegistry cancellations,
     RunPersistenceService runs,
     BackupEngine engine,
+    BackupRetentionService retention,
     TimeProvider timeProvider) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -71,6 +72,14 @@ public sealed class BackupExecutionWorker(
                     try
                     {
                         var result = await engine.ExecuteAsync(new(run.Id, run.JobId, timeProvider.GetUtcNow()), token);
+                        if (result.Outcome is RunOutcome.Successful or RunOutcome.SuccessfulWithWarnings)
+                        {
+                            var warnings = await retention.ApplyAsync(run.Id, CancellationToken.None);
+                            if (warnings.Count > 0)
+                            {
+                                result = result with { Outcome = RunOutcome.SuccessfulWithWarnings, Problems = result.Problems.Concat(warnings).ToArray() };
+                            }
+                        }
                         await runs.RecordExecutionResultAsync(result, CancellationToken.None);
                         await runs.CompleteAsync(run.Id, result.Outcome,
                             result.Problems.FirstOrDefault(problem => problem.Severity == BackupProblemSeverity.Error)?.Message,

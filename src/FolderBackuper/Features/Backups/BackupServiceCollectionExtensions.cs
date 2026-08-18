@@ -11,6 +11,8 @@ public static class BackupServiceCollectionExtensions
         services.AddSingleton<IBackupCommitCoordinator, DurableBackupCommitCoordinator>();
         services.AddSingleton<DestinationArchiveService>();
         services.AddSingleton<DestinationAccessRecorder>();
+        services.AddSingleton<BackupRetentionService>();
+        services.AddSingleton<BackupRecoveryService>();
         services.AddSingleton<BackupEngine>();
         services.AddSingleton<BackupExecutionQueue>();
         services.AddSingleton<BackupCancellationRegistry>();
