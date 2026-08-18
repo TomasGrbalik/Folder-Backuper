@@ -3,6 +3,7 @@ using System;
 using FolderBackuper.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FolderBackuper.Infrastructure.Database.Migrations
 {
     [DbContext(typeof(FolderBackuperDbContext))]
-    partial class FolderBackuperDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260818065324_DefineDurableExecutionState")]
+    partial class DefineDurableExecutionState
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.0");
@@ -64,9 +67,6 @@ namespace FolderBackuper.Infrastructure.Database.Migrations
                     b.Property<Guid>("OwnershipRunId")
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid?>("RetentionRequestedByRunId")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("RetentionState")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -87,8 +87,6 @@ namespace FolderBackuper.Infrastructure.Database.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("RetentionRequestedByRunId");
 
                     b.HasIndex("RunId")
                         .IsUnique();
@@ -142,14 +140,6 @@ namespace FolderBackuper.Infrastructure.Database.Migrations
                     b.Property<string>("DestinationType")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("DestinationUsername")
-                        .HasMaxLength(256)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("DestinationVerificationFingerprint")
-                        .HasMaxLength(256)
                         .HasColumnType("TEXT");
 
                     b.Property<long>("DirectoryCount")
@@ -300,11 +290,6 @@ namespace FolderBackuper.Infrastructure.Database.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("RunId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Severity")
-                        .IsRequired()
-                        .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("UserMessage")

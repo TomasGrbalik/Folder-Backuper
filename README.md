@@ -40,4 +40,4 @@ Only one process can use a data root. A machine-wide mutex rejects a second serv
 dotnet publish src/FolderBackuper/FolderBackuper.csproj -c Release -r win-x64 --self-contained true
 ```
 
-Installer packaging is scheduled for Milestone 10. See the [Milestone 5 acceptance checklist](docs/milestone-5-acceptance.md) for archive safety, cancellation, scale, local storage, and intended-NAS validation steps. User-triggered and scheduled backup execution remain unavailable until Milestone 6 adds the durable queue, cancellation, retention, and crash recovery workflows.
+Installer packaging is scheduled for Milestone 10. User-triggered execution now uses the durable queue, cancellation, retention, and startup-recovery workflow described in the [Milestone 6 acceptance checklist](docs/milestone-6-acceptance.md). Scheduled execution remains deferred to Milestone 7.

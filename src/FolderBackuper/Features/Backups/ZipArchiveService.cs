@@ -24,10 +24,11 @@ public sealed class ZipArchiveService
         BackupManifest manifest,
         ArchiveOwnership ownership,
         Action<BackupCopyProgress>? progress = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? exactStagingPath = null)
     {
         ArgumentNullException.ThrowIfNull(manifest);
-        var stagingPath = Path.Combine(stagingRoot,
+        var stagingPath = exactStagingPath ?? Path.Combine(stagingRoot,
             $".folder-backuper-{ownership.RunId:N}-{Guid.NewGuid():N}.zip.tmp");
         var created = false;
         var stopwatch = Stopwatch.StartNew();

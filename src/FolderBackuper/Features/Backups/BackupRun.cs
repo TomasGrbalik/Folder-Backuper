@@ -34,11 +34,14 @@ public sealed class BackupRun
     public Guid Id { get; init; } = Guid.NewGuid();
     public Guid JobId { get; init; }
     public BackupJob? Job { get; set; }
+    public Guid DestinationId { get; init; }
     public required string JobName { get; init; }
     public required string SourcePath { get; init; }
     public required string DestinationName { get; init; }
     public DestinationType DestinationType { get; init; }
     public required string DestinationRootPath { get; init; }
+    public string? DestinationUsername { get; init; }
+    public string? DestinationVerificationFingerprint { get; init; }
     public required string DestinationSubfolder { get; init; }
     public ScheduledWeekdays ScheduledWeekdays { get; init; }
     public TimeOnly ScheduledTime { get; init; }
@@ -54,6 +57,8 @@ public sealed class BackupRun
     public DateTimeOffset? CancellationRequestedAtUtc { get; private set; }
     public DateTimeOffset? FinalCommitStartedAtUtc { get; private set; }
     public DateTimeOffset? FinalCommittedAtUtc { get; private set; }
+    public string? StagingPath { get; set; }
+    public string? DestinationPartialPath { get; set; }
     public long FileCount { get; set; }
     public long DirectoryCount { get; set; }
     public long SourceBytes { get; set; }
@@ -187,6 +192,7 @@ public sealed class RunProblem
     public BackupRun? Run { get; set; }
     public string? Path { get; init; }
     public RunPhase Phase { get; init; }
+    public BackupProblemSeverity Severity { get; init; } = BackupProblemSeverity.Error;
     public required string Operation { get; init; }
     public required string ErrorCategory { get; init; }
     public string? NativeErrorCode { get; init; }

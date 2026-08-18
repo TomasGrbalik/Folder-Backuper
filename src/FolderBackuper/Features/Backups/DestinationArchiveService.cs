@@ -1,22 +1,47 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using FolderBackuper.Features.Destinations;
+using FolderBackuper.Infrastructure.Database;
 using FolderBackuper.Infrastructure.Filesystem;
 
 namespace FolderBackuper.Features.Backups;
 
 public interface IBackupCommitCoordinator
 {
-    ValueTask BeginCommitAsync(Guid runId, CancellationToken cancellationToken);
+    ValueTask RecordPartialIntentAsync(Guid runId, string partialPath, CancellationToken cancellationToken);
+    ValueTask BeginCommitAsync(BackupCommitIntent intent, CancellationToken cancellationToken);
+    ValueTask MarkCommittedAsync(Guid runId, CancellationToken cancellationToken);
+    ValueTask MarkFinalizationFailedAsync(Guid runId, CancellationToken cancellationToken);
 }
 
 public sealed class DirectBackupCommitCoordinator : IBackupCommitCoordinator
 {
-    public ValueTask BeginCommitAsync(Guid runId, CancellationToken cancellationToken)
+    public ValueTask RecordPartialIntentAsync(Guid runId, string partialPath, CancellationToken cancellationToken) =>
+        ValueTask.CompletedTask;
+
+    public ValueTask BeginCommitAsync(BackupCommitIntent intent, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         return ValueTask.CompletedTask;
     }
+
+    public ValueTask MarkCommittedAsync(Guid runId, CancellationToken cancellationToken) => ValueTask.CompletedTask;
+    public ValueTask MarkFinalizationFailedAsync(Guid runId, CancellationToken cancellationToken) => ValueTask.CompletedTask;
+}
+
+public sealed class DurableBackupCommitCoordinator(RunPersistenceService runs) : IBackupCommitCoordinator
+{
+    public ValueTask RecordPartialIntentAsync(Guid runId, string partialPath, CancellationToken cancellationToken) =>
+        new(runs.RecordDestinationPartialPathAsync(runId, partialPath, cancellationToken));
+
+    public ValueTask BeginCommitAsync(BackupCommitIntent intent, CancellationToken cancellationToken) =>
+        new(runs.BeginFinalCommitAsync(intent, cancellationToken));
+
+    public ValueTask MarkCommittedAsync(Guid runId, CancellationToken cancellationToken) =>
+        new(runs.MarkFinalCommittedAsync(runId, cancellationToken));
+
+    public ValueTask MarkFinalizationFailedAsync(Guid runId, CancellationToken cancellationToken) =>
+        new(runs.MarkFinalizationFailedAsync(runId, cancellationToken));
 }
 
 public sealed record BackupTransferProgress(long BytesTransferred, long TotalBytes);
@@ -34,7 +59,8 @@ public sealed record DestinationArchiveResult(
 
 public sealed class DestinationArchiveService(
     ZipArchiveService zipArchives,
-    IBackupCommitCoordinator commitCoordinator)
+    IBackupCommitCoordinator commitCoordinator,
+    IBackupFaultInjector? faultInjector = null)
 {
     private const int CopyBufferSize = 128 * 1024;
 
@@ -61,8 +87,12 @@ public sealed class DestinationArchiveService(
                     $".folder-backuper-{ownership.RunId:N}-{Guid.NewGuid():N}.zip.partial");
                 var partialCreated = false;
                 var commitStarted = false;
+                var renamed = false;
                 try
                 {
+                    await commitCoordinator.RecordPartialIntentAsync(ownership.RunId, partialPath, cancellationToken);
+                    if (faultInjector is not null)
+                        await faultInjector.HitAsync(BackupFaultPoint.AfterPartialIntentPersisted, ownership.RunId, cancellationToken);
                     await using (var input = new FileStream(stagingPath, FileMode.Open, FileAccess.Read,
                                      FileShare.Read, CopyBufferSize,
                                      FileOptions.Asynchronous | FileOptions.SequentialScan))
@@ -85,6 +115,9 @@ public sealed class DestinationArchiveService(
                         await output.FlushAsync(cancellationToken);
                         output.Flush(flushToDisk: true);
                     }
+
+                    if (faultInjector is not null)
+                        await faultInjector.HitAsync(BackupFaultPoint.AfterPartialFileCreated, ownership.RunId, cancellationToken);
 
                     var actualLength = new FileInfo(partialPath).Length;
                     if (actualLength != expectedLength)
@@ -110,10 +143,50 @@ public sealed class DestinationArchiveService(
                     var finalPath = Path.Combine(effectiveDestinationPath, finalFileName);
                     ValidateContainment(configuration.RootPath, effectiveDestinationPath, finalPath);
 
-                    await commitCoordinator.BeginCommitAsync(ownership.RunId, cancellationToken);
+                    string? filesystemIdentity = null;
+                    var ownershipCreatedAtUtc = new DateTimeOffset(File.GetCreationTimeUtc(partialPath), TimeSpan.Zero);
+                    try
+                    {
+                        filesystemIdentity = WindowsFilesystemInterop.GetIdentity(partialPath).ToString();
+                    }
+                    catch (IOException)
+                    {
+                        // NAS providers may not expose a stable file identity; length and ZIP ownership remain required.
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        // NAS providers may not expose a stable file identity; length and ZIP ownership remain required.
+                    }
+                    catch (Win32Exception)
+                    {
+                        // NAS providers may not expose a stable file identity; length and ZIP ownership remain required.
+                    }
+
+                    await commitCoordinator.BeginCommitAsync(new(
+                        ownership.RunId,
+                        partialPath,
+                        effectiveDestinationPath,
+                        finalFileName,
+                        expectedLength,
+                        archiveInstant,
+                        ownershipCreatedAtUtc,
+                        filesystemIdentity), cancellationToken);
                     commitStarted = true;
+                    if (faultInjector is not null)
+                        await faultInjector.HitAsync(BackupFaultPoint.AfterCommitIntentPersisted, ownership.RunId, cancellationToken);
                     File.Move(partialPath, finalPath, overwrite: false);
+                    renamed = true;
                     partialCreated = false;
+                    if (faultInjector is not null)
+                        await faultInjector.HitAsync(BackupFaultPoint.AfterFinalRename, ownership.RunId, cancellationToken);
+                    try
+                    {
+                        await commitCoordinator.MarkCommittedAsync(ownership.RunId, CancellationToken.None);
+                    }
+                    catch (Exception exception)
+                    {
+                        throw new FinalCommitRecoveryRequiredException(ownership.RunId, exception);
+                    }
                     return new(finalPath, finalFileName, expectedLength, stopwatch.Elapsed, true, validation);
                 }
                 catch (OperationCanceledException exception) when (!commitStarted)
@@ -131,6 +204,10 @@ public sealed class DestinationArchiveService(
                 {
                     var problems = new List<BackupProblem> { ClassifyDestinationFailure(exception, partialPath) };
                     CleanupPartial(partialPath, partialCreated, problems);
+                    if (commitStarted && !renamed)
+                    {
+                        await commitCoordinator.MarkFinalizationFailedAsync(ownership.RunId, CancellationToken.None);
+                    }
                     return Failed(expectedLength, stopwatch.Elapsed, commitStarted, problems);
                 }
             });
@@ -209,4 +286,10 @@ public sealed class DestinationArchiveService(
                 "The incomplete destination archive could not be removed.", path, exception.HResult & 0xFFFF));
         }
     }
+}
+
+public sealed class FinalCommitRecoveryRequiredException(Guid runId, Exception innerException)
+    : Exception($"Run {runId} was renamed but its final commit state could not be persisted.", innerException)
+{
+    public Guid RunId { get; } = runId;
 }

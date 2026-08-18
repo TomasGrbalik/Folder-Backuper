@@ -35,12 +35,18 @@ public sealed class BackupEngine(
     DestinationAccessRecorder accessRecorder,
     BackupProgressRegistry progressRegistry,
     ApplicationPaths applicationPaths,
-    TimeProvider timeProvider)
+    TimeProvider timeProvider,
+    RunPersistenceService? runPersistence = null,
+    IBackupFaultInjector? faultInjector = null)
 {
     public async Task<BackupEngineResult> ExecuteAsync(
         BackupEngineRequest request,
-        CancellationToken cancellationToken = default)
+        CancellationToken userCancellationToken = default,
+        CancellationToken interruptionToken = default)
     {
+        using var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+            userCancellationToken, interruptionToken);
+        var cancellationToken = operationCancellation.Token;
         var stopwatch = Stopwatch.StartNew();
         var problems = new List<BackupProblem>();
         BackupManifest? manifest = null;
@@ -53,6 +59,7 @@ public sealed class BackupEngine(
         var transferDuration = TimeSpan.Zero;
         var outcome = RunOutcome.Failed;
         var destinationAccessed = false;
+        var crashInjected = false;
         var destinationAccessResult = DestinationAccessResult.Failed;
         string? destinationAccessError = null;
 
@@ -62,11 +69,52 @@ public sealed class BackupEngine(
             string[] configuredSources;
             await using (var context = await contextFactory.CreateDbContextAsync(cancellationToken))
             {
-                job = await context.Jobs.AsNoTracking().SingleOrDefaultAsync(item => item.Id == request.JobId, cancellationToken);
-                if (job is not null)
+                if (runPersistence is not null)
                 {
-                    destination = await context.Destinations.AsNoTracking()
-                        .SingleOrDefaultAsync(item => item.Id == job.DestinationId, cancellationToken);
+                    var run = await context.Runs.AsNoTracking().SingleOrDefaultAsync(item => item.Id == request.RunId, cancellationToken);
+                    var currentDestination = run is null ? null : await context.Destinations.AsNoTracking()
+                        .SingleOrDefaultAsync(item => item.Id == run.DestinationId, cancellationToken);
+                    if (run is not null && currentDestination is not null)
+                    {
+                        job = new BackupJob
+                        {
+                            Id = run.JobId,
+                            Name = run.JobName,
+                            SourcePath = run.SourcePath,
+                            DestinationId = run.DestinationId,
+                            DestinationSubfolder = run.DestinationSubfolder,
+                            Weekdays = run.ScheduledWeekdays,
+                            ScheduledTime = run.ScheduledTime,
+                            RetentionCount = run.RetentionCount,
+                            DestinationOwnershipKey = "snapshot"
+                        };
+                        destination = new Destination
+                        {
+                            Id = run.DestinationId,
+                            Name = run.DestinationName,
+                            Type = run.DestinationType,
+                            RootPath = run.DestinationRootPath,
+                            SmbUsername = run.DestinationUsername,
+                            ProtectedPassword = currentDestination.ProtectedPassword,
+                            VerificationResult = string.IsNullOrWhiteSpace(run.DestinationVerificationFingerprint)
+                                ? DestinationVerificationResult.Unverified
+                                : DestinationVerificationResult.Succeeded,
+                            VerificationFingerprint = run.DestinationVerificationFingerprint
+                        };
+                    }
+                    else
+                    {
+                        job = null;
+                    }
+                }
+                else
+                {
+                    job = await context.Jobs.AsNoTracking().SingleOrDefaultAsync(item => item.Id == request.JobId, cancellationToken);
+                    if (job is not null)
+                    {
+                        destination = await context.Destinations.AsNoTracking()
+                            .SingleOrDefaultAsync(item => item.Id == job.DestinationId, cancellationToken);
+                    }
                 }
                 configuredSources = await context.Jobs.AsNoTracking()
                     .Select(item => item.SourcePath).ToArrayAsync(cancellationToken);
@@ -112,7 +160,16 @@ public sealed class BackupEngine(
             Publish(request.RunId, RunPhase.Scanning, stopwatch.Elapsed, true, manifest);
 
             var compressionThroughput = new RollingThroughput(timeProvider);
+            await PersistPhaseAsync(RunPhase.Compressing, cancellationToken);
             Publish(request.RunId, RunPhase.Compressing, stopwatch.Elapsed, true, manifest);
+            stagingPath = Path.Combine(applicationPaths.Staging,
+                $".folder-backuper-{request.RunId:N}-{Guid.NewGuid():N}.zip.tmp");
+            if (runPersistence is not null)
+            {
+                await runPersistence.RecordStagingPathAsync(request.RunId, stagingPath, cancellationToken);
+                if (faultInjector is not null)
+                    await faultInjector.HitAsync(BackupFaultPoint.AfterStagingIntentPersisted, request.RunId, cancellationToken);
+            }
             var localArchive = await zipArchives.CreateAsync(
                 sourcePath,
                 applicationPaths.Staging,
@@ -120,11 +177,13 @@ public sealed class BackupEngine(
                 manifest,
                 ownership,
                 copy => PublishCompression(request.RunId, stopwatch.Elapsed, manifest, copy, compressionThroughput),
-                cancellationToken);
+                cancellationToken,
+                stagingPath);
             problems.AddRange(localArchive.Problems);
             compressionDuration = localArchive.CompressionDuration;
             if (!localArchive.Succeeded) return Result();
-            stagingPath = localArchive.StagingPath;
+            if (faultInjector is not null)
+                await faultInjector.HitAsync(BackupFaultPoint.AfterStagingFileCreated, request.RunId, cancellationToken);
             archiveBytes = localArchive.ArchiveBytes;
 
             var finalScan = await manifests.BuildAsync(sourcePath, cancellationToken);
@@ -141,6 +200,7 @@ public sealed class BackupEngine(
             Publish(request.RunId, RunPhase.Transferring, stopwatch.Elapsed, true, manifest,
                 archiveBytes: archiveBytes);
             var transferThroughput = new RollingThroughput(timeProvider);
+            await PersistPhaseAsync(RunPhase.Transferring, cancellationToken);
             var destinationResult = await destinationArchives.TransferAsync(
                 effectiveDestinations.Adapter(destination.Type),
                 effectiveDestinations.Configuration(destination),
@@ -173,18 +233,37 @@ public sealed class BackupEngine(
                 ? RunOutcome.SuccessfulWithWarnings
                 : RunOutcome.Successful;
         }
-        catch (BackupOperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
+        catch (BackupOperationCanceledException exception) when (userCancellationToken.IsCancellationRequested)
         {
             problems.AddRange(exception.CleanupProblems);
             problems.Add(new(BackupProblemSeverity.Error, BackupProblemCategory.Cancelled,
                 CurrentPhase(request.RunId), "Cancel backup", "The backup was cancelled."));
             outcome = RunOutcome.Cancelled;
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (userCancellationToken.IsCancellationRequested)
         {
             problems.Add(new(BackupProblemSeverity.Error, BackupProblemCategory.Cancelled,
                 CurrentPhase(request.RunId), "Cancel backup", "The backup was cancelled."));
             outcome = RunOutcome.Cancelled;
+        }
+        catch (DurableCancellationRequestedException)
+        {
+            problems.Add(new(BackupProblemSeverity.Error, BackupProblemCategory.Cancelled,
+                CurrentPhase(request.RunId), "Cancel backup", "The backup was cancelled."));
+            outcome = RunOutcome.Cancelled;
+        }
+        catch (OperationCanceledException) when (interruptionToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (FinalCommitRecoveryRequiredException)
+        {
+            throw;
+        }
+        catch (InjectedBackupFaultException)
+        {
+            crashInjected = true;
+            throw;
         }
         catch (Exception exception)
         {
@@ -193,7 +272,7 @@ public sealed class BackupEngine(
         }
         finally
         {
-            if (stagingPath is not null && File.Exists(stagingPath))
+            if (!crashInjected && stagingPath is not null && File.Exists(stagingPath))
             {
                 try
                 {
@@ -250,6 +329,9 @@ public sealed class BackupEngine(
         }
 
         bool HasErrors() => problems.Any(problem => problem.Severity == BackupProblemSeverity.Error);
+
+        Task PersistPhaseAsync(RunPhase phase, CancellationToken token) =>
+            runPersistence?.AdvancePhaseAsync(request.RunId, phase, token) ?? Task.CompletedTask;
     }
 
     private void PublishCompression(

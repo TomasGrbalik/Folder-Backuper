@@ -1,7 +1,9 @@
 @page "/jobs"
+@using FolderBackuper.Features.Backups
 @inject JobService JobService
 @inject DestinationService DestinationService
 @inject ScheduleOccurrenceCalculator ScheduleCalculator
+@inject BackupExecutionService BackupExecution
 @inject IDialogService DialogService
 @inject NavigationManager Navigation
 
@@ -117,7 +119,8 @@ else
                         { <MudButton Variant="Variant.Outlined" OnClick="() => RestoreAsync(job)">Restore</MudButton> }
                         else
                         {
-                            <MudButton Variant="Variant.Text" OnClick="() => EditAsync(job.Id)">Edit</MudButton>
+                             <MudButton Variant="Variant.Text" OnClick="() => EditAsync(job.Id)">Edit</MudButton>
+                             <MudButton Color="Color.Primary" Variant="Variant.Outlined" OnClick="() => RunNowAsync(job)">Run now</MudButton>
                             @if (job.Lifecycle == JobLifecycle.Active) { <MudButton Variant="Variant.Outlined" OnClick="() => TransitionAsync(job, JobLifecycle.Paused)">Pause</MudButton> }
                             else { <MudButton Variant="Variant.Outlined" OnClick="() => TransitionAsync(job, JobLifecycle.Active)">Reactivate</MudButton> }
                             <MudButton Color="Color.Error" Variant="Variant.Text" OnClick="() => ArchiveAsync(job)">Archive</MudButton>
@@ -158,6 +161,13 @@ else
         var destinationsTask = DestinationService.ListAsync();
         await Task.WhenAll(jobsTask, destinationsTask);
         jobs = jobsTask.Result; destinations = destinationsTask.Result; loading = false;
+    }
+
+    private async Task RunNowAsync(JobSummary job)
+    {
+        var result = await BackupExecution.RunNowAsync(job.Id);
+        outcome = result.Message;
+        outcomeError = result.RunId is null;
     }
     private void NewJob() { ResetForm(); editing = true; }
     private async Task EditAsync(Guid id)

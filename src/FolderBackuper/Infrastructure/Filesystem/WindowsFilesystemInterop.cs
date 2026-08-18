@@ -107,7 +107,7 @@ public static class WindowsFilesystemInterop
         return handle;
     }
 
-    private static string GetFinalPath(SafeFileHandle handle)
+    public static string GetFinalPath(SafeFileHandle handle)
     {
         var required = GetFinalPathNameByHandleW(handle, null, 0, 0);
         if (required == 0) throw new Win32Exception(Marshal.GetLastWin32Error(), "Could not determine the final path.");
@@ -119,7 +119,7 @@ public static class WindowsFilesystemInterop
             path.StartsWith(@"\\?\", StringComparison.OrdinalIgnoreCase) ? path[4..] : path;
     }
 
-    private static FilesystemIdentity GetIdentity(SafeFileHandle handle)
+    public static FilesystemIdentity GetIdentity(SafeFileHandle handle)
     {
         var info = new FileIdInfo { FileId = new byte[16] };
         if (GetFileInformationByHandleEx(handle, 18, ref info, (uint)Marshal.SizeOf<FileIdInfo>()))
@@ -141,6 +141,17 @@ public static class WindowsFilesystemInterop
         return new(basic.VolumeSerialNumber, (((ulong)basic.FileIndexHigh << 32) | basic.FileIndexLow).ToString("X16"), true);
     }
 
+    public static DateTimeOffset GetCreationTimeUtc(SafeFileHandle handle)
+    {
+        if (!GetFileInformationByHandle(handle, out var basic))
+        {
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "Could not obtain filesystem creation metadata.");
+        }
+
+        var fileTime = ((long)basic.CreationTime.High << 32) | basic.CreationTime.Low;
+        return new DateTimeOffset(DateTime.FromFileTimeUtc(fileTime), TimeSpan.Zero);
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     private struct FileIdInfo { public ulong VolumeSerialNumber; [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)] public byte[] FileId; }
 
@@ -153,10 +164,13 @@ public static class WindowsFilesystemInterop
     [StructLayout(LayoutKind.Sequential)]
     private struct ByHandleFileInformation
     {
-        public uint FileAttributes; public long CreationTime; public long LastAccessTime; public long LastWriteTime;
+        public uint FileAttributes; public NativeFileTime CreationTime; public NativeFileTime LastAccessTime; public NativeFileTime LastWriteTime;
         public uint VolumeSerialNumber; public uint FileSizeHigh; public uint FileSizeLow; public uint NumberOfLinks;
         public uint FileIndexHigh; public uint FileIndexLow;
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeFileTime { public uint Low; public int High; }
 
     [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     private static extern SafeFileHandle CreateFileW(string fileName, uint desiredAccess, uint shareMode, IntPtr securityAttributes, uint creationDisposition, uint flagsAndAttributes, IntPtr templateFile);

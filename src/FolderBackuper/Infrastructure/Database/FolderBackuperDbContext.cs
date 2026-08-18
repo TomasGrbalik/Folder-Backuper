@@ -88,10 +88,13 @@ public sealed class FolderBackuperDbContext(DbContextOptions<FolderBackuperDbCon
         });
         entity.HasKey(x => x.Id);
         entity.Property(x => x.JobName).HasMaxLength(200);
+        entity.Property(x => x.DestinationId).IsRequired();
         entity.Property(x => x.SourcePath).HasMaxLength(2048);
         entity.Property(x => x.DestinationName).HasMaxLength(200);
         entity.Property(x => x.DestinationType).HasConversion<string>().HasMaxLength(20);
         entity.Property(x => x.DestinationRootPath).HasMaxLength(2048);
+        entity.Property(x => x.DestinationUsername).HasMaxLength(256);
+        entity.Property(x => x.DestinationVerificationFingerprint).HasMaxLength(256);
         entity.Property(x => x.DestinationSubfolder).HasMaxLength(2048);
         entity.Property(x => x.ScheduledWeekdays).HasConversion<string>().HasMaxLength(100);
         entity.Property(x => x.RegionalCulture).HasMaxLength(100);
@@ -104,6 +107,17 @@ public sealed class FolderBackuperDbContext(DbContextOptions<FolderBackuperDbCon
         entity.Property(x => x.NotificationErrorSummary).HasMaxLength(2000);
         entity.HasIndex(x => new { x.JobId, x.Outcome });
         entity.HasIndex(x => new { x.QueuedAtUtc, x.Id });
+        entity.Property(x => x.StagingPath).HasMaxLength(2048);
+        entity.Property(x => x.DestinationPartialPath).HasMaxLength(2048);
+        entity.HasIndex(x => new { x.Phase, x.QueuedAtUtc, x.Id })
+            .HasFilter("Outcome IS NULL AND Phase <> 'Planned'");
+        entity.HasIndex(x => new { x.JobId, x.Phase, x.QueuedAtUtc, x.Id })
+            .HasFilter("Outcome IS NULL AND Phase <> 'Planned'");
+        entity.HasIndex(x => new { x.Phase, x.Id })
+            .HasFilter("Outcome IS NULL");
+        entity.HasIndex(x => x.JobId)
+            .IsUnique()
+            .HasFilter("Outcome IS NULL AND Phase <> 'Planned'");
         entity.HasOne(x => x.Job)
             .WithMany()
             .HasForeignKey(x => x.JobId)
@@ -135,6 +149,7 @@ public sealed class FolderBackuperDbContext(DbContextOptions<FolderBackuperDbCon
         entity.HasKey(x => x.Id);
         entity.Property(x => x.Path).HasMaxLength(2048);
         entity.Property(x => x.Phase).HasConversion<string>().HasMaxLength(30);
+        entity.Property(x => x.Severity).HasConversion<string>().HasMaxLength(20);
         entity.Property(x => x.Operation).HasMaxLength(200);
         entity.Property(x => x.ErrorCategory).HasMaxLength(100);
         entity.Property(x => x.NativeErrorCode).HasMaxLength(100);
@@ -158,6 +173,7 @@ public sealed class FolderBackuperDbContext(DbContextOptions<FolderBackuperDbCon
         entity.Property(x => x.State).HasConversion<string>().HasMaxLength(40);
         entity.Property(x => x.FinalizationState).HasConversion<string>().HasMaxLength(30);
         entity.Property(x => x.RetentionState).HasConversion<string>().HasMaxLength(30);
+        entity.HasIndex(x => x.RetentionRequestedByRunId);
         entity.Property(x => x.OwnershipFileSystemIdentity).HasMaxLength(500);
         entity.HasIndex(x => x.RunId).IsUnique();
         entity.HasOne(x => x.Run)
