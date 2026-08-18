@@ -1,0 +1,111 @@
+@inject RunQueryService Runs
+
+<MudDialog>
+    <DialogContent>
+        @if (details is null)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+        }
+        else
+        {
+            <div class="run-details">
+                <div class="run-details-head">
+                    <MudText Typo="Typo.h5">@details.JobName</MudText>
+                    <MudChip T="string" Size="Size.Small" Color="@MonitoringDisplay.StatusColor(details.Outcome, details.Phase)">
+                        @MonitoringDisplay.StatusLabel(details.Outcome, details.Phase)
+                    </MudChip>
+                    <MudChip T="string" Size="Size.Small" Color="Color.Default">@MonitoringDisplay.TriggerLabel(details.Trigger)</MudChip>
+                </div>
+
+                <dl class="run-details-facts">
+                    <div><dt>Source</dt><dd>@details.SourcePath</dd></div>
+                    <div><dt>Destination</dt><dd>@details.DestinationName (@details.DestinationRootPath\@details.DestinationSubfolder)</dd></div>
+                    <div><dt>Scheduled</dt><dd>@DisplayFormat.LocalDateTime(details.DueAtUtc)</dd></div>
+                    <div><dt>Started</dt><dd>@DisplayFormat.LocalDateTime(details.StartedAtUtc)</dd></div>
+                    <div><dt>Completed</dt><dd>@DisplayFormat.LocalDateTime(details.CompletedAtUtc)</dd></div>
+                    <div><dt>Duration</dt><dd>@DisplayFormat.Duration(details.Duration)</dd></div>
+                    <div><dt>Phase reached</dt><dd>@MonitoringDisplay.PhaseLabel(details.Phase)</dd></div>
+                    <div><dt>Files / folders</dt><dd>@details.FileCount.ToString("N0") / @details.DirectoryCount.ToString("N0")</dd></div>
+                    <div><dt>Source size</dt><dd>@DisplayFormat.Bytes(details.SourceBytes)</dd></div>
+                    <div><dt>Archive size</dt><dd>@DisplayFormat.Bytes(details.ArchiveBytes)</dd></div>
+                    <div><dt>Retention</dt><dd>keep @details.RetentionCount</dd></div>
+                    <div><dt>Time zone</dt><dd>@details.TimeZoneId</dd></div>
+                </dl>
+
+                @if (details.ArchiveFinalFileName is not null)
+                {
+                    <MudPaper Class="run-archive" Elevation="0">
+                        <MudText Typo="Typo.subtitle2">Archive</MudText>
+                        <MudText Typo="Typo.body2" Class="archive-name">@details.ArchiveFinalFileName</MudText>
+                        <MudText Typo="Typo.caption">@details.ArchiveEffectivePath</MudText>
+                        <div>
+                            <MudChip T="string" Size="Size.Small" Color="@MonitoringDisplay.ArtifactColor(details.ArtifactState)">@MonitoringDisplay.ArtifactLabel(details.ArtifactState)</MudChip>
+                            <span>@DisplayFormat.Bytes(details.ArchiveSize, "—")</span>
+                        </div>
+                    </MudPaper>
+                }
+
+                <MudText Typo="Typo.body2">
+                    Notification:
+                    <MudChip T="string" Size="Size.Small" Color="@MonitoringDisplay.NotificationColor(details.NotificationState)">@MonitoringDisplay.NotificationLabel(details.NotificationState)</MudChip>
+                    @if (details.NotificationErrorSummary is not null) { <span>@details.NotificationErrorSummary</span> }
+                </MudText>
+
+                @if (details.ErrorSummary is not null)
+                {
+                    <MudAlert Severity="Severity.Error" Dense="true">@details.ErrorSummary</MudAlert>
+                }
+
+                <MudText Typo="Typo.h6" Class="mt-3">Problems (@details.ProblemCount)</MudText>
+                @if (details.ProblemCount == 0)
+                {
+                    <MudText Typo="Typo.body2">No problems were recorded for this run.</MudText>
+                }
+                else
+                {
+                    <MudTable T="RunProblemRow" ServerData="LoadProblemsAsync" @ref="problemTable" Dense="true" Hover="true"
+                              Virtualize="false" RowsPerPage="RunQueryService.DefaultPageSize" Class="problem-table">
+                        <HeaderContent>
+                            <MudTh>Severity</MudTh>
+                            <MudTh>Phase</MudTh>
+                            <MudTh>Operation</MudTh>
+                            <MudTh>Path</MudTh>
+                            <MudTh>Message</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Severity">
+                                <MudChip T="string" Size="Size.Small" Color="@(context.Severity == BackupProblemSeverity.Error ? Color.Error : Color.Warning)">@context.Severity</MudChip>
+                            </MudTd>
+                            <MudTd DataLabel="Phase">@MonitoringDisplay.PhaseLabel(context.Phase)</MudTd>
+                            <MudTd DataLabel="Operation">@context.Operation</MudTd>
+                            <MudTd DataLabel="Path" Class="problem-path">@context.Path</MudTd>
+                            <MudTd DataLabel="Message">@context.UserMessage</MudTd>
+                        </RowTemplate>
+                        <PagerContent>
+                            <MudTablePager PageSizeOptions="new[] { 50, 100, 200 }" />
+                        </PagerContent>
+                    </MudTable>
+                }
+            </div>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => Dialog.Close()">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = null!;
+    [Parameter, EditorRequired] public Guid RunId { get; set; }
+
+    private RunDetailsView? details;
+    private MudTable<RunProblemRow>? problemTable;
+
+    protected override async Task OnInitializedAsync() => details = await Runs.GetRunDetailsAsync(RunId);
+
+    private async Task<TableData<RunProblemRow>> LoadProblemsAsync(TableState state, CancellationToken cancellationToken)
+    {
+        var page = await Runs.ListRunProblemsAsync(RunId, state.Page, state.PageSize, cancellationToken);
+        return new TableData<RunProblemRow> { Items = page.Rows, TotalItems = page.TotalCount };
+    }
+}

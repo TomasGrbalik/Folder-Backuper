@@ -2,6 +2,7 @@ using FolderBackuper.Components;
 using FolderBackuper.Features.Backups;
 using FolderBackuper.Features.Destinations;
 using FolderBackuper.Features.Jobs;
+using FolderBackuper.Features.Monitoring;
 using FolderBackuper.Infrastructure.Database;
 using FolderBackuper.Infrastructure.Filesystem;
 using FolderBackuper.Infrastructure.Security;
@@ -77,6 +78,7 @@ try
     builder.Services.AddSingleton<IMachineTimeZoneProvider, MachineTimeZoneProvider>();
     builder.Services.AddSingleton<BackupScheduler>();
     builder.Services.AddSingleton<CalendarOccurrenceService>();
+    builder.Services.AddMonitoringServices();
     builder.Services.AddHostedService<BackupSchedulerWorker>();
     builder.Services.AddScoped<DestinationService>();
     builder.Services.AddFolderBackuperDatabase(paths);

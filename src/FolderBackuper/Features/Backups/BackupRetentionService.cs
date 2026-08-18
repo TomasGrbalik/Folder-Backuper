@@ -28,6 +28,78 @@ public sealed class BackupRetentionService(
         return warnings;
     }
 
+    /// <summary>
+    /// Non-destructively verifies each currently retained artifact for a job on explicit UI request. Present,
+    /// owned archives are kept; archives that are gone or no longer prove ownership are marked found-missing.
+    /// When the destination is unavailable the last-confirmed totals and timestamp are preserved untouched.
+    /// This never deletes files and never mutates unmanaged or historical artifacts.
+    /// </summary>
+    public async Task<InventoryReconcileResult> ReconcileInventoryAsync(
+        Guid jobId,
+        CancellationToken cancellationToken = default)
+    {
+        List<BackupArtifact> retained;
+        await using (var context = await contextFactory.CreateDbContextAsync(cancellationToken))
+        {
+            retained = await context.BackupArtifacts.AsNoTracking().Include(item => item.Run)
+                .Where(item => item.Run!.JobId == jobId && item.State == ArtifactState.Retained &&
+                    item.RetentionState == RetentionOperationState.None)
+                .ToListAsync(cancellationToken);
+        }
+
+        if (retained.Count == 0)
+        {
+            await RefreshAggregatesAsync(jobId, cancellationToken);
+            return new InventoryReconcileResult(true, 0, 0);
+        }
+
+        var installationId = await installationIdentity.GetInstallationIdAsync(cancellationToken);
+        var missing = new List<Guid>();
+        foreach (var artifact in retained)
+        {
+            var path = Path.Combine(artifact.EffectivePath, artifact.FinalFileName);
+            OwnedArchiveResult result;
+            try
+            {
+                var destination = await DestinationSnapshotAsync(artifact.Run!, cancellationToken);
+                if (destination is null)
+                {
+                    return new InventoryReconcileResult(false, 0, 0);
+                }
+
+                result = await effectiveDestinations.Adapter(destination.Type).ExecuteAsync(
+                    effectiveDestinations.Configuration(destination),
+                    () => Task.FromResult(ownershipVerifier.Inspect(path, artifact, installationId, artifact.EffectivePath)));
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or
+                System.ComponentModel.Win32Exception or ArgumentException or NotSupportedException)
+            {
+                return new InventoryReconcileResult(false, 0, 0);
+            }
+
+            switch (result)
+            {
+                case OwnedArchiveResult.Owned:
+                    break;
+                case OwnedArchiveResult.Missing:
+                case OwnedArchiveResult.OwnershipMismatch:
+                    missing.Add(artifact.Id);
+                    break;
+                default:
+                    // Access could not be established; treat the destination as unavailable and preserve totals.
+                    return new InventoryReconcileResult(false, 0, 0);
+            }
+        }
+
+        foreach (var artifactId in missing)
+        {
+            await ChangeArtifactAsync(artifactId, artifact => artifact.MarkMissing(timeProvider.GetUtcNow()), cancellationToken);
+        }
+
+        await RefreshAggregatesAsync(jobId, cancellationToken);
+        return new InventoryReconcileResult(true, retained.Count, missing.Count);
+    }
+
     public async Task<IReadOnlyList<BackupProblem>> RecoverPendingAsync(CancellationToken cancellationToken = default)
     {
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
@@ -193,6 +265,8 @@ public sealed class BackupRetentionService(
             return true;
         }, cancellationToken);
     }
+
+    public sealed record InventoryReconcileResult(bool DestinationReachable, int Checked, int MarkedMissing);
 
     private static BackupProblem Warning(string path, string operation, string message) =>
         new(BackupProblemSeverity.Warning, BackupProblemCategory.CleanupFailed, RunPhase.Finalizing,

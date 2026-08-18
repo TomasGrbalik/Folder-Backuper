@@ -1,0 +1,137 @@
+@implements IDisposable
+@inject BackupProgressRegistry ProgressRegistry
+@inject BackupExecutionService BackupExecution
+
+<MudPaper Class="active-run-card" Elevation="0">
+    <div class="active-run-head">
+        <div>
+            <MudText Typo="Typo.overline">Active backup</MudText>
+            <MudText Typo="Typo.h5">@Run.JobName</MudText>
+            <MudText Typo="Typo.body2" Class="active-run-source">@Run.SourcePath</MudText>
+        </div>
+        <div class="active-run-status">
+            <MudChip T="string" Size="Size.Small" Color="Color.Info">@PhaseLabel</MudChip>
+            <MudChip T="string" Size="Size.Small" Color="Color.Default">@MonitoringDisplay.TriggerLabel(Run.Trigger)</MudChip>
+        </div>
+    </div>
+
+    @if (Indeterminate)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="active-run-bar" />
+        <MudText Typo="Typo.caption">@(CurrentPhase == RunPhase.Scanning ? "Scanning source to establish total work…" : "Preparing…")</MudText>
+    }
+    else
+    {
+        <MudProgressLinear Value="@ProgressPercent" Color="Color.Primary" Class="active-run-bar" />
+        <MudText Typo="Typo.caption">@ProgressPercent.ToString("0")% complete</MudText>
+    }
+
+    @if (snapshot is { } s)
+    {
+        @if (!string.IsNullOrEmpty(s.CurrentRelativePath))
+        {
+            <MudText Typo="Typo.body2" Class="active-run-file">@s.CurrentRelativePath</MudText>
+        }
+        <div class="preview-metrics">
+            <span><strong>@s.FilesProcessed.ToString("N0")</strong> files processed</span>
+            <span><strong>@DisplayFormat.Bytes(s.BytesProcessed)</strong> source read</span>
+            <span><strong>@DisplayFormat.Bytes(s.ArchiveBytes)</strong> archive size</span>
+            @if (CurrentPhase == RunPhase.Compressing)
+            {
+                <span><strong>@DisplayFormat.Rate(s.ThroughputBytesPerSecond)</strong> compression</span>
+            }
+            @if (CurrentPhase == RunPhase.Transferring)
+            {
+                <span><strong>@DisplayFormat.Bytes(s.TransferBytes)</strong> @TransferVerb.ToLowerInvariant()</span>
+                <span><strong>@DisplayFormat.Rate(s.ThroughputBytesPerSecond)</strong> @TransferVerb.ToLowerInvariant()</span>
+            }
+            <span><strong>@DisplayFormat.Duration(s.Elapsed)</strong> elapsed</span>
+            @if (s.EstimatedRemaining is { } remaining)
+            {
+                <span><strong>@DisplayFormat.Duration(remaining)</strong> remaining</span>
+            }
+        </div>
+    }
+    else
+    {
+        <MudText Typo="Typo.caption">Live progress is unavailable; showing durable phase from the last saved state.</MudText>
+    }
+
+    @if (message is not null)
+    {
+        <MudAlert Severity="Severity.Info" Dense="true" Class="mt-2">@message</MudAlert>
+    }
+
+    <div class="active-run-actions">
+        <MudButton Color="Color.Error" Variant="Variant.Outlined" Disabled="@(cancelling || !CancellationAvailable)"
+                   StartIcon="@Icons.Material.Filled.Cancel" OnClick="CancelAsync">
+            @(cancelling ? "Cancelling…" : "Cancel")
+        </MudButton>
+    </div>
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired] public ActiveRunView Run { get; set; } = null!;
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private IDisposable? subscription;
+    private Guid subscribedRunId;
+    private BackupProgressSnapshot? snapshot;
+    private bool cancelling;
+    private string? message;
+
+    protected override void OnParametersSet()
+    {
+        if (Run.RunId == subscribedRunId)
+        {
+            return;
+        }
+
+        subscription?.Dispose();
+        subscribedRunId = Run.RunId;
+        message = null;
+        snapshot = ProgressRegistry.Current(Run.RunId);
+        subscription = ProgressRegistry.Subscribe(Run.RunId, OnProgress);
+    }
+
+    private void OnProgress(BackupProgressSnapshot value) =>
+        InvokeAsync(() =>
+        {
+            snapshot = value;
+            StateHasChanged();
+        });
+
+    private RunPhase CurrentPhase => snapshot?.Phase ?? Run.Phase;
+    private string PhaseLabel => MonitoringDisplay.PhaseLabel(CurrentPhase);
+    private string TransferVerb => MonitoringDisplay.TransferVerb(Run.DestinationType);
+    private bool CancellationAvailable => (snapshot?.CancellationAvailable ?? true) && !Run.CancellationRequested;
+
+    private bool Indeterminate => snapshot is not { } s ||
+        CurrentPhase is RunPhase.Scanning or RunPhase.Queued or RunPhase.Planned ||
+        (CurrentPhase == RunPhase.Compressing && s.TotalBytes <= 0) ||
+        (CurrentPhase == RunPhase.Transferring && s.ArchiveBytes <= 0);
+
+    private double ProgressPercent => snapshot is { } s
+        ? CurrentPhase switch
+        {
+            RunPhase.Compressing when s.TotalBytes > 0 => Math.Clamp(100.0 * s.BytesProcessed / s.TotalBytes, 0, 100),
+            RunPhase.Transferring when s.ArchiveBytes > 0 => Math.Clamp(100.0 * s.TransferBytes / s.ArchiveBytes, 0, 100),
+            RunPhase.Finalizing => 100,
+            _ => 0
+        }
+        : 0;
+
+    private async Task CancelAsync()
+    {
+        cancelling = true;
+        var outcome = await BackupExecution.CancelAsync(Run.RunId);
+        message = outcome.Message;
+        cancelling = false;
+        if (OnChanged.HasDelegate)
+        {
+            await OnChanged.InvokeAsync();
+        }
+    }
+
+    public void Dispose() => subscription?.Dispose();
+}
