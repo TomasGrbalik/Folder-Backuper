@@ -93,6 +93,56 @@ public sealed class RunPersistenceService(
         await ChangeRunAsync(runId, run => run.AdvanceTo(phase, timeProvider.GetUtcNow()), cancellationToken);
     }
 
+    public async Task RecordStagingPathAsync(Guid runId, string stagingPath, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(stagingPath);
+        await ChangeRunAsync(runId, run => run.StagingPath = stagingPath, cancellationToken);
+    }
+
+    public async Task RecordDestinationPartialPathAsync(
+        Guid runId,
+        string partialPath,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(partialPath);
+        await ChangeRunAsync(runId, run => run.DestinationPartialPath = partialPath, cancellationToken);
+    }
+
+    public async Task RecordExecutionResultAsync(
+        BackupEngineResult result,
+        CancellationToken cancellationToken = default)
+    {
+        await mutationGate.ExecuteRunStateChangeAsync(async ct =>
+        {
+            await using var context = await contextFactory.CreateDbContextAsync(ct);
+            var run = await context.Runs.SingleAsync(item => item.Id == result.RunId, ct);
+            run.FileCount = result.FileCount;
+            run.DirectoryCount = result.DirectoryCount;
+            run.SourceBytes = result.SourceBytes;
+            run.ArchiveBytes = result.ArchiveBytes;
+            run.CompressionDuration = result.CompressionDuration;
+            run.TransferDuration = result.TransferDuration;
+            run.ErrorSummary = result.Problems.FirstOrDefault(problem => problem.Severity == BackupProblemSeverity.Error)?.Message;
+            foreach (var problem in result.Problems)
+            {
+                context.RunProblems.Add(new RunProblem
+                {
+                    RunId = run.Id,
+                    Path = problem.Path,
+                    Phase = problem.Phase,
+                    Operation = problem.Operation,
+                    ErrorCategory = problem.Category.ToString(),
+                    NativeErrorCode = problem.NativeErrorCode?.ToString(),
+                    UserMessage = problem.Message,
+                    DiagnosticDetail = null
+                });
+            }
+
+            await context.SaveChangesAsync(ct);
+            return true;
+        }, cancellationToken);
+    }
+
     public async Task CompleteAsync(
         Guid runId,
         RunOutcome outcome,

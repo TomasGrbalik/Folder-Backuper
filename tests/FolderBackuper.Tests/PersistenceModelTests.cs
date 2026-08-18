@@ -222,6 +222,39 @@ public sealed class PersistenceModelTests
     }
 
     [Fact]
+    public async Task ExecutionPersistence_RecordsCleanupPathsMetricsAndProblems()
+    {
+        await using var database = new TemporaryDatabase();
+        await database.Initializer.InitializeAsync();
+        var destination = DatabaseInitializationTests.Destination("Primary");
+        var job = DatabaseInitializationTests.Job(destination.Id, "Documents");
+        await using (var context = await database.ContextFactory.CreateDbContextAsync())
+        {
+            context.AddRange(destination, job);
+            await context.SaveChangesAsync();
+        }
+
+        var queued = await database.RunPersistence.EnqueueManualAsync(job.Id);
+        var runId = queued.RunId!.Value;
+        await database.RunPersistence.RecordStagingPathAsync(runId, @"C:\staging\run.zip.tmp");
+        await database.RunPersistence.RecordDestinationPartialPathAsync(runId, @"D:\backup\run.zip.partial");
+        await database.RunPersistence.RecordExecutionResultAsync(new(
+            runId, RunOutcome.Failed, null, null, 2, 1, 12, 10,
+            TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(3),
+            [new(BackupProblemSeverity.Error, BackupProblemCategory.InvalidArchive, RunPhase.Finalizing,
+                "Validate archive", "The archive is invalid.", @"D:\backup\run.zip.partial")]));
+
+        await using var inspection = await database.ContextFactory.CreateDbContextAsync();
+        var stored = await inspection.Runs.Include(item => item.Problems).SingleAsync();
+        Assert.Equal(@"C:\staging\run.zip.tmp", stored.StagingPath);
+        Assert.Equal(@"D:\backup\run.zip.partial", stored.DestinationPartialPath);
+        Assert.Equal(2, stored.FileCount);
+        Assert.Equal(10, stored.ArchiveBytes);
+        var problem = Assert.Single(stored.Problems);
+        Assert.Equal("InvalidArchive", problem.ErrorCategory);
+    }
+
+    [Fact]
     public async Task OwnershipKey_IsUniqueForActiveAndPausedJobsButReusableAfterArchive()
     {
         await using var database = new TemporaryDatabase();
