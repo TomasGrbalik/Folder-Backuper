@@ -31,11 +31,12 @@ public sealed class DashboardQueryService(
 
         // Compact terminal-run projections for the relevant jobs, newest first; reduced in memory to the
         // latest run and latest successful run per job. Small column set keeps this cheap for a dashboard load.
-        var terminalRuns = await context.Runs.AsNoTracking()
-            .Where(x => jobIds.Contains(x.JobId) && x.Outcome != null)
-            .OrderByDescending(x => x.CompletedAtUtc)
-            .Select(x => new TerminalRunProjection(x.JobId, x.CompletedAtUtc, x.Outcome!.Value, x.NotificationState))
-            .ToListAsync(cancellationToken);
+        var terminalRuns = (await context.Runs.AsNoTracking()
+                .Where(x => jobIds.Contains(x.JobId) && x.Outcome != null)
+                .Select(x => new TerminalRunProjection(x.JobId, x.CompletedAtUtc, x.Outcome!.Value, x.NotificationState))
+                .ToListAsync(cancellationToken))
+            .OrderByDescending(x => x.CompletedAtUtc ?? DateTimeOffset.MinValue)
+            .ToList();
 
         var lastRun = new Dictionary<Guid, TerminalRunProjection>();
         var lastSuccess = new Dictionary<Guid, DateTimeOffset?>();
