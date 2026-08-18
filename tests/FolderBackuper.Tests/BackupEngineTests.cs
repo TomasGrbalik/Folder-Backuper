@@ -159,6 +159,46 @@ public sealed class BackupEngineTests : IAsyncLifetime
         Assert.True(File.Exists(result.FinalPath));
     }
 
+    [Fact]
+    public async Task FaultAfterStagingIntent_PersistsPathBeforeCreatingFile()
+    {
+        var queued = await database.RunPersistence.EnqueueManualAsync(job.Id);
+        var run = await database.RunPersistence.ClaimNextAsync();
+        Assert.Equal(queued.RunId, run!.Id);
+        await using (var mutation = await database.ContextFactory.CreateDbContextAsync())
+        {
+            var currentJob = await mutation.Jobs.SingleAsync();
+            var currentDestination = await mutation.Destinations.SingleAsync();
+            currentJob.SourcePath = Path.Combine(database.Paths.Root, "mutated-source");
+            currentDestination.RootPath = Path.Combine(database.Paths.Root, "mutated-destination");
+            await mutation.SaveChangesAsync();
+        }
+        var injector = new ThrowingFaultInjector(BackupFaultPoint.AfterStagingIntentPersisted);
+
+        await Assert.ThrowsAsync<InjectedBackupFaultException>(() =>
+            DurableEngine(new BackupProgressRegistry(minimumInterval: TimeSpan.Zero), injector).ExecuteAsync(
+                new(run.Id, job.Id, DateTimeOffset.UtcNow)));
+
+        await using var context = await database.ContextFactory.CreateDbContextAsync();
+        var stored = await context.Runs.AsNoTracking().SingleAsync();
+        Assert.NotNull(stored.StagingPath);
+        Assert.False(File.Exists(stored.StagingPath));
+        Assert.Null(stored.Outcome);
+    }
+
+    [Fact]
+    public async Task ServiceInterruption_IsNotReportedAsUserCancellation()
+    {
+        using var interruption = new CancellationTokenSource();
+        interruption.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            Engine(new BackupProgressRegistry(minimumInterval: TimeSpan.Zero)).ExecuteAsync(
+                new(Guid.NewGuid(), job.Id, DateTimeOffset.UtcNow),
+                userCancellationToken: CancellationToken.None,
+                interruptionToken: interruption.Token));
+    }
+
     private BackupEngine Engine(BackupProgressRegistry progress)
     {
         var effectiveDestinations = new EffectiveDestinationService([adapter], new NoOpSecretProtector());
@@ -178,6 +218,27 @@ public sealed class BackupEngineTests : IAsyncLifetime
             timeProvider);
     }
 
+    private BackupEngine DurableEngine(BackupProgressRegistry progress, IBackupFaultInjector injector)
+    {
+        var effectiveDestinations = new EffectiveDestinationService([adapter], new NoOpSecretProtector());
+        var zip = new ZipArchiveService();
+        return new(
+            database.ContextFactory,
+            new InstallationIdentityService(database.ContextFactory, timeProvider),
+            new BackupPreflightService(database.Paths, effectiveDestinations,
+                new OwnershipMarkerService(), new NeverLocalDetector()),
+            new SourceManifestBuilder(),
+            zip,
+            new DestinationArchiveService(zip, new DurableBackupCommitCoordinator(database.RunPersistence), injector),
+            effectiveDestinations,
+            new DestinationAccessRecorder(database.ContextFactory, timeProvider),
+            progress,
+            database.Paths,
+            timeProvider,
+            database.RunPersistence,
+            injector);
+    }
+
     public async Task DisposeAsync() => await database.DisposeAsync();
 
     private sealed class NoOpSecretProtector : ISecretProtector
@@ -189,5 +250,14 @@ public sealed class BackupEngineTests : IAsyncLifetime
     private sealed class NeverLocalDetector : ILocalHostUncDetector
     {
         public bool IsHostedLocally(string uncPath) => false;
+    }
+
+    private sealed class ThrowingFaultInjector(BackupFaultPoint target) : IBackupFaultInjector
+    {
+        public ValueTask HitAsync(BackupFaultPoint point, Guid runId, CancellationToken cancellationToken)
+        {
+            if (point == target) throw new InjectedBackupFaultException(point);
+            return ValueTask.CompletedTask;
+        }
     }
 }

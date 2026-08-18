@@ -142,6 +142,45 @@ public sealed class DatabaseInitializationTests
         await MigrationBackupService.ValidateAsync(backup);
     }
 
+    [Fact]
+    public async Task DurableExecutionMigration_ReconcilesLegacyDuplicateActiveRuns()
+    {
+        await using var database = new TemporaryDatabase();
+        await using var context = await database.ContextFactory.CreateDbContextAsync();
+        await context.Database.OpenConnectionAsync();
+        await context.Database.MigrateAsync("20260817180942_AddScheduleEffectiveFromUtc");
+        await context.Database.ExecuteSqlRawAsync("PRAGMA foreign_keys = OFF;");
+        var jobId = Guid.NewGuid();
+        var first = Guid.NewGuid();
+        var second = Guid.NewGuid();
+        const string insert = """
+            INSERT INTO Runs (
+                Id, JobId, JobName, SourcePath, DestinationName, DestinationType,
+                DestinationRootPath, DestinationSubfolder, ScheduledWeekdays, ScheduledTime,
+                RetentionCount, RegionalCulture, TimeZoneId, Trigger, QueuedAtUtc, Phase,
+                FileCount, DirectoryCount, SourceBytes, ArchiveBytes)
+            VALUES ({0}, {1}, 'Legacy', 'C:\Source', 'Legacy', 'Local', 'D:\Backup',
+                'Legacy', 'Monday', '01:00:00', 1, 'en-US', 'UTC', 'Manual',
+                '2026-08-18 01:00:00+00:00', 'Queued', 0, 0, 0, 0);
+            """;
+        await context.Database.ExecuteSqlRawAsync(insert, first, jobId);
+        await context.Database.ExecuteSqlRawAsync(insert, second, jobId);
+        await context.Database.ExecuteSqlInterpolatedAsync($"""
+            UPDATE Runs SET Phase = 'Finalizing', StartedAtUtc = QueuedAtUtc,
+                FinalCommitStartedAtUtc = QueuedAtUtc, FinalCommittedAtUtc = QueuedAtUtc
+            WHERE Id = {second};
+            """);
+
+        await context.Database.MigrateAsync();
+
+        Assert.Equal(1L, await ScalarAsync(context,
+            "SELECT COUNT(*) FROM Runs WHERE Outcome IS NULL AND Phase <> 'Planned';"));
+        Assert.Equal(1L, await ScalarAsync(context,
+            "SELECT COUNT(*) FROM Runs WHERE Outcome = 'Failed' AND ErrorSummary LIKE 'Duplicate active work%';"));
+        Assert.Equal(second, Guid.Parse((string)(await ScalarAsync(context,
+            "SELECT Id FROM Runs WHERE Outcome IS NULL AND Phase <> 'Planned';"))!));
+    }
+
     private static async Task<object?> ScalarAsync(FolderBackuperDbContext context, string sql)
     {
         await using var command = context.Database.GetDbConnection().CreateCommand();

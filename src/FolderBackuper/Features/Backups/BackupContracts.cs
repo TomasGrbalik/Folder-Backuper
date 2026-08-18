@@ -26,6 +26,7 @@ public sealed record BackupCommitIntent(
     string FinalFileName,
     long ExpectedLength,
     DateTimeOffset CreatedAtUtc,
+    DateTimeOffset OwnershipCreatedAtUtc,
     string? FileSystemIdentity);
 
 public enum BackupProblemCategory

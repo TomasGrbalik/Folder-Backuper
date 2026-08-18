@@ -43,6 +43,7 @@ public sealed class BackupArtifact
     public string? OwnershipFileSystemIdentity { get; init; }
     public FinalizationOperationState FinalizationState { get; private set; } = FinalizationOperationState.Pending;
     public RetentionOperationState RetentionState { get; private set; }
+    public Guid? RetentionRequestedByRunId { get; private set; }
     public DateTimeOffset StateChangedAtUtc { get; private set; } = DateTimeOffset.UtcNow;
 
     public void MarkRetained(DateTimeOffset now)
@@ -63,6 +64,9 @@ public sealed class BackupArtifact
     }
 
     public void BeginRetentionDeletion(DateTimeOffset now)
+        => BeginRetentionDeletion(null, now);
+
+    public void BeginRetentionDeletion(Guid? requestingRunId, DateTimeOffset now)
     {
         RequireState(ArtifactState.Retained);
         if (RetentionState != RetentionOperationState.None)
@@ -71,6 +75,7 @@ public sealed class BackupArtifact
         }
 
         RetentionState = RetentionOperationState.PendingDeletion;
+        RetentionRequestedByRunId = requestingRunId;
         StateChangedAtUtc = now;
     }
 

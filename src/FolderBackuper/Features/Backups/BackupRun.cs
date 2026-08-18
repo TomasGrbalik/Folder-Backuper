@@ -40,6 +40,8 @@ public sealed class BackupRun
     public required string DestinationName { get; init; }
     public DestinationType DestinationType { get; init; }
     public required string DestinationRootPath { get; init; }
+    public string? DestinationUsername { get; init; }
+    public string? DestinationVerificationFingerprint { get; init; }
     public required string DestinationSubfolder { get; init; }
     public ScheduledWeekdays ScheduledWeekdays { get; init; }
     public TimeOnly ScheduledTime { get; init; }
@@ -190,6 +192,7 @@ public sealed class RunProblem
     public BackupRun? Run { get; set; }
     public string? Path { get; init; }
     public RunPhase Phase { get; init; }
+    public BackupProblemSeverity Severity { get; init; } = BackupProblemSeverity.Error;
     public required string Operation { get; init; }
     public required string ErrorCategory { get; init; }
     public string? NativeErrorCode { get; init; }

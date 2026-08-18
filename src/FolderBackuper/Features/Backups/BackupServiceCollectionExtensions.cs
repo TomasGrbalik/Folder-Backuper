@@ -5,6 +5,7 @@ public static class BackupServiceCollectionExtensions
     public static IServiceCollection AddBackupEngine(this IServiceCollection services)
     {
         services.AddSingleton<BackupProgressRegistry>();
+        services.AddSingleton<IBackupFaultInjector, NoOpBackupFaultInjector>();
         services.AddSingleton<SourceManifestBuilder>();
         services.AddSingleton<BackupPreflightService>();
         services.AddSingleton<ZipArchiveService>();
@@ -12,6 +13,7 @@ public static class BackupServiceCollectionExtensions
         services.AddSingleton<DestinationArchiveService>();
         services.AddSingleton<DestinationAccessRecorder>();
         services.AddSingleton<BackupRetentionService>();
+        services.AddSingleton<BackupArtifactOwnershipVerifier>();
         services.AddSingleton<BackupRecoveryService>();
         services.AddSingleton<BackupEngine>();
         services.AddSingleton<BackupExecutionQueue>();

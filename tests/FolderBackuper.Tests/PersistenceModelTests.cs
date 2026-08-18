@@ -4,6 +4,7 @@ using FolderBackuper.Features.Jobs;
 using FolderBackuper.Features.Notifications;
 using FolderBackuper.Features.Settings;
 using FolderBackuper.Infrastructure.Database;
+using FolderBackuper.Infrastructure.Filesystem;
 using Microsoft.EntityFrameworkCore;
 
 namespace FolderBackuper.Tests;
@@ -275,7 +276,7 @@ public sealed class PersistenceModelTests
         await database.RunPersistence.AdvancePhaseAsync(runId, RunPhase.Transferring);
         var coordinator = new DurableBackupCommitCoordinator(database.RunPersistence);
         var intent = new BackupCommitIntent(runId, @"D:\backup\run.zip.partial", @"D:\backup",
-            "run.zip", 42, clock.GetUtcNow(), "volume:file");
+            "run.zip", 42, clock.GetUtcNow(), clock.GetUtcNow(), "volume:file");
 
         await coordinator.BeginCommitAsync(intent, CancellationToken.None);
 
@@ -312,12 +313,24 @@ public sealed class PersistenceModelTests
         var queued = await database.RunPersistence.EnqueueManualAsync(job.Id);
         var runId = queued.RunId!.Value;
         await database.RunPersistence.ClaimNextAsync();
+        var identity = new InstallationIdentityService(database.ContextFactory, TimeProvider.System);
+        var installationId = await identity.GetInstallationIdAsync();
         var staging = Path.Combine(database.Paths.Staging, "interrupted.zip.tmp");
-        await File.WriteAllBytesAsync(staging, [1, 2, 3]);
+        await using (var stream = File.Create(staging))
+        using (var archive = new System.IO.Compression.ZipArchive(stream, System.IO.Compression.ZipArchiveMode.Create))
+        {
+            archive.Comment = new ArchiveOwnership(installationId, runId).Format();
+        }
         await database.RunPersistence.RecordStagingPathAsync(runId, staging);
         var unknown = Path.Combine(database.Paths.Staging, "unknown.zip.tmp");
         await File.WriteAllBytesAsync(unknown, [4, 5, 6]);
-        var recovery = new BackupRecoveryService(database.ContextFactory, database.RunPersistence, null!);
+        var effective = new EffectiveDestinationService([new LocalDestinationAdapter()], new TestSecretProtector());
+        var verifier = new BackupArtifactOwnershipVerifier();
+        var retention = new BackupRetentionService(database.ContextFactory, database.MutationGate,
+            database.RunPersistence, identity,
+            effective, new OwnershipMarkerService(), verifier, TimeProvider.System);
+        var recovery = new BackupRecoveryService(database.ContextFactory, database.RunPersistence, retention,
+            identity, effective, new OwnershipMarkerService(), verifier, database.Paths);
 
         await recovery.RecoverAsync();
 
@@ -471,6 +484,8 @@ public sealed class PersistenceModelTests
             DestinationName = destination.Name,
             DestinationType = destination.Type,
             DestinationRootPath = destination.RootPath,
+            DestinationUsername = destination.SmbUsername,
+            DestinationVerificationFingerprint = destination.VerificationFingerprint,
             DestinationSubfolder = job.DestinationSubfolder,
             ScheduledWeekdays = job.Weekdays,
             ScheduledTime = job.ScheduledTime,
@@ -505,5 +520,11 @@ public sealed class PersistenceModelTests
         {
             return false;
         }
+    }
+
+    private sealed class TestSecretProtector : FolderBackuper.Infrastructure.Security.ISecretProtector
+    {
+        public byte[] Protect(string plaintext) => System.Text.Encoding.UTF8.GetBytes(plaintext);
+        public string Unprotect(byte[] protectedData) => System.Text.Encoding.UTF8.GetString(protectedData);
     }
 }

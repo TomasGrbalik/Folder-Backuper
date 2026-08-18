@@ -39,6 +39,9 @@ public sealed class JobsPageTests
         context.Services.AddSingleton(database.RunPersistence);
         context.Services.AddSingleton<BackupExecutionQueue>();
         context.Services.AddSingleton<BackupCancellationRegistry>();
+        context.Services.AddSingleton(new EffectiveDestinationService([new LocalDestinationAdapter()], new PassthroughProtector()));
+        context.Services.AddSingleton(new InstallationIdentityService(database.ContextFactory, TimeProvider.System));
+        context.Services.AddSingleton<OwnershipMarkerService>();
         context.Services.AddSingleton<BackupExecutionService>();
         var component = context.Render<Jobs>();
 

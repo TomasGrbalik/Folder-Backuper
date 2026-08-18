@@ -34,6 +34,30 @@ namespace FolderBackuper.Infrastructure.Database.Migrations
 
             migrationBuilder.Sql("UPDATE Runs SET DestinationId = (SELECT DestinationId FROM Jobs WHERE Jobs.Id = Runs.JobId) WHERE EXISTS (SELECT 1 FROM Jobs WHERE Jobs.Id = Runs.JobId);");
 
+            migrationBuilder.Sql("""
+                WITH ranked AS (
+                    SELECT Id,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY JobId
+                               ORDER BY CASE
+                                   WHEN FinalCommittedAtUtc IS NOT NULL THEN 0
+                                   WHEN FinalCommitStartedAtUtc IS NOT NULL THEN 1
+                                   ELSE 2 END,
+                                   CASE Phase
+                                   WHEN 'Finalizing' THEN 0 WHEN 'Transferring' THEN 1
+                                   WHEN 'Compressing' THEN 2 WHEN 'Scanning' THEN 3
+                                   WHEN 'Queued' THEN 4 ELSE 5 END,
+                                   COALESCE(StartedAtUtc, QueuedAtUtc), Id) AS rn
+                    FROM Runs
+                    WHERE Outcome IS NULL AND Phase <> 'Planned'
+                )
+                UPDATE Runs
+                SET Outcome = 'Failed',
+                    CompletedAtUtc = COALESCE(StartedAtUtc, QueuedAtUtc),
+                    ErrorSummary = 'Duplicate active work was reconciled during the durable execution upgrade.'
+                WHERE Id IN (SELECT Id FROM ranked WHERE rn > 1);
+                """);
+
             migrationBuilder.CreateIndex(
                 name: "IX_Runs_JobId",
                 table: "Runs",

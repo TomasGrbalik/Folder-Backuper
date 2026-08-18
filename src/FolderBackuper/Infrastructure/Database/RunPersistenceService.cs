@@ -12,6 +12,7 @@ public sealed class RunPersistenceService(
 {
     public async Task<ManualRunEnqueueOutcome> EnqueueManualAsync(
         Guid jobId,
+        Func<BackupJob, Destination, CancellationToken, Task<string?>>? validate = null,
         CancellationToken cancellationToken = default)
     {
         return await mutationGate.ExecuteRunStateChangeAsync<ManualRunEnqueueOutcome>(async ct =>
@@ -24,6 +25,11 @@ public sealed class RunPersistenceService(
             {
                 return new(ManualRunEnqueueStatus.Unavailable, null,
                     "The job or destination is unavailable for a manual backup.");
+            }
+
+            if (validate is not null && await validate(job, job.Destination, ct) is { } validationError)
+            {
+                return new(ManualRunEnqueueStatus.OwnershipInvalid, null, validationError);
             }
 
             var now = timeProvider.GetUtcNow();
@@ -48,20 +54,29 @@ public sealed class RunPersistenceService(
     {
         return await mutationGate.ExecuteRunStateChangeAsync<BackupRun?>(async ct =>
         {
-            await using var context = await contextFactory.CreateDbContextAsync(ct);
-            // SQLite cannot translate DateTimeOffset ordering through EF, but its stored ISO values
-            // preserve chronological order and the durable queue index covers this query.
-            var run = await context.Runs.FromSqlRaw("""
-                SELECT * FROM Runs
-                WHERE Outcome IS NULL AND Phase = 'Queued' AND CancellationRequestedAtUtc IS NULL
-                ORDER BY QueuedAtUtc, Id
-                LIMIT 1
-                """).SingleOrDefaultAsync(ct);
-            if (run is null) return null;
+            while (true)
+            {
+                await using var context = await contextFactory.CreateDbContextAsync(ct);
+                var candidate = await context.Runs.FromSqlRaw("""
+                    SELECT * FROM Runs
+                    WHERE Outcome IS NULL AND Phase = 'Queued' AND CancellationRequestedAtUtc IS NULL
+                    ORDER BY QueuedAtUtc, Id
+                    LIMIT 1
+                    """).AsNoTracking().SingleOrDefaultAsync(ct);
+                if (candidate is null) return null;
 
-            run.AdvanceTo(RunPhase.Scanning, timeProvider.GetUtcNow());
-            await context.SaveChangesAsync(ct);
-            return run;
+                var now = timeProvider.GetUtcNow();
+                var affected = await context.Database.ExecuteSqlInterpolatedAsync($"""
+                    UPDATE Runs
+                    SET Phase = 'Scanning', StartedAtUtc = {now}
+                    WHERE Id = {candidate.Id} AND Outcome IS NULL AND Phase = 'Queued'
+                      AND CancellationRequestedAtUtc IS NULL
+                    """, ct);
+                if (affected == 1)
+                {
+                    return await context.Runs.AsNoTracking().SingleAsync(item => item.Id == candidate.Id, ct);
+                }
+            }
         }, cancellationToken);
     }
 
@@ -123,24 +138,33 @@ public sealed class RunPersistenceService(
             run.CompressionDuration = result.CompressionDuration;
             run.TransferDuration = result.TransferDuration;
             run.ErrorSummary = result.Problems.FirstOrDefault(problem => problem.Severity == BackupProblemSeverity.Error)?.Message;
-            foreach (var problem in result.Problems)
-            {
-                context.RunProblems.Add(new RunProblem
-                {
-                    RunId = run.Id,
-                    Path = problem.Path,
-                    Phase = problem.Phase,
-                    Operation = problem.Operation,
-                    ErrorCategory = problem.Category.ToString(),
-                    NativeErrorCode = problem.NativeErrorCode?.ToString(),
-                    UserMessage = problem.Message,
-                    DiagnosticDetail = null
-                });
-            }
+            AddProblems(context, run.Id, result.Problems);
 
             await context.SaveChangesAsync(ct);
             return true;
         }, cancellationToken);
+    }
+
+    public async Task AppendProblemsAsync(
+        Guid runId,
+        IReadOnlyCollection<BackupProblem> problems,
+        CancellationToken cancellationToken = default)
+    {
+        if (problems.Count == 0) return;
+        await mutationGate.ExecuteRunStateChangeAsync(async ct =>
+        {
+            await using var context = await contextFactory.CreateDbContextAsync(ct);
+            AddProblems(context, runId, problems);
+            await context.SaveChangesAsync(ct);
+            return true;
+        }, cancellationToken);
+    }
+
+    public async Task<bool> HasWarningsAsync(Guid runId, CancellationToken cancellationToken = default)
+    {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        return await context.RunProblems.AsNoTracking()
+            .AnyAsync(item => item.RunId == runId && item.Severity == BackupProblemSeverity.Warning, cancellationToken);
     }
 
     public async Task BeginFinalCommitAsync(BackupCommitIntent intent, CancellationToken cancellationToken = default)
@@ -149,6 +173,10 @@ public sealed class RunPersistenceService(
         {
             await using var context = await contextFactory.CreateDbContextAsync(ct);
             var run = await context.Runs.SingleAsync(item => item.Id == intent.RunId, ct);
+            if (run.CancellationRequestedAtUtc is not null)
+            {
+                throw new DurableCancellationRequestedException(run.Id);
+            }
             run.DestinationPartialPath = intent.PartialPath;
             run.AdvanceTo(RunPhase.Finalizing, timeProvider.GetUtcNow());
             run.BeginFinalCommit(timeProvider.GetUtcNow());
@@ -163,7 +191,7 @@ public sealed class RunPersistenceService(
                 CreatedAtUtc = intent.CreatedAtUtc,
                 OwnershipRunId = run.Id,
                 OwnershipExpectedLength = intent.ExpectedLength,
-                OwnershipCreatedAtUtc = intent.CreatedAtUtc,
+                OwnershipCreatedAtUtc = intent.OwnershipCreatedAtUtc,
                 OwnershipFileSystemIdentity = intent.FileSystemIdentity
             });
             await context.SaveChangesAsync(ct);
@@ -181,6 +209,18 @@ public sealed class RunPersistenceService(
             run.MarkFinalCommitted(timeProvider.GetUtcNow());
             run.Artifact!.MarkRetained(timeProvider.GetUtcNow());
             run.DestinationPartialPath = null;
+            await context.SaveChangesAsync(ct);
+            return true;
+        }, cancellationToken);
+    }
+
+    public async Task MarkFinalizationFailedAsync(Guid runId, CancellationToken cancellationToken = default)
+    {
+        await mutationGate.ExecuteRunStateChangeAsync(async ct =>
+        {
+            await using var context = await contextFactory.CreateDbContextAsync(ct);
+            var artifact = await context.BackupArtifacts.SingleAsync(item => item.RunId == runId, ct);
+            artifact.MarkFinalizationFailed(timeProvider.GetUtcNow());
             await context.SaveChangesAsync(ct);
             return true;
         }, cancellationToken);
@@ -242,6 +282,27 @@ public sealed class RunPersistenceService(
         }, cancellationToken);
     }
 
+    private static void AddProblems(
+        FolderBackuperDbContext context,
+        Guid runId,
+        IEnumerable<BackupProblem> problems)
+    {
+        foreach (var problem in problems)
+        {
+            context.RunProblems.Add(new RunProblem
+            {
+                RunId = runId,
+                Path = problem.Path,
+                Phase = problem.Phase,
+                Severity = problem.Severity,
+                Operation = problem.Operation,
+                ErrorCategory = problem.Category.ToString(),
+                NativeErrorCode = problem.NativeErrorCode?.ToString(),
+                UserMessage = problem.Message
+            });
+        }
+    }
+
     private static BackupRun Snapshot(BackupJob job, Destination destination, DateTimeOffset now) => new()
     {
         JobId = job.Id,
@@ -251,6 +312,8 @@ public sealed class RunPersistenceService(
         DestinationName = destination.Name,
         DestinationType = destination.Type,
         DestinationRootPath = destination.RootPath,
+        DestinationUsername = destination.SmbUsername,
+        DestinationVerificationFingerprint = destination.VerificationFingerprint,
         DestinationSubfolder = job.DestinationSubfolder,
         ScheduledWeekdays = job.Weekdays,
         ScheduledTime = job.ScheduledTime,
@@ -266,7 +329,8 @@ public enum ManualRunEnqueueStatus
 {
     Queued,
     Busy,
-    Unavailable
+    Unavailable,
+    OwnershipInvalid
 }
 
 public sealed record ManualRunEnqueueOutcome(ManualRunEnqueueStatus Status, Guid? RunId, string Message);
@@ -281,3 +345,6 @@ public enum RunCancellationStatus
 }
 
 public sealed record RunCancellationOutcome(RunCancellationStatus Status, string Message);
+
+public sealed class DurableCancellationRequestedException(Guid runId)
+    : OperationCanceledException($"Cancellation was requested for run {runId} before final commit.");

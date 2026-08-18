@@ -3,10 +3,15 @@
 ## Automated checks
 
 - Racing manual enqueue requests produce one non-terminal run per job.
-- Queue claims use SQLite ordering and queued cancellation performs no filesystem work.
+- Independent queue claimers use a conditional SQLite update, return a run only once, and queued cancellation performs no filesystem work.
 - The finalization transaction records a pending owned artifact before rename, closes cancellation, and records the completed rename afterward.
-- Retention begins with a deletion intent, verifies archive ownership and size, and does not delete an unproven file.
-- Startup recovery removes only recorded pre-commit paths and marks interrupted work failed.
+- Staging and destination-partial intents are durable before file creation, and execution uses the immutable run snapshot with current protected credentials.
+- Recovery validates length, ZIP ownership, creation metadata, filesystem identity, physical containment, and destination ownership before adopting or deleting a file.
+- Retention begins with a deletion intent, runs inside the destination adapter scope, reconciles interrupted deletion, and persists ownership-refusal warnings.
+- Startup recovery preserves a valid renamed archive, refuses same-length replacements, leaves inaccessible finalization pending, and removes only proven run-owned temporary files.
+- User cancellation survives the claim/register race; service interruption remains non-terminal for startup recovery.
+- Legacy duplicate active runs are reconciled deterministically before the unique execution guard is created.
+- Explicit fault points cover staging, transfer, commit intent, rename, and final-commit durability boundaries.
 - Run now is available for non-archived jobs; cancellation is exposed through the execution application service.
 
 ## Manual checks
