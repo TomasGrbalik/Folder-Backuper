@@ -253,6 +253,8 @@ The source browser requests one directory level at a time under a service-valida
 
 Live progress is delivered through the existing Blazor Interactive Server circuit. The UI displays a reconnect state if the circuit is interrupted. Durable state is reloaded from SQLite after reconnection; current progress is reloaded from the in-memory progress registry while the process remains alive.
 
+Durable run and job changes are broadcast in-process by a run activity signal so that an open page reflects a queued, dequeued, advancing, or finished run without a manual refresh. The signal carries no payload: a subscriber re-reads its whole view from SQLite exactly as the refresh button does, and reloads are coalesced so a burst of transitions cannot queue up work. Writers raise the signal after their change committed and never await a subscriber, so no browser connection can slow down or fail a backup. The dashboard, history, and calendar subscribe; the progress registry continues to carry per-file progress for the run it is keyed to.
+
 The UI must not treat an open browser connection as necessary for backup execution.
 
 ## 8. Persistence Design

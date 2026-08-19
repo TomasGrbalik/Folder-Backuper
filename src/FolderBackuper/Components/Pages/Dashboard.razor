@@ -1,5 +1,7 @@
 @page "/"
+@implements IDisposable
 @inject DashboardQueryService DashboardQueries
+@inject RunActivitySignal RunActivity
 @inject DestinationService DestinationService
 @inject BackupExecutionService BackupExecution
 @inject BackupRetentionService Retention
@@ -166,18 +168,52 @@ else
     private DashboardView? view;
     private IReadOnlyList<DestinationSummary> destinations = [];
     private bool loading = true;
+    private bool reloading;
+    private bool reloadRequested;
+    private IDisposable? activitySubscription;
     private Guid? busyJobId;
     private string? operationMessage;
     private bool operationError;
 
-    protected override async Task OnInitializedAsync() => await ReloadAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        // Subscribed before the first load so that a run claimed or finished while that load is in
+        // flight still reaches this page.
+        activitySubscription = RunActivity.Subscribe(() => InvokeAsync(ReloadAsync));
+        await ReloadAsync();
+    }
 
+    /// <summary>
+    /// Reloads every durable figure on the page. Signalled reloads and the refresh button share this
+    /// path; the spinner belongs to the first load only, so an automatic reload neither flickers nor
+    /// tears down the live progress subscription held by the active run panel.
+    /// </summary>
     private async Task ReloadAsync()
     {
-        loading = true;
-        view = await DashboardQueries.GetAsync();
-        destinations = await DestinationService.ListAsync(includeArchived: false);
-        loading = false;
+        if (reloading)
+        {
+            // A burst of transitions collapses into one further reload rather than a queue of them.
+            reloadRequested = true;
+            return;
+        }
+
+        reloading = true;
+        try
+        {
+            do
+            {
+                reloadRequested = false;
+                view = await DashboardQueries.GetAsync();
+                destinations = await DestinationService.ListAsync(includeArchived: false);
+                loading = false;
+                StateHasChanged();
+            }
+            while (reloadRequested);
+        }
+        finally
+        {
+            reloading = false;
+        }
     }
 
     private async Task RunNowAsync(Guid jobId)
@@ -203,6 +239,8 @@ else
     }
 
     private void ViewHistory(Guid jobId) => Navigation.NavigateTo($"history?job={jobId}");
+
+    public void Dispose() => activitySubscription?.Dispose();
 
     private static Color VerificationColor(DestinationVerificationResult result) => result switch
     {

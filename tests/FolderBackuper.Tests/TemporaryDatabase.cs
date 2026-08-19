@@ -1,3 +1,4 @@
+using FolderBackuper.Features.Monitoring;
 using FolderBackuper.Infrastructure.Database;
 using FolderBackuper.Infrastructure.ServiceHosting;
 using Microsoft.EntityFrameworkCore;
@@ -21,6 +22,7 @@ internal sealed class TemporaryDatabase : IAsyncDisposable
         services.AddLogging();
         services.AddSingleton(Paths);
         services.AddSingleton(timeProvider ?? TimeProvider.System);
+        services.AddSingleton<RunActivitySignal>();
         services.AddFolderBackuperDatabase(Paths);
         serviceProvider = services.BuildServiceProvider();
     }
@@ -37,6 +39,9 @@ internal sealed class TemporaryDatabase : IAsyncDisposable
     public ConfigurationMutationGate MutationGate => serviceProvider.GetRequiredService<ConfigurationMutationGate>();
 
     public RunPersistenceService RunPersistence => serviceProvider.GetRequiredService<RunPersistenceService>();
+
+    /// <summary>The instance <see cref="RunPersistence"/> raises, so a page test can subscribe to real transitions.</summary>
+    public RunActivitySignal ActivitySignal => serviceProvider.GetRequiredService<RunActivitySignal>();
 
     public async ValueTask DisposeAsync()
     {

@@ -1,5 +1,6 @@
 using FolderBackuper.Features.Backups;
 using FolderBackuper.Features.Jobs;
+using FolderBackuper.Features.Monitoring;
 using FolderBackuper.Infrastructure.Database;
 using FolderBackuper.Infrastructure.ServiceHosting;
 using Microsoft.EntityFrameworkCore;
@@ -140,6 +141,7 @@ public sealed class BackupScheduler(
 public sealed class BackupSchedulerWorker(
     BackupScheduler scheduler,
     BackupExecutionQueue queue,
+    RunActivitySignal activity,
     StartupRecoveryBarrier startupRecovery,
     TimeProvider timeProvider,
     ILogger<BackupSchedulerWorker> logger) : BackgroundService
@@ -159,6 +161,11 @@ public sealed class BackupSchedulerWorker(
             {
                 var result = await scheduler.EvaluateAsync(stoppingToken);
                 if (result.QueuedRuns != 0) queue.Signal();
+
+                // The scheduler writes runs and job planning columns directly, so its evaluation is the
+                // one durable change that run persistence cannot announce. Every pass is announced, not
+                // only a queueing one, because each pass also re-plans next-run times.
+                activity.Signal();
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
