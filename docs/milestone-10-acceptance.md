@@ -1,6 +1,6 @@
 # Milestone 10: Installer And Release Hardening
 
-Email notifications are not part of this release. Milestone 9 was skipped, so no notification behavior is verified here.
+Email notifications are verified separately in the [Milestone 9 acceptance checklist](milestone-9-acceptance.md); no notification behavior is re-verified here. Confirm only that an upgrade preserves saved notification settings, including the protected API key, along with the rest of the application data.
 
 ## Automated checks
 

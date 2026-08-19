@@ -692,6 +692,11 @@ a:hover { color: var(--fb-accent-hover); text-decoration: underline; }
     background: var(--fb-surface) !important;
     box-shadow: var(--fb-shadow-2);
 }
+/* The settings card is narrower than the 1180px content column. `.settings-panel` is the direct
+   child of `.main-content`, so it takes that column width and its auto margins; the card then
+   starts at the column's left edge, lining up with the page heading. Left-aligning the card
+   directly instead would push it past the heading to the viewport edge. */
+.settings-panel > .job-form { margin-inline: 0 auto; }
 .job-form section { display: flex; flex-direction: column; gap: 12px; padding-top: 6px; }
 .job-form section > .mud-typography-h5 {
     display: flex;
@@ -709,7 +714,7 @@ a:hover { color: var(--fb-accent-hover); text-decoration: underline; }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .field { display: grid; align-content: start; gap: 5px; color: var(--fb-err-ink); font-size: 12.5px; font-weight: 600; }
 .field > span { color: var(--fb-text-2); font-size: 12.5px; font-weight: 600; letter-spacing: 0; }
-.field input, .field select {
+.field input, .field select, .field textarea {
     width: 100%;
     box-sizing: border-box;
     padding: 9px 11px;
@@ -720,11 +725,14 @@ a:hover { color: var(--fb-accent-hover); text-decoration: underline; }
     font: inherit;
     font-size: 13.5px;
 }
-.field input:focus, .field select:focus {
+.field input:focus, .field select:focus, .field textarea:focus {
     outline: none;
     border-color: var(--fb-accent);
     box-shadow: 0 0 0 3px var(--fb-accent-soft);
 }
+.field textarea { resize: vertical; min-height: 84px; font-family: var(--fb-mono); }
+/* A checkbox inside a field label must not stretch to the full input width. */
+.field > span input[type="checkbox"] { width: auto; margin-right: 8px; vertical-align: middle; }
 .field-wide { grid-column: 1 / -1; }
 .input-action { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
 .input-action button {

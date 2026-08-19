@@ -33,7 +33,7 @@ The current look is a warm, editorial "forest & amber on paper" theme and is fai
 **Dark mode is required, not optional.** Deliver a fully worked light theme *and* a fully worked dark theme — both first-class, both shown in the mockups. Design the palette as semantic tokens (surface, elevated surface, border, text primary/secondary, accent, and the status colors) so both themes derive from one system and status stays legible in both.
 
 ## Information architecture (screens to design)
-Left sidebar nav labeled "Workspace" with: **Dashboard, Jobs, Destinations, Calendar, History**. Top app bar shows the product name, a subtitle ("LOCAL BACKUP CONTROL"), and a service-status indicator. A footer note in the nav says "Loopback access only" (reinforces the private/safe nature). Design the app shell (app bar + nav + content area) plus these pages:
+Left sidebar nav labeled "Workspace" with: **Dashboard, Jobs, Destinations, Calendar, History, Settings**. Top app bar shows the product name, a subtitle ("LOCAL BACKUP CONTROL"), and a service-status indicator. A footer note in the nav says "Loopback access only" (reinforces the private/safe nature). Design the app shell (app bar + nav + content area) plus these pages:
 
 ### 1. Dashboard (home)
 The at-a-glance health view. Contains, top to bottom:

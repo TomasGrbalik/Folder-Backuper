@@ -16,6 +16,7 @@ internal static class MonitoringTestSeed
         DestinationName = destination.Name,
         DestinationType = destination.Type,
         DestinationRootPath = destination.RootPath,
+        DestinationUsername = destination.SmbUsername,
         DestinationSubfolder = job.DestinationSubfolder,
         ScheduledWeekdays = job.Weekdays,
         ScheduledTime = job.ScheduledTime,

@@ -8,7 +8,7 @@ Related requirements: [Use Cases and Product Requirements](use-cases.md)
 
 This document translates the agreed product requirements into a technical architecture. It defines component boundaries, data ownership, execution behavior, deployment, security, and verification strategy.
 
-The notification transport remains open. All other major stack choices in this document have been accepted for the initial implementation.
+Every major stack choice in this document has been accepted for the initial implementation, including the notification transport: Resend over HTTPS.
 
 ## 2. Architecture Summary
 
@@ -66,7 +66,7 @@ There is no separate worker process, frontend deployment, public API, message br
 | Filesystem | BCL `System.IO` APIs plus narrow Windows safe-handle interop for physical identity and final-path resolution |
 | SMB authentication | Windows network-only impersonation with per-destination credentials |
 | Secret protection | Windows DPAPI, machine scope |
-| Email | TBD: MailKit SMTP or Resend HTTPS API |
+| Email | Resend HTTPS API through a named `HttpClient` |
 | Logging | Serilog rolling files |
 | Installer | Inno Setup |
 | Tests | xUnit, bUnit, real temporary files, and real temporary SQLite databases |
@@ -712,22 +712,28 @@ Provider-neutral eligibility and content rules are fixed:
 - Credentials and secret values are excluded before provider formatting.
 - The full structured problem list remains in SQLite. Email includes at most the first 100 problems, states the total count, and directs the user to local run details.
 
-### Option A: MailKit
+### Selected provider: Resend
 
-- Direct SMTP delivery.
-- SMTP host, port, transport security, username, and protected password.
-- No third-party email API dependency.
-- More configuration and more variation between mail servers.
-
-### Option B: Resend
-
-- HTTPS request through a typed `HttpClient`.
+- HTTPS request through a named `HttpClient`, with no third-party client package.
 - Protected API key and verified sender identity.
-- Simpler transport configuration.
+- Simpler transport configuration than SMTP.
 - Requires internet access and a verified sending domain.
 - Sends email content, including selected run diagnostics, through an external processor.
 
-The provider decision must be made before implementing the notification milestone. The architecture does not include runtime provider switching or simultaneous provider support.
+MailKit over SMTP was considered and not implemented. The architecture does not include runtime provider switching or simultaneous provider support.
+
+The client is a singleton and resolves its `HttpClient` from `IHttpClientFactory` per attempt rather than capturing one, so message-handler rotation continues to refresh DNS in a process that runs for months. The API key is passed per call, so the unprotected secret exists only for the duration of one attempt.
+
+Classification of a single response decides the recorded state, and the distinction matters because there is no retry:
+
+| Provider outcome | Recorded state |
+| --- | --- |
+| `2xx` | Delivered |
+| Any `4xx`, including `429` | Failed; the request was refused, so nothing was sent |
+| Connection never established | Failed; nothing can have been sent |
+| `5xx`, timeout, or connection lost in flight | Delivery unknown |
+
+Provider error text is truncated and scrubbed of anything key-shaped before it is persisted, logged, or displayed, so a provider that echoes the submitted credential back cannot leak it.
 
 Notification delivery occurs through the durable outbox after the run outcome is durable. Startup begins records for which no attempt started. Failure updates notification status and creates a dashboard warning; it never changes the backup outcome.
 
@@ -865,11 +871,6 @@ Code signing is strongly recommended for released installer and executable artif
 - DPAPI machine scope protects secrets at rest but does not defend against local administrators.
 - Destination validation checks ZIP structure and expected entries but does not perform a complete decompression and CRC readback.
 
-## 21. Open Technical Decision
+## 21. Resolved Technical Decision
 
-The initial notification provider remains unresolved:
-
-- MailKit over SMTP, or
-- Resend over HTTPS.
-
-This choice does not block implementation of the persistence, scheduler, backup, destination, or UI foundations.
+The notification provider decision is closed: **Resend over HTTPS**, with its verified-domain and external-processing requirements accepted. See section 14. No open technical decision remains.

@@ -49,6 +49,7 @@ public sealed record RunHistoryRow(
     TimeSpan? Duration,
     long ArchiveBytes,
     ArtifactState? ArtifactState,
+    NotificationDeliveryState? NotificationState,
     int ProblemCount);
 
 public sealed record RunHistoryPage(IReadOnlyList<RunHistoryRow> Rows, int TotalCount, int Page, int PageSize);

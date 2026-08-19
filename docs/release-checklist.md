@@ -4,7 +4,9 @@ Work through this list in order for every released `setup.exe`. Record the resul
 
 ## Scope of this release
 
-Email notifications are not implemented. Milestone 9 was skipped, so no notification provider, settings page, template, or outbox exists. Backup outcomes are visible only in the web interface, and every notification row in the pre-release matrix below is marked not applicable.
+Email notifications are implemented through Resend over HTTPS: a notification settings page, a test email, provider-neutral templates, and the durable single-attempt outbox worker. Sending requires a Resend API key and a verified sending domain; when notifications are not configured, backup outcomes remain visible in the web interface and every run simply reports Not sent.
+
+Before release, confirm that the Resend account used for verification is a test account and that no production key is left in the shipped build or in any captured screenshot.
 
 ## 1. Source and version
 
@@ -67,7 +69,7 @@ Run against the installed build, not a development host. Source: `docs/implement
 - Retention success, ownership mismatch, deletion denial, and missing artifacts.
 - Daylight-saving and system-clock changes.
 - Browser disconnect and service restart.
-- Notification success, rejection, timeout, and uncertain crash boundary. **Not applicable**; see Milestone 9.
+- Notification success, rejection, timeout, and uncertain crash boundary. See the [Milestone 9 acceptance checklist](milestone-9-acceptance.md).
 - Install, upgrade, repair, and uninstall.
 
 ## 6. Resource behavior
