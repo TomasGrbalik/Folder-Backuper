@@ -4,6 +4,9 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
     <PublishTrimmed>false</PublishTrimmed>
+    <DebugType>portable</DebugType>
+    <!-- The Web SDK emits a web.config for IIS hosting; this application is never IIS-hosted. -->
+    <IsTransformWebConfigDisabled>true</IsTransformWebConfigDisabled>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" />
@@ -15,6 +18,7 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" />
     <PackageReference Include="System.IO.FileSystem.AccessControl" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" />
     <PackageReference Include="MudBlazor" />
     <PackageReference Include="Serilog.AspNetCore" />
     <PackageReference Include="Serilog.Sinks.File" />
