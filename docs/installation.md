@@ -53,7 +53,9 @@ Get-Service FolderBackuper
 4. Use **Run now** to confirm the whole path works before relying on the schedule.
 5. Watch progress on the dashboard, and review outcomes in the run history.
 
-Email notifications are not part of this release. Backup outcomes are visible only in the web interface.
+To receive email about finished runs, open **Settings** and enter a Resend API key, a sender address on a domain you have verified with Resend, and one or more recipients, then use **Send test email** to confirm delivery. Notifications are optional: without them, backup outcomes remain visible in the web interface.
+
+Email is sent through Resend, so the run details it carries — job names, folder paths, and error messages — are processed by that external service. The complete problem list for a run always stays on this PC.
 
 ## Change the port
 

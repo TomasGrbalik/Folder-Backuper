@@ -52,7 +52,7 @@ Features outside the accepted use cases are not added opportunistically. New beh
 | 6 | Durable execution, cancellation, retention, and crash recovery |
 | 7 | Scheduler, queue ordering, catch-up, and manual-run coalescing |
 | 8 | Dashboard, progress, calendar, history, and storage presentation |
-| 9 | Selected email provider and durable notification workflow (skipped; deferred) |
+| 9 | Selected email provider and durable notification workflow |
 | 10 | Installer, upgrade, service recovery, and release hardening |
 
 ## 4. Milestone 0: Technical Risk Validation
@@ -407,7 +407,7 @@ Expose complete operational visibility after execution semantics are stable.
 - Dashboard.
 - Live progress view.
 - Calendar and agenda.
-- Permanent history and structured diagnostics, pending notification-result integration in Milestone 9.
+- Permanent history and structured diagnostics; notification results were integrated in Milestone 9.
 - Managed storage presentation.
 
 ### Exit Criteria
@@ -425,16 +425,13 @@ Expose complete operational visibility after execution semantics are stable.
 
 ## 13. Milestone 9: Notifications
 
-This milestone was deliberately skipped and deferred. Milestone 10 was implemented directly after Milestone 8, and the release documents record that email notifications are not part of the current release.
+This milestone was originally skipped: Milestone 10 was implemented directly after Milestone 8. It has since been implemented, and email notifications are part of the product.
 
 ### Prerequisite Decision
 
-Choose exactly one initial provider before starting this milestone:
+**Resend over HTTPS was selected.** MailKit over SMTP was not implemented, and the architecture has no runtime provider switching.
 
-- MailKit over SMTP, or
-- Resend over HTTPS.
-
-If Resend is selected, explicitly accept its verified-domain and external-processing requirements. If MailKit is selected, define the supported SMTP security modes.
+Selecting Resend explicitly accepts its two requirements. A verified sending domain is mandatory, so a sender address on an unverified domain is refused by the provider rather than by this application. Email content, including the run diagnostics listed below, is processed by an external service; the settings page states this where the user turns notifications on, and the complete problem list stays local regardless.
 
 ### Goal
 
@@ -573,7 +570,7 @@ Milestone 9: notifications
 Milestone 10: installer and release hardening
 ```
 
-Milestone 9 provider selection can occur earlier, but provider implementation should not distract from backup correctness and recovery. Milestone 9 was skipped, and Milestone 10 does not depend on it: notification outcomes are simply absent rather than pending.
+Milestone 9 provider selection can occur earlier, but provider implementation should not distract from backup correctness and recovery. Milestone 10 does not depend on Milestone 9, which is why implementing it after Milestone 10 required no change to the installer or release work.
 
 ## 17. Definition of Complete
 
@@ -587,5 +584,5 @@ The initial implementation is complete only when:
 6. The installer passes clean install, upgrade, repair, and uninstall testing.
 7. Permanent history survives normal upgrades and artifact retention.
 8. Source read-only behavior has been reviewed and tested independently.
-9. The notification provider decision and privacy implications are documented. Deferred with Milestone 9.
+9. The notification provider decision and privacy implications are documented.
 10. No known critical or high-severity correctness issue remains open.

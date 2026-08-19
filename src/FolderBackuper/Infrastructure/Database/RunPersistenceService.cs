@@ -1,15 +1,23 @@
 using FolderBackuper.Features.Backups;
 using FolderBackuper.Features.Destinations;
 using FolderBackuper.Features.Jobs;
+using FolderBackuper.Features.Notifications;
 using FolderBackuper.Infrastructure.Scheduling;
 using Microsoft.EntityFrameworkCore;
 
 namespace FolderBackuper.Infrastructure.Database;
 
+/// <summary>
+/// Every durable run state transition. <paramref name="notifications"/> and
+/// <paramref name="notificationSignal"/> are optional so that tests exercising run persistence alone
+/// need no notification configuration; when absent, terminal outcomes simply create no outbox work.
+/// </summary>
 public sealed class RunPersistenceService(
     IDbContextFactory<FolderBackuperDbContext> contextFactory,
     ConfigurationMutationGate mutationGate,
-    TimeProvider timeProvider)
+    TimeProvider timeProvider,
+    NotificationOutboxWriter? notifications = null,
+    NotificationOutboxSignal? notificationSignal = null)
 {
     public async Task<ManualRunEnqueueOutcome> EnqueueManualAsync(
         Guid jobId,
@@ -227,17 +235,27 @@ public sealed class RunPersistenceService(
         }, cancellationToken);
     }
 
+    /// <summary>
+    /// Makes a run outcome durable and, in the same transaction, creates the notification work that
+    /// outcome requires. Committing both together is what lets recovery treat a completed run with no
+    /// outbox row as genuinely not requiring notification.
+    /// </summary>
     public async Task CompleteAsync(
         Guid runId,
         RunOutcome outcome,
         string? errorSummary,
         CancellationToken cancellationToken = default)
     {
-        await ChangeRunAsync(runId, run =>
+        var queued = await ChangeRunAsync(runId, async (context, run, ct) =>
         {
             run.ErrorSummary = errorSummary;
             run.Complete(outcome, timeProvider.GetUtcNow());
+            return notifications is not null && await notifications.AddIfEligibleAsync(context, run, ct);
         }, cancellationToken);
+
+        // Signalled only after the transaction committed, so the worker can never look for a row that
+        // is not there yet.
+        if (queued) notificationSignal?.Signal();
     }
 
     public async Task CreateAsync(
@@ -280,6 +298,25 @@ public sealed class RunPersistenceService(
             change(run);
             await context.SaveChangesAsync(ct);
             return true;
+        }, cancellationToken);
+    }
+
+    /// <summary>
+    /// Applies a change that also needs the context, so additional rows can be written in the same
+    /// transaction as the run change.
+    /// </summary>
+    private async Task<T> ChangeRunAsync<T>(
+        Guid runId,
+        Func<FolderBackuperDbContext, BackupRun, CancellationToken, Task<T>> change,
+        CancellationToken cancellationToken)
+    {
+        return await mutationGate.ExecuteRunStateChangeAsync(async ct =>
+        {
+            await using var context = await contextFactory.CreateDbContextAsync(ct);
+            var run = await context.Runs.SingleAsync(item => item.Id == runId, ct);
+            var result = await change(context, run, ct);
+            await context.SaveChangesAsync(ct);
+            return result;
         }, cancellationToken);
     }
 

@@ -1,4 +1,5 @@
 using FolderBackuper.Features.Backups;
+using FolderBackuper.Features.Notifications;
 using FolderBackuper.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 
@@ -57,7 +58,8 @@ public sealed class RunQueryService(IDbContextFactory<FolderBackuperDbContext> c
             .Select(x => new HistoryProjection(
                 x.Id, x.JobId, x.JobName, x.Trigger, x.Phase, x.Outcome,
                 x.StartedAtUtc, x.CompletedAtUtc, x.QueuedAtUtc, x.ArchiveBytes,
-                x.Artifact != null ? x.Artifact.State : (ArtifactState?)null))
+                x.Artifact != null ? x.Artifact.State : (ArtifactState?)null,
+                x.NotificationState))
             .ToListAsync(cancellationToken);
 
         var ordered = rows
@@ -77,7 +79,7 @@ public sealed class RunQueryService(IDbContextFactory<FolderBackuperDbContext> c
             x.Id, x.JobId, x.JobName, x.Trigger, x.Phase, x.Outcome,
             x.StartedAtUtc, x.CompletedAtUtc,
             x.StartedAtUtc is not null && x.CompletedAtUtc is not null ? x.CompletedAtUtc - x.StartedAtUtc : null,
-            x.ArchiveBytes, x.ArtifactState,
+            x.ArchiveBytes, x.ArtifactState, x.NotificationState,
             problemCounts.TryGetValue(x.Id, out var count) ? count : 0)).ToList();
 
         return new RunHistoryPage(result, total, page, pageSize);
@@ -151,5 +153,5 @@ public sealed class RunQueryService(IDbContextFactory<FolderBackuperDbContext> c
     private sealed record HistoryProjection(
         Guid Id, Guid JobId, string JobName, RunTrigger Trigger, RunPhase Phase, RunOutcome? Outcome,
         DateTimeOffset? StartedAtUtc, DateTimeOffset? CompletedAtUtc, DateTimeOffset QueuedAtUtc,
-        long ArchiveBytes, ArtifactState? ArtifactState);
+        long ArchiveBytes, ArtifactState? ArtifactState, NotificationDeliveryState? NotificationState);
 }

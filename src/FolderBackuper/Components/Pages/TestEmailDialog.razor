@@ -1,0 +1,61 @@
+@using FolderBackuper.Features.Notifications
+@inject IRunNotificationSender Sender
+
+<MudDialog>
+    <DialogContent>
+        @if (sending)
+        {
+            <MudStack AlignItems="AlignItems.Center" Spacing="2">
+                <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                <MudText>Sending a test email through the saved configuration...</MudText>
+            </MudStack>
+        }
+        else if (result is not null)
+        {
+            <MudAlert Severity="@Severity(result.Status)">@result.Message</MudAlert>
+            @if (result.Succeeded)
+            {
+                <MudText Class="mt-3" Typo="Typo.body2">
+                    Check the configured recipients. Delivery to the inbox depends on the receiving mail
+                    service, which Folder Backuper cannot observe.
+                </MudText>
+            }
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" Disabled="sending" OnClick="Close">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance Dialog { get; set; } = null!;
+    private bool sending = true;
+    private NotificationSendResult? result;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            result = await Sender.SendTestAsync();
+        }
+        catch (Exception)
+        {
+            result = new NotificationSendResult(NotificationSendStatus.Uncertain,
+                "The test email could not be completed. Try again or check the application logs.");
+        }
+        finally
+        {
+            sending = false;
+        }
+    }
+
+    // An uncertain result is a warning rather than an error: the message may well have been sent.
+    private static Severity Severity(NotificationSendStatus status) => status switch
+    {
+        NotificationSendStatus.Delivered => MudBlazor.Severity.Success,
+        NotificationSendStatus.Uncertain => MudBlazor.Severity.Warning,
+        _ => MudBlazor.Severity.Error
+    };
+
+    private void Close() => Dialog.Close();
+}

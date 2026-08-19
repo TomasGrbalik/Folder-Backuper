@@ -1,0 +1,237 @@
+@page "/settings"
+@using FolderBackuper.Features.Notifications
+@inject NotificationSettingsService NotificationSettings
+@inject IDialogService DialogService
+@inject NavigationManager Navigation
+
+<PageTitle>Settings | Folder Backuper</PageTitle>
+<NavigationLock ConfirmExternalNavigation="dirty" OnBeforeInternalNavigation="BeforeInternalNavigation" />
+
+<div class="page-heading">
+    <div>
+        <MudText Typo="Typo.h1">Settings</MudText>
+        <MudText Class="page-lead">One global email configuration shared by every job.</MudText>
+    </div>
+</div>
+
+@if (outcome is not null)
+{
+    <MudAlert Severity="@(outcomeError ? Severity.Error : Severity.Success)" Class="mb-4">@outcome</MudAlert>
+}
+
+@if (loading)
+{
+    <MudProgressLinear Indeterminate="true" />
+}
+else
+{
+    <div class="settings-panel">
+        <MudPaper Class="job-form" Elevation="0">
+            <section>
+                <MudText Typo="Typo.h5">Email notifications</MudText>
+                <MudText Typo="Typo.body2" Class="page-lead">
+                    Folder Backuper sends one email after a run finishes successfully, finishes with
+                    warnings, or fails. Cancelled runs never send email, and a delivery problem never
+                    changes a backup result.
+                </MudText>
+                <label class="field field-wide">
+                    <span>
+                        <input type="checkbox" checked="@enabled" @onchange="EnabledChanged" />
+                        Send email for finished runs
+                    </span>
+                </label>
+            </section>
+
+            <section>
+                <MudText Typo="Typo.h5">Resend account</MudText>
+                <MudText Typo="Typo.body2" Class="page-lead">
+                    Messages are delivered through Resend over HTTPS.
+                    Resend requires a verified sending domain.
+                    Run details in the email — job names, folder paths, and error messages —
+                    are processed by that external service.
+                </MudText>
+                <div class="form-grid">
+                    <label class="field">
+                        <span>API key@(view.HasApiKey ? " (optional replacement)" : "")</span>
+                        <input type="password" @bind="apiKey" @bind:after="Changed" autocomplete="new-password"
+                               placeholder="@(view.HasApiKey ? "Leave blank to keep the saved key" : "re_...")" />
+                        @ErrorFor(nameof(SaveNotificationSettingsCommand.ApiKey))
+                    </label>
+                    <label class="field">
+                        <span>Sender address</span>
+                        <input @bind="fromAddress" @bind:after="Changed" maxlength="320"
+                               placeholder="backups@example.com" />
+                        @ErrorFor(nameof(SaveNotificationSettingsCommand.FromAddress))
+                    </label>
+                    <label class="field">
+                        <span>Sender name (optional)</span>
+                        <input @bind="fromName" @bind:after="Changed" maxlength="200" placeholder="Folder Backuper" />
+                        @ErrorFor(nameof(SaveNotificationSettingsCommand.FromName))
+                    </label>
+                </div>
+                <MudText Typo="Typo.caption">
+                    Saved API keys are never displayed. Leave the field blank to keep the existing key.
+                </MudText>
+            </section>
+
+            <section>
+                <MudText Typo="Typo.h5">Recipients</MudText>
+                <div class="form-grid">
+                    <label class="field field-wide">
+                        <span>Recipient addresses</span>
+                        <textarea rows="4" @bind="recipients" @bind:after="Changed"
+                                  placeholder="operator@example.com"></textarea>
+                        @ErrorFor(nameof(SaveNotificationSettingsCommand.Recipients))
+                    </label>
+                </div>
+                <MudText Typo="Typo.caption">
+                    One address per line, or separated by commas. Every job notifies this same list.
+                </MudText>
+            </section>
+
+            <section>
+                <MudText Typo="Typo.h5">Verification</MudText>
+                <div class="verification-line">
+                    <MudChip T="string" Size="Size.Small" Color="@(view.IsDeliverable ? Color.Success : Color.Default)">
+                        @(view.IsDeliverable ? "Ready to send" : "Not configured")
+                    </MudChip>
+                    <span>@SavedText</span>
+                </div>
+                <div class="form-tools">
+                    <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Outlined.MarkEmailRead"
+                               Disabled="@(saving || !view.IsDeliverable)" OnClick="SendTestAsync">
+                        Send test email
+                    </MudButton>
+                </div>
+                <MudText Typo="Typo.caption">
+                    A test email uses the saved configuration, so unsaved changes are not tested.
+                </MudText>
+            </section>
+
+            <div class="form-footer">
+                <MudButton Disabled="@(saving || !dirty)" OnClick="ReloadAsync">Discard changes</MudButton>
+                <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="saving" OnClick="SaveAsync">
+                    @(saving ? "Saving..." : "Save settings")
+                </MudButton>
+            </div>
+        </MudPaper>
+    </div>
+}
+
+@code {
+    private NotificationSettingsView view = new(false, null, null, [], false, null);
+    private Dictionary<string, string> errors = new(StringComparer.Ordinal);
+    private bool enabled;
+    private string apiKey = "";
+    private string fromAddress = "";
+    private string fromName = "";
+    private string recipients = "";
+    private bool loading = true;
+    private bool saving;
+    private bool dirty;
+    private string? outcome;
+    private bool outcomeError;
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+
+    private async Task ReloadAsync()
+    {
+        loading = true;
+        try
+        {
+            view = await NotificationSettings.GetAsync();
+            enabled = view.Enabled;
+            fromAddress = view.FromAddress ?? "";
+            fromName = view.FromName ?? "";
+            recipients = string.Join(Environment.NewLine, view.Recipients);
+            apiKey = "";
+            errors = new Dictionary<string, string>(StringComparer.Ordinal);
+            dirty = false;
+        }
+        catch (Exception)
+        {
+            SetOutcome("Notification settings could not be loaded. Try again or check the application logs.", true);
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        saving = true;
+        try
+        {
+            var result = await NotificationSettings.SaveAsync(new SaveNotificationSettingsCommand(
+                enabled, fromAddress, fromName, recipients, apiKey));
+            errors = result.FieldErrors is null
+                ? new Dictionary<string, string>(StringComparer.Ordinal)
+                : new Dictionary<string, string>(result.FieldErrors, StringComparer.Ordinal);
+            SetOutcome(result.Message, !result.Succeeded);
+            if (result.Succeeded)
+            {
+                dirty = false;
+                await ReloadAsync();
+            }
+        }
+        catch (Exception)
+        {
+            SetOutcome("Notification settings could not be saved. Try again or check the application logs.", true);
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+
+    private async Task SendTestAsync()
+    {
+        if (dirty)
+        {
+            SetOutcome("Save changes before sending a test email. A test email verifies the saved configuration.", true);
+            return;
+        }
+
+        await DialogService.ShowAsync<TestEmailDialog>("Send test email");
+    }
+
+    private void EnabledChanged(ChangeEventArgs args)
+    {
+        enabled = args.Value is true;
+        Changed();
+    }
+
+    private void Changed()
+    {
+        dirty = true;
+        outcome = null;
+    }
+
+    private void SetOutcome(string message, bool error)
+    {
+        outcome = message;
+        outcomeError = error;
+    }
+
+    private string SavedText => view.UpdatedAtUtc is { } updated
+        ? $"Last saved: {DisplayFormat.LocalDateTime(updated)}"
+        : "Not saved yet";
+
+    private RenderFragment ErrorFor(string field) => builder =>
+    {
+        if (errors.TryGetValue(field, out var message)) builder.AddContent(0, message);
+    };
+
+    private async Task BeforeInternalNavigation(LocationChangingContext context)
+    {
+        if (!dirty) return;
+        context.PreventNavigation();
+        if (await DialogService.ShowMessageBoxAsync("Leave without saving?",
+                "Your unsaved notification settings will be lost.", yesText: "Leave", cancelText: "Stay") == true)
+        {
+            dirty = false;
+            Navigation.NavigateTo(context.TargetLocation);
+        }
+    }
+}

@@ -4,6 +4,7 @@ using FolderBackuper.Features.Backups;
 using FolderBackuper.Features.Destinations;
 using FolderBackuper.Features.Jobs;
 using FolderBackuper.Features.Monitoring;
+using FolderBackuper.Features.Notifications;
 using FolderBackuper.Features.Settings;
 using FolderBackuper.Infrastructure.Database;
 using FolderBackuper.Infrastructure.Filesystem;
@@ -123,6 +124,36 @@ public sealed class MonitoringPageTests
         Assert.Contains("Failed", component.Markup, StringComparison.Ordinal);
         Assert.DoesNotContain("raw log", component.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Export", component.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task History_ShowsTheNotificationDeliveryResultForEachRun()
+    {
+        await using var database = await CreateDatabaseAsync();
+        await using var context = CreateContext(database);
+        var destination = await SeedDestinationAsync(database);
+        var job = DatabaseInitializationTests.Job(destination.Id, "Nightly");
+        var delivered = MonitoringTestSeed.Terminal(job, destination, RunOutcome.Successful, Utc(1, 1));
+        delivered.NotificationState = NotificationDeliveryState.Delivered;
+        var unresolved = MonitoringTestSeed.Terminal(job, destination, RunOutcome.Failed, Utc(2, 1));
+        unresolved.NotificationState = NotificationDeliveryState.DeliveryUnknown;
+        var notSent = MonitoringTestSeed.Terminal(job, destination, RunOutcome.Successful, Utc(3, 1));
+
+        await using (var db = await database.ContextFactory.CreateDbContextAsync())
+        {
+            db.AddRange(job, delivered, unresolved, notSent);
+            await db.SaveChangesAsync();
+        }
+
+        context.Render<MudPopoverProvider>();
+        var component = context.Render<History>();
+        component.WaitForAssertion(() => Assert.Contains("Nightly", component.Markup, StringComparison.Ordinal));
+
+        // Permanent history has to report delivered, failed, and delivery-unknown results.
+        Assert.Contains("Notification", component.Markup, StringComparison.Ordinal);
+        Assert.Contains("Delivered", component.Markup, StringComparison.Ordinal);
+        Assert.Contains("Delivery unknown", component.Markup, StringComparison.Ordinal);
+        Assert.Contains("Not sent", component.Markup, StringComparison.Ordinal);
     }
 
     [Fact]

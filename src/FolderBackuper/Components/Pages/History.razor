@@ -37,6 +37,7 @@
         <MudTh>Started</MudTh>
         <MudTh>Duration</MudTh>
         <MudTh>Archive</MudTh>
+        <MudTh>Notification</MudTh>
         <MudTh>Problems</MudTh>
     </HeaderContent>
     <RowTemplate>
@@ -56,6 +57,9 @@
             {
                 <span>—</span>
             }
+        </MudTd>
+        <MudTd DataLabel="Notification">
+            <MudChip T="string" Size="Size.Small" Color="@MonitoringDisplay.NotificationColor(context.NotificationState)">@MonitoringDisplay.NotificationLabel(context.NotificationState)</MudChip>
         </MudTd>
         <MudTd DataLabel="Problems">@context.ProblemCount.ToString("N0")</MudTd>
     </RowTemplate>
