@@ -1,6 +1,8 @@
 @page "/calendar"
 @using System.Globalization
+@implements IDisposable
 @inject CalendarEntryService CalendarEntries
+@inject RunActivitySignal RunActivity
 @inject JobService JobService
 @inject IDialogService DialogService
 
@@ -114,6 +116,9 @@ else
     private IReadOnlyList<CalendarEntry> entries = [];
     private Dictionary<DateOnly, List<CalendarEntry>> entriesByDate = new();
     private List<DateOnly> gridDays = new();
+    private bool reloading;
+    private bool reloadRequested;
+    private IDisposable? activitySubscription;
 
     private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
     private string MonthLabel => month.ToString("MMMM yyyy", CultureInfo.CurrentCulture);
@@ -133,21 +138,48 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        activitySubscription = RunActivity.Subscribe(() => InvokeAsync(() => ReloadAsync(showLoading: false)));
         jobs = await JobService.ListAsync(includeArchived: true);
         await ReloadAsync();
     }
 
-    private async Task ReloadAsync()
+    /// <summary>
+    /// Rebuilds the visible month. Choosing a month or a filter shows the progress bar because the whole
+    /// view is being replaced; a reload caused by a run starting or finishing keeps the current month
+    /// rendered and swaps its entries in place, so the page never flickers on its own.
+    /// </summary>
+    private async Task ReloadAsync(bool showLoading = true)
     {
-        loading = true;
-        BuildGrid();
+        if (reloading)
+        {
+            // A burst of transitions collapses into one further reload rather than a queue of them.
+            reloadRequested = true;
+            return;
+        }
 
-        var zone = TimeZoneInfo.Local;
-        var fromUtc = ToUtc(gridDays[0], zone);
-        var throughUtc = ToUtc(gridDays[^1].AddDays(1), zone);
-        entries = await CalendarEntries.GetEntriesAsync(fromUtc, throughUtc, new RunHistoryFilter(jobFilter, statusFilter));
-        entriesByDate = entries.GroupBy(x => x.LocalDate).ToDictionary(x => x.Key, x => x.ToList());
-        loading = false;
+        reloading = true;
+        loading = showLoading;
+        try
+        {
+            do
+            {
+                reloadRequested = false;
+                BuildGrid();
+
+                var zone = TimeZoneInfo.Local;
+                var fromUtc = ToUtc(gridDays[0], zone);
+                var throughUtc = ToUtc(gridDays[^1].AddDays(1), zone);
+                entries = await CalendarEntries.GetEntriesAsync(fromUtc, throughUtc, new RunHistoryFilter(jobFilter, statusFilter));
+                entriesByDate = entries.GroupBy(x => x.LocalDate).ToDictionary(x => x.Key, x => x.ToList());
+                loading = false;
+                StateHasChanged();
+            }
+            while (reloadRequested);
+        }
+        finally
+        {
+            reloading = false;
+        }
     }
 
     private void BuildGrid()
@@ -207,6 +239,8 @@ else
         var options = new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true, CloseButton = true };
         await DialogService.ShowAsync<RunDetailsDialog>("Run details", parameters, options);
     }
+
+    public void Dispose() => activitySubscription?.Dispose();
 
     private static Color EntryColor(CalendarEntry entry) =>
         entry.IsPlanned ? Color.Info : MonitoringDisplay.StatusColor(entry.Outcome, entry.Phase);

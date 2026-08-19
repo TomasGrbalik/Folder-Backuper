@@ -1,5 +1,7 @@
 @page "/history"
+@implements IDisposable
 @inject RunQueryService Runs
+@inject RunActivitySignal RunActivity
 @inject JobService JobService
 @inject IDialogService DialogService
 
@@ -78,13 +80,52 @@
     private IReadOnlyList<JobSummary> jobs = [];
     private Guid? jobFilter;
     private RunStatusFilter statusFilter = RunStatusFilter.All;
+    private bool reloading;
+    private bool reloadRequested;
+    private IDisposable? activitySubscription;
 
     protected override async Task OnInitializedAsync()
     {
+        activitySubscription = RunActivity.Subscribe(() => InvokeAsync(ReloadAsync));
         jobs = await JobService.ListAsync(includeArchived: true);
         if (JobQuery is { } job && jobs.Any(x => x.Id == job))
         {
             jobFilter = job;
+        }
+    }
+
+    /// <summary>
+    /// Re-runs the current query. The table keeps its page and page size, so a run that starts or finishes
+    /// updates the rows in place instead of moving them under the reader. Before the first render there is
+    /// no table to reload and none is needed: it loads the current state itself.
+    /// </summary>
+    private async Task ReloadAsync()
+    {
+        if (table is null)
+        {
+            return;
+        }
+
+        if (reloading)
+        {
+            // A burst of transitions collapses into one further reload rather than a queue of them.
+            reloadRequested = true;
+            return;
+        }
+
+        reloading = true;
+        try
+        {
+            do
+            {
+                reloadRequested = false;
+                await table.ReloadServerData();
+            }
+            while (reloadRequested);
+        }
+        finally
+        {
+            reloading = false;
         }
     }
 
@@ -98,19 +139,13 @@
     private async Task OnJobFilterChanged(Guid? value)
     {
         jobFilter = value;
-        if (table is not null)
-        {
-            await table.ReloadServerData();
-        }
+        await ReloadAsync();
     }
 
     private async Task OnStatusFilterChanged(RunStatusFilter value)
     {
         statusFilter = value;
-        if (table is not null)
-        {
-            await table.ReloadServerData();
-        }
+        await ReloadAsync();
     }
 
     private async Task OpenDetailsAsync(TableRowClickEventArgs<RunHistoryRow> args)
@@ -124,6 +159,8 @@
         var options = new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true, CloseButton = true };
         await DialogService.ShowAsync<RunDetailsDialog>("Run details", parameters, options);
     }
+
+    public void Dispose() => activitySubscription?.Dispose();
 
     private static string StatusText(RunStatusFilter status) => status switch
     {

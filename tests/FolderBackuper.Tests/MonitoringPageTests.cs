@@ -102,6 +102,45 @@ public sealed class MonitoringPageTests
     }
 
     [Fact]
+    public async Task Dashboard_FollowsARunFromQueuedToActiveToFinishedWithoutAManualRefresh()
+    {
+        await using var database = await CreateDatabaseAsync();
+        await using var context = CreateContext(database);
+        var destination = await SeedDestinationAsync(database);
+        var job = DatabaseInitializationTests.Job(destination.Id, "Accounting");
+        job.Activate();
+        var queued = MonitoringTestSeed.NewRun(job, destination, RunTrigger.Manual, Utc(5, 1));
+        queued.AdvanceTo(RunPhase.Queued, Utc(5, 1));
+        await using (var db = await database.ContextFactory.CreateDbContextAsync())
+        {
+            db.AddRange(job, queued);
+            await db.SaveChangesAsync();
+        }
+
+        var component = context.Render<Dashboard>();
+        component.WaitForAssertion(() => Assert.Contains("Queued (1)", component.Markup, StringComparison.Ordinal));
+        Assert.Contains("No backup is running right now", component.Markup, StringComparison.Ordinal);
+
+        // Dequeueing is what the execution worker does; the page must follow it on its own.
+        var claimed = await database.RunPersistence.ClaimNextAsync();
+        Assert.NotNull(claimed);
+        component.WaitForAssertion(() =>
+            Assert.DoesNotContain("No backup is running right now", component.Markup, StringComparison.Ordinal));
+        // The claimed run left the queue section, which disappears once nothing is waiting.
+        Assert.DoesNotContain("Queued (", component.Markup, StringComparison.Ordinal);
+        Assert.Contains(@"C:\Source", component.Markup, StringComparison.Ordinal);
+
+        await database.RunPersistence.AdvancePhaseAsync(claimed!.Id, RunPhase.Compressing);
+        component.WaitForAssertion(() => Assert.Contains("Compressing", component.Markup, StringComparison.Ordinal));
+
+        // A terminal outcome has to remove the active panel and update the job card behind it.
+        await database.RunPersistence.CompleteAsync(claimed.Id, RunOutcome.Failed, "Simulated failure.");
+        component.WaitForAssertion(() =>
+            Assert.Contains("No backup is running right now", component.Markup, StringComparison.Ordinal));
+        Assert.Contains("reported a failed last run", component.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task History_ListsRunsWithStatusAndNoLogExport()
     {
         await using var database = await CreateDatabaseAsync();
@@ -154,6 +193,57 @@ public sealed class MonitoringPageTests
         Assert.Contains("Delivered", component.Markup, StringComparison.Ordinal);
         Assert.Contains("Delivery unknown", component.Markup, StringComparison.Ordinal);
         Assert.Contains("Not sent", component.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task History_ReflectsATerminalOutcomeWithoutAManualRefresh()
+    {
+        await using var database = await CreateDatabaseAsync();
+        await using var context = CreateContext(database);
+        var destination = await SeedDestinationAsync(database);
+        var job = DatabaseInitializationTests.Job(destination.Id, "Nightly");
+        var running = MonitoringTestSeed.Running(job, destination, RunPhase.Compressing, Utc(5, 1));
+        await using (var db = await database.ContextFactory.CreateDbContextAsync())
+        {
+            db.AddRange(job, running);
+            await db.SaveChangesAsync();
+        }
+
+        context.Render<MudPopoverProvider>();
+        var component = context.Render<History>();
+        component.WaitForAssertion(() => Assert.Contains("Compressing", component.Markup, StringComparison.Ordinal));
+
+        await database.RunPersistence.CompleteAsync(running.Id, RunOutcome.Failed, "Simulated failure.");
+
+        // The row has to leave its in-progress phase on its own; no status filter offers the word.
+        component.WaitForAssertion(() =>
+            Assert.DoesNotContain("Compressing", component.Markup, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Calendar_ReflectsATerminalOutcomeWithoutAManualRefresh()
+    {
+        await using var database = await CreateDatabaseAsync();
+        await using var context = CreateContext(database);
+        var destination = await SeedDestinationAsync(database);
+        var job = DatabaseInitializationTests.Job(destination.Id, "Weekly");
+        // Placed today so the run falls inside the month the calendar opens on.
+        var running = MonitoringTestSeed.Running(job, destination, RunPhase.Compressing, DateTimeOffset.UtcNow);
+        await using (var db = await database.ContextFactory.CreateDbContextAsync())
+        {
+            db.AddRange(job, running);
+            await db.SaveChangesAsync();
+        }
+
+        context.Render<MudPopoverProvider>();
+        var component = context.Render<Calendar>();
+        component.WaitForAssertion(() => Assert.Contains("Compressing", component.Markup, StringComparison.Ordinal));
+
+        await database.RunPersistence.CompleteAsync(running.Id, RunOutcome.Failed, "Simulated failure.");
+
+        component.WaitForAssertion(() =>
+            Assert.DoesNotContain("Compressing", component.Markup, StringComparison.Ordinal));
+        Assert.Contains("Failed", component.Markup, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -221,6 +311,7 @@ public sealed class MonitoringPageTests
         context.Services.AddSingleton<TimeProvider>(TimeProvider.System);
         context.Services.AddSingleton(database.MutationGate);
         context.Services.AddSingleton(database.RunPersistence);
+        context.Services.AddSingleton(database.ActivitySignal);
         context.Services.AddSingleton(new InstallationIdentityService(database.ContextFactory, TimeProvider.System));
         context.Services.AddSingleton(new EffectiveDestinationService([new LocalDestinationAdapter()], new PassthroughProtector()));
         context.Services.AddSingleton<OwnershipMarkerService>();

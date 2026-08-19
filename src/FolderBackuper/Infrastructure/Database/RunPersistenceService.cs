@@ -1,6 +1,7 @@
 using FolderBackuper.Features.Backups;
 using FolderBackuper.Features.Destinations;
 using FolderBackuper.Features.Jobs;
+using FolderBackuper.Features.Monitoring;
 using FolderBackuper.Features.Notifications;
 using FolderBackuper.Infrastructure.Scheduling;
 using Microsoft.EntityFrameworkCore;
@@ -8,23 +9,25 @@ using Microsoft.EntityFrameworkCore;
 namespace FolderBackuper.Infrastructure.Database;
 
 /// <summary>
-/// Every durable run state transition. <paramref name="notifications"/> and
-/// <paramref name="notificationSignal"/> are optional so that tests exercising run persistence alone
-/// need no notification configuration; when absent, terminal outcomes simply create no outbox work.
+/// Every durable run state transition. <paramref name="notifications"/>,
+/// <paramref name="notificationSignal"/>, and <paramref name="activity"/> are optional so that tests
+/// exercising run persistence alone need no notification or monitoring configuration; when absent,
+/// terminal outcomes simply create no outbox work and no page is told to reload.
 /// </summary>
 public sealed class RunPersistenceService(
     IDbContextFactory<FolderBackuperDbContext> contextFactory,
     ConfigurationMutationGate mutationGate,
     TimeProvider timeProvider,
     NotificationOutboxWriter? notifications = null,
-    NotificationOutboxSignal? notificationSignal = null)
+    NotificationOutboxSignal? notificationSignal = null,
+    RunActivitySignal? activity = null)
 {
     public async Task<ManualRunEnqueueOutcome> EnqueueManualAsync(
         Guid jobId,
         Func<BackupJob, Destination, CancellationToken, Task<string?>>? validate = null,
         CancellationToken cancellationToken = default)
     {
-        return await mutationGate.ExecuteRunStateChangeAsync<ManualRunEnqueueOutcome>(async ct =>
+        var outcome = await mutationGate.ExecuteRunStateChangeAsync<ManualRunEnqueueOutcome>(async ct =>
         {
             await using var context = await contextFactory.CreateDbContextAsync(ct);
             var job = await context.Jobs.Include(item => item.Destination)
@@ -57,11 +60,14 @@ public sealed class RunPersistenceService(
 
             return new(ManualRunEnqueueStatus.Queued, run.Id, "The backup was queued.");
         }, cancellationToken);
+
+        if (outcome.Status == ManualRunEnqueueStatus.Queued) activity?.Signal();
+        return outcome;
     }
 
     public async Task<BackupRun?> ClaimNextAsync(CancellationToken cancellationToken = default)
     {
-        return await mutationGate.ExecuteRunStateChangeAsync<BackupRun?>(async ct =>
+        var claimed = await mutationGate.ExecuteRunStateChangeAsync<BackupRun?>(async ct =>
         {
             while (true)
             {
@@ -87,13 +93,16 @@ public sealed class RunPersistenceService(
                 }
             }
         }, cancellationToken);
+
+        if (claimed is not null) activity?.Signal();
+        return claimed;
     }
 
     public async Task<RunCancellationOutcome> RequestCancellationAsync(
         Guid runId,
         CancellationToken cancellationToken = default)
     {
-        return await mutationGate.ExecuteRunStateChangeAsync<RunCancellationOutcome>(async ct =>
+        var outcome = await mutationGate.ExecuteRunStateChangeAsync<RunCancellationOutcome>(async ct =>
         {
             await using var context = await contextFactory.CreateDbContextAsync(ct);
             var run = await context.Runs.SingleOrDefaultAsync(item => item.Id == runId, ct);
@@ -110,6 +119,9 @@ public sealed class RunPersistenceService(
             return new(run.Outcome == RunOutcome.Cancelled ? RunCancellationStatus.Cancelled : RunCancellationStatus.Requested,
                 run.Outcome == RunOutcome.Cancelled ? "The queued backup was cancelled." : "Cancellation was requested.");
         }, cancellationToken);
+
+        if (outcome.Status is RunCancellationStatus.Requested or RunCancellationStatus.Cancelled) activity?.Signal();
+        return outcome;
     }
 
     public async Task AdvancePhaseAsync(Guid runId, RunPhase phase, CancellationToken cancellationToken = default)
@@ -206,6 +218,8 @@ public sealed class RunPersistenceService(
             await context.SaveChangesAsync(ct);
             return true;
         }, cancellationToken);
+
+        activity?.Signal();
     }
 
     public async Task MarkFinalCommittedAsync(Guid runId, CancellationToken cancellationToken = default)
@@ -287,6 +301,8 @@ public sealed class RunPersistenceService(
             await context.SaveChangesAsync(ct);
             return true;
         }, cancellationToken);
+
+        activity?.Signal();
     }
 
     private async Task ChangeRunAsync(Guid runId, Action<BackupRun> change, CancellationToken cancellationToken)
@@ -299,6 +315,10 @@ public sealed class RunPersistenceService(
             await context.SaveChangesAsync(ct);
             return true;
         }, cancellationToken);
+
+        // Every committed transition tells open monitoring pages that their view is stale. Signalling
+        // after the gate released keeps a subscriber's reload out of the serialized write path.
+        activity?.Signal();
     }
 
     /// <summary>
@@ -310,14 +330,17 @@ public sealed class RunPersistenceService(
         Func<FolderBackuperDbContext, BackupRun, CancellationToken, Task<T>> change,
         CancellationToken cancellationToken)
     {
-        return await mutationGate.ExecuteRunStateChangeAsync(async ct =>
+        var result = await mutationGate.ExecuteRunStateChangeAsync(async ct =>
         {
             await using var context = await contextFactory.CreateDbContextAsync(ct);
             var run = await context.Runs.SingleAsync(item => item.Id == runId, ct);
-            var result = await change(context, run, ct);
+            var value = await change(context, run, ct);
             await context.SaveChangesAsync(ct);
-            return result;
+            return value;
         }, cancellationToken);
+
+        activity?.Signal();
+        return result;
     }
 
     private static void AddProblems(
