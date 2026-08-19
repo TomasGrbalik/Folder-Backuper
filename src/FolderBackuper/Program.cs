@@ -96,7 +96,13 @@ try
         .WriteTo.File(
             Path.Combine(paths.Logs, "folder-backuper-.log"),
             rollingInterval: RollingInterval.Day,
-            retainedFileCountLimit: 30));
+            // Without an explicit size limit the sink silently stops writing once a file reaches
+            // its one gigabyte default. Rolling on size instead keeps every event and bounds the
+            // directory at roughly LogRetainedFileCountLimit * LogFileSizeLimitBytes.
+            fileSizeLimitBytes: ApplicationLogging.FileSizeLimitBytes,
+            rollOnFileSizeLimit: true,
+            retainedFileCountLimit: ApplicationLogging.RetainedFileCountLimit,
+            retainedFileTimeLimit: ApplicationLogging.RetainedFileTimeLimit));
 
     builder.Services.AddWindowsService(options => options.ServiceName = WindowsServiceMetadata.ServiceName);
     builder.Services.AddSingleton(paths);

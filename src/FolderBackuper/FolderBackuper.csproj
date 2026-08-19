@@ -7,6 +7,9 @@
     <DebugType>portable</DebugType>
     <!-- The Web SDK emits a web.config for IIS hosting; this application is never IIS-hosted. -->
     <IsTransformWebConfigDisabled>true</IsTransformWebConfigDisabled>
+    <!-- One icon serves the executable, the installer, the start-menu shortcut and the browser
+         tab. It is also served from wwwroot, so it must stay where static assets can reach it. -->
+    <ApplicationIcon>wwwroot\favicon.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" />

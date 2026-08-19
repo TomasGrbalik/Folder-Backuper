@@ -737,13 +737,17 @@ The application makes at most one provider call per notification. It marks the a
 
 Serilog writes structured rolling files under `ProgramData`.
 
-- Daily rolling files.
-- Thirty-day retention initially.
+- Daily rolling files, additionally rolled at 8 MB.
+- Thirty-day retention, capped at 45 retained files.
 - Stable event identifiers for important operations.
 - Reduced ASP.NET and SignalR request noise.
 - Credentials and protected values excluded by construction.
 - Startup logging available before normal dependency injection is complete.
 - Final flush attempted during graceful shutdown.
+
+The log directory is bounded on disk. A retention period alone cannot bound it, because a single unusually noisy day would grow without limit, and the file sink's default one-gigabyte size limit silently stops writing rather than rolling. Rolling on size as well as on date caps an individual file, the retained-file count caps the total at roughly 360 MB, and the time limit still discards anything older than the retention period. Normal operation stays far below the cap because high-frequency progress is neither logged nor persisted.
+
+The startup-failure log is written without Serilog and therefore carries its own limit. Reaching it replaces the previous copy instead of growing, which bounds the pair even when a service fails to start repeatedly.
 
 SQLite structured run records are the source for user-visible diagnostics. Raw log files are not exposed through the UI or exported by the product.
 

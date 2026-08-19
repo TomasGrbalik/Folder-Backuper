@@ -81,6 +81,45 @@ public sealed class StartupFailureTests
     }
 
     [Fact]
+    public void StartupFailureLog_IsRolledOnceItReachesItsLimit()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "FolderBackuper-StartupFailureLog-" + Guid.NewGuid().ToString("N"));
+        var paths = ApplicationPaths.Resolve(root);
+        try
+        {
+            paths.CreateDirectories();
+            var filePath = Path.Combine(paths.Logs, "startup-failure.log");
+            var previousPath = Path.Combine(paths.Logs, "startup-failure.previous.log");
+            File.WriteAllBytes(filePath, new byte[ApplicationLogging.StartupFailureLogSizeLimitBytes]);
+
+            StartupFailureReporter.Report(StartupFailure.DataRoot, new InvalidOperationException("boom"), paths);
+
+            Assert.True(File.Exists(previousPath));
+            Assert.Equal(ApplicationLogging.StartupFailureLogSizeLimitBytes, new FileInfo(previousPath).Length);
+            Assert.Contains("boom", File.ReadAllText(filePath), StringComparison.Ordinal);
+            Assert.True(new FileInfo(filePath).Length < ApplicationLogging.StartupFailureLogSizeLimitBytes);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public void LogDirectoryBounds_AreFiniteAndDocumented()
+    {
+        Assert.True(ApplicationLogging.FileSizeLimitBytes > 0);
+        Assert.True(ApplicationLogging.RetainedFileCountLimit > 0);
+        Assert.Equal(
+            ApplicationLogging.FileSizeLimitBytes * ApplicationLogging.RetainedFileCountLimit,
+            ApplicationLogging.MaximumLogDirectoryBytes);
+        Assert.Equal(TimeSpan.FromDays(30), ApplicationLogging.RetainedFileTimeLimit);
+    }
+
+    [Fact]
     public void Compose_NamesTheCategoryAndTheEventId()
     {
         var text = StartupFailureReporter.Compose(StartupFailure.PortBinding, new InvalidOperationException("boom"));

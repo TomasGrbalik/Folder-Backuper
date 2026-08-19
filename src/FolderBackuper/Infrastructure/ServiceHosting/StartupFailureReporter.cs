@@ -54,13 +54,38 @@ public static class StartupFailureReporter
         {
             var logs = paths?.Logs ?? ApplicationPaths.Resolve(configuredRoot: null).Logs;
             Directory.CreateDirectory(logs);
+
+            var filePath = Path.Combine(logs, "startup-failure.log");
+            Roll(filePath);
             File.AppendAllText(
-                Path.Combine(logs, "startup-failure.log"),
+                filePath,
                 $"{DateTimeOffset.UtcNow:O}{Environment.NewLine}{text}{Environment.NewLine}{Environment.NewLine}");
         }
         catch (Exception)
         {
             // A failure to resolve or write the data root is itself one of the reported categories.
+        }
+    }
+
+    /// <summary>
+    /// Keeps the startup-failure log bounded. Serilog's rolling policy does not cover this file,
+    /// and a service that fails to start repeatedly would otherwise append without limit.
+    /// </summary>
+    private static void Roll(string filePath)
+    {
+        try
+        {
+            var file = new FileInfo(filePath);
+            if (!file.Exists || file.Length < ApplicationLogging.StartupFailureLogSizeLimitBytes)
+            {
+                return;
+            }
+
+            File.Move(filePath, Path.ChangeExtension(filePath, ".previous.log"), overwrite: true);
+        }
+        catch (Exception)
+        {
+            // Appending to an oversized file is better than losing the diagnostic entirely.
         }
     }
 }

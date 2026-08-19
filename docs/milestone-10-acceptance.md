@@ -18,6 +18,7 @@ Email notifications are not part of this release. Milestone 9 was skipped, so no
 - The startup barrier releases the queue and the scheduler on success, releases them without work on failure, and propagates cancellation.
 - A failed database migration prevents normal hosting, leaves a validated pre-migration backup, and exits with the service failure code.
 - Every address Kestrel is configured to bind is loopback, and an address beyond loopback is reported.
+- Log directory bounds are finite, and the startup-failure log rolls into a single previous copy once it reaches its limit rather than growing without limit.
 
 ## Manual checks
 
@@ -34,4 +35,5 @@ Email notifications are not part of this release. Milestone 9 was skipped, so no
 - Confirm every startup event identifier renders readable text in Event Viewer rather than a missing-description placeholder.
 - Run the pre-release matrix in [the release checklist](release-checklist.md) against the installed build, including the intended NAS.
 - Confirm no installer action changed permissions on any source folder, and that `C:\ProgramData\FolderBackuper` grants full control only to the local system account and local administrators with inheritance disabled.
-- Observe CPU, memory, database growth, log rolling, and the staging directory over repeated runs including one large backup.
+- Observe CPU, memory, database growth, log rolling, and the staging directory over repeated runs including one large backup, confirming the log directory settles within its documented cap.
+- Confirm the application icon appears on the installer, the start-menu shortcut, the installed executable, the Apps list entry, and the browser tab.

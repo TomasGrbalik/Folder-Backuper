@@ -54,6 +54,7 @@ Compression=lzma2/max
 SolidCompression=yes
 OutputDir={#OutputDir}
 OutputBaseFilename=FolderBackuper-{#AppVersion}-setup
+SetupIconFile={#PublishDir}\wwwroot\favicon.ico
 UninstallDisplayIcon={app}\{#AppExeName}
 UninstallDisplayName={#AppName}
 #ifdef SIGN

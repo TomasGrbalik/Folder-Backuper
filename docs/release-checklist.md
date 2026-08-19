@@ -26,6 +26,7 @@ pwsh installer/Build-Installer.ps1
 - Every test passes.
 - `artifacts/installer/FolderBackuper-<version>-setup.exe` exists and its version matches `Directory.Build.props`.
 - The published application directory contains no `web.config`, no satellite resource directories for languages other than English, and `FolderBackuper.pdb`.
+- `FolderBackuper.exe` and `setup.exe` both carry the application icon.
 
 ## 3. Clean Windows VM lifecycle
 
@@ -75,7 +76,8 @@ Observe an installed build over repeated runs, including at least one large back
 
 - CPU and memory return to idle levels after a run completes.
 - The database does not grow unbounded, and WAL files are checkpointed.
-- Log files roll daily and older files are removed after thirty days.
+- Log files roll daily and at the size limit, older files are removed after thirty days, and the directory stays within its documented cap.
+- The startup-failure log rolls into a single previous copy rather than growing.
 - The staging directory is empty between runs, and interrupted runs leave nothing behind after startup recovery.
 
 ## 7. Security and privacy review

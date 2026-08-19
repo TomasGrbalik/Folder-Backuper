@@ -26,7 +26,7 @@ The web interface is reachable only from this computer, at `http://localhost:<po
 | `C:\ProgramData\FolderBackuper\config` | `service.json`, the loopback port. |
 | `C:\ProgramData\FolderBackuper\data` | The SQLite database and validated pre-migration backups. |
 | `C:\ProgramData\FolderBackuper\staging` | Temporary archives during a backup run. |
-| `C:\ProgramData\FolderBackuper\logs` | Daily rolling log files, retained for thirty days. |
+| `C:\ProgramData\FolderBackuper\logs` | Daily rolling log files, retained for thirty days and capped at roughly 360 MB. |
 | Start menu, **Folder Backuper** | A shortcut to the web interface and a shortcut to the log folder. |
 
 `C:\ProgramData\FolderBackuper` is restricted to the local system account and local administrators. Inheritance is disabled so that other local accounts receive no access.
@@ -104,6 +104,17 @@ The installer reports a failed start and names where to look. Two places record 
 | 1099 | An unclassified startup failure. | Read the log file for the full exception. |
 
 Service recovery actions restart the service after an unexpected termination, but Windows does not apply them to start failures. A service that fails to start stays stopped until the cause is fixed, which is why these diagnostics are the intended path.
+
+## Disk used by logs
+
+Log files cannot grow without limit and need no maintenance.
+
+- A log file rolls daily and also whenever it reaches 8 MB.
+- At most 45 files are kept, and nothing older than thirty days is kept, so the directory settles at roughly 360 MB in the worst case and at a few megabytes in normal operation.
+- Backup progress is deliberately never logged. Only phase transitions, warnings, and unexpected errors are written, so a large backup does not produce a large log.
+- `startup-failure.log` is capped separately. When it fills it becomes `startup-failure.previous.log`, so a service that repeatedly fails to start cannot fill the disk either.
+
+Nothing in the log directory is needed to run the application; deleting its contents is safe. Backup history is kept in the database and shown in the web interface, not in these files.
 
 ## Build the installer yourself
 
