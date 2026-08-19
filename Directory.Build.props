@@ -7,4 +7,16 @@
     <Deterministic>true</Deterministic>
     <TreatWarningsAsErrors Condition="'$(Configuration)' == 'Release'">true</TreatWarningsAsErrors>
   </PropertyGroup>
+  <PropertyGroup Label="Product identity">
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <!-- Inno Setup reads the Win32 version resource, so FileVersion must be a plain numeric
+         version. InformationalVersion is unusable there because the SDK appends the commit hash. -->
+    <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
+    <FileVersion>$(VersionPrefix).0</FileVersion>
+    <Product>Folder Backuper</Product>
+    <Company>Folder Backuper</Company>
+    <Copyright>Copyright (c) Folder Backuper contributors</Copyright>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
 </Project>

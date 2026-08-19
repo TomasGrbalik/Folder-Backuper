@@ -148,7 +148,11 @@ public sealed class BackupSchedulerWorker(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await startupRecovery.WaitAsync(stoppingToken);
+        if (!await startupRecovery.WaitAsync(stoppingToken))
+        {
+            return;
+        }
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try

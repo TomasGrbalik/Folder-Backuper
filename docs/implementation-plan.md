@@ -52,7 +52,7 @@ Features outside the accepted use cases are not added opportunistically. New beh
 | 6 | Durable execution, cancellation, retention, and crash recovery |
 | 7 | Scheduler, queue ordering, catch-up, and manual-run coalescing |
 | 8 | Dashboard, progress, calendar, history, and storage presentation |
-| 9 | Selected email provider and durable notification workflow |
+| 9 | Selected email provider and durable notification workflow (skipped; deferred) |
 | 10 | Installer, upgrade, service recovery, and release hardening |
 
 ## 4. Milestone 0: Technical Risk Validation
@@ -425,6 +425,8 @@ Expose complete operational visibility after execution semantics are stable.
 
 ## 13. Milestone 9: Notifications
 
+This milestone was deliberately skipped and deferred. Milestone 10 was implemented directly after Milestone 8, and the release documents record that email notifications are not part of the current release.
+
 ### Prerequisite Decision
 
 Choose exactly one initial provider before starting this milestone:
@@ -571,7 +573,7 @@ Milestone 9: notifications
 Milestone 10: installer and release hardening
 ```
 
-Milestone 9 provider selection can occur earlier, but provider implementation should not distract from backup correctness and recovery.
+Milestone 9 provider selection can occur earlier, but provider implementation should not distract from backup correctness and recovery. Milestone 9 was skipped, and Milestone 10 does not depend on it: notification outcomes are simply absent rather than pending.
 
 ## 17. Definition of Complete
 
@@ -585,5 +587,5 @@ The initial implementation is complete only when:
 6. The installer passes clean install, upgrade, repair, and uninstall testing.
 7. Permanent history survives normal upgrades and artifact retention.
 8. Source read-only behavior has been reviewed and tested independently.
-9. The notification provider decision and privacy implications are documented.
+9. The notification provider decision and privacy implications are documented. Deferred with Milestone 9.
 10. No known critical or high-severity correctness issue remains open.

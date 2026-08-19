@@ -106,11 +106,13 @@ C:\ProgramData\FolderBackuper\
 
 The service and local administrators have access to this tree. Normal users do not receive direct filesystem access through installer-created permissions.
 
+`config\service.json` holds the installer-selected loopback port and is the only hosting configuration that survives an upgrade.
+
 The staging directory must never be located inside a configured source folder.
 
 ### 4.3 Service identity
 
-The service runs as `LocalSystem` and starts automatically with Windows. Windows service recovery restarts it after unexpected termination.
+The service runs as `LocalSystem` and starts automatically with Windows, using delayed automatic start so that the network and SMB stacks have settled before startup recovery probes destinations. Windows service recovery restarts it after unexpected termination.
 
 `LocalSystem` is chosen because the service must run without an interactive login, read locally configured sources, protect machine-level credentials, and perform scoped outbound impersonation. Source validation must still confirm that the service can read a selected folder. The application never changes source permissions automatically.
 
@@ -164,21 +166,34 @@ Interfaces are introduced at concrete boundaries that require substitution or is
 
 ## 6. Hosting and Startup
 
-Startup order is deterministic:
+Startup order is deterministic and splits at the service control manager handshake.
 
-1. Resolve and validate application paths.
-2. Configure structured bootstrap logging.
-3. Acquire a named single-instance mutex.
-4. Apply application-data access controls.
-5. Open SQLite and enable required connection settings.
-6. Back up the database if a schema migration is pending.
-7. Apply EF Core migrations.
-8. Recover interrupted runs and orphaned temporary files.
-9. Start the backup queue consumer.
-10. Start the scheduler.
-11. Start Kestrel and accept UI connections.
+Before the host starts:
 
-If database initialization or migration fails, the scheduler and backup executor must not start. The service exits with a diagnostic rather than running against unknown state.
+1. Handle installer maintenance commands and exit, if the process was started with one.
+2. Resolve and validate application paths.
+3. Configure structured bootstrap logging.
+4. Acquire a named single-instance mutex.
+5. Apply application-data access controls.
+6. Read installer-owned hosting configuration.
+
+The host then starts, which completes the service control manager handshake and starts Kestrel.
+
+After the host has started:
+
+7. Open SQLite and enable required connection settings.
+8. Back up the database if a schema migration is pending.
+9. Apply EF Core migrations.
+10. Recover interrupted runs and orphaned temporary files.
+11. Release the startup barrier, which starts the backup queue consumer and the scheduler.
+
+Steps 7 to 11 deliberately run in a hosted service rather than before the host starts. Work performed before the host starts also runs before the service control manager handshake, and a validated pre-migration backup followed by recovery that probes an unreachable SMB destination can exceed the thirty-second service start window. Windows terminates a service that exceeds it, and service recovery actions do not apply to start failures, so the result would be a permanent boot failure with no retry.
+
+If database initialization or migration fails, the scheduler and backup executor must not start. That guarantee is enforced by the startup barrier rather than by statement order: the queue and the scheduler await the barrier, a failure faults it, and the failure stops the host. The service exits with a diagnostic rather than running against unknown state.
+
+Kestrel therefore accepts connections before initialization completes. The loopback readiness endpoint reports that distinction, and the installer probes it rather than the web interface itself.
+
+Startup failures are classified into data-root, access-control, single-instance, migration, port-binding, and non-loopback-binding categories. Each is recorded as a Windows application event with a stable event identifier, and appended to `logs\startup-failure.log`. Neither channel depends on the structured logger, because the failures they exist for can occur before the file sink is configured. The service process itself always exits with 1: the service control manager renders a service exit code as a Win32 error string, so a distinct code would misdescribe the failure.
 
 The application uses a machine-wide `Global\FolderBackuper-<data-root-hash>` mutex with an explicit security descriptor granting the service and local administrators access. This prevents service and interactive diagnostic instances in different Windows sessions from operating on the same data directory concurrently.
 
@@ -191,10 +206,18 @@ The application uses a machine-wide `Global\FolderBackuper-<data-root-hash>` mut
 - Kestrel bound to `127.0.0.1` and `::1` on the configured port.
 - HTTP only while loopback-only.
 - No CORS policy allowing external origins.
-- No public Minimal API in the initial version.
+- No public Minimal API beyond the loopback readiness endpoint described below.
 - Static assets served locally; runtime CDN dependencies are prohibited.
 
-The installer selects an available default port, writes immutable hosting configuration, and creates a start-menu shortcut for the correct localhost URL.
+`GET /healthz` is the single exception to the no-Minimal-API rule. It reports the startup barrier state as `starting`, `ready`, or `failed`, carries no application data, and exists because Kestrel now binds before initialization completes, so a response from the web interface no longer proves the application is usable. The installer uses it to verify readiness after starting the service.
+
+The installer writes the hosting configuration to `config\service.json` under the application data root, which survives an upgrade because the installation directory is replaced. Only the port belongs in that file. The data root cannot: it is the location of the file itself, and remains settable only through the `FolderBackuper__DataRoot` environment variable or the `--FolderBackuper:DataRoot` argument. A data root written into the machine configuration file is rejected at startup rather than silently ignored.
+
+Environment and command-line configuration are re-applied above the machine configuration file so that a development override still wins over an installed value.
+
+Every address Kestrel actually bound is checked once the application has started. A non-loopback address stops the application, because `UseUrls` writes the same host setting that `ASPNETCORE_URLS` maps to and an operator environment variable could otherwise widen the binding.
+
+The installer selects the port, writes it into the hosting configuration, and creates a start-menu shortcut for the correct localhost URL.
 
 ### 7.2 Security controls
 
@@ -714,13 +737,17 @@ The application makes at most one provider call per notification. It marks the a
 
 Serilog writes structured rolling files under `ProgramData`.
 
-- Daily rolling files.
-- Thirty-day retention initially.
+- Daily rolling files, additionally rolled at 8 MB.
+- Thirty-day retention, capped at 45 retained files.
 - Stable event identifiers for important operations.
 - Reduced ASP.NET and SignalR request noise.
 - Credentials and protected values excluded by construction.
 - Startup logging available before normal dependency injection is complete.
 - Final flush attempted during graceful shutdown.
+
+The log directory is bounded on disk. A retention period alone cannot bound it, because a single unusually noisy day would grow without limit, and the file sink's default one-gigabyte size limit silently stops writing rather than rolling. Rolling on size as well as on date caps an individual file, the retained-file count caps the total at roughly 360 MB, and the time limit still discards anything older than the retention period. Normal operation stays far below the cap because high-frequency progress is neither logged nor persisted.
+
+The startup-failure log is written without Serilog and therefore carries its own limit. Reaching it replaces the previous copy instead of growing, which bounds the pair even when a service fails to start repeatedly.
 
 SQLite structured run records are the source for user-visible diagnostics. Raw log files are not exposed through the UI or exported by the product.
 
@@ -807,11 +834,19 @@ Inno Setup is responsible for:
 - Asking explicitly before deleting application data during uninstall.
 - Waiting for service readiness and verifying the localhost URL after install or upgrade.
 - Reporting service, migration, and Kestrel binding failures with a path to local diagnostics.
-- Providing a repair action that can select and write a new loopback port when the current port prevents UI startup.
+- Selecting and writing a new loopback port when the current port prevents UI startup.
 
 The installer does not create mapped drives, source ACLs, destination credentials, firewall rules, or TLS certificates.
 
 Schema migration is performed by the application during startup, not by custom installer SQL.
+
+The installer never writes directories or access-control lists itself. It runs the installed executable with `--configure-port`, which creates the application data directories, applies the documented access controls, verifies the chosen port is free, and writes `config\service.json`. Readiness is verified the same way, through `--wait-ready`. Both commands are handled before the host builder, so neither contends for the single-instance mutex held by a running service, and both return distinct exit codes that the installer maps to operator guidance.
+
+The port is chosen on a wizard page rather than by the application. Icons are written before the post-install step runs, so a port selected later would produce a shortcut with the wrong URL. The chosen value is remembered in `HKLM\SOFTWARE\FolderBackuper` and pre-filled on the next run; `config\service.json` remains the application's source of truth.
+
+Inno Setup has no separate repair mode. Re-running `setup.exe` over an existing installation is the repair, and it re-applies files, icons, registry values, and the post-install sequence. Because the port page is always shown with the previous value pre-filled, one code path covers installation, upgrade, and repair, including reconfiguring the port when the current one prevents UI startup.
+
+The service is registered as `FolderBackuper` with display name `Folder Backuper` and delayed automatic start, which keeps it out of the boot contention window so the network and SMB stacks have settled before startup recovery probes destinations. Recovery actions restart the service after unexpected termination. The service failure flag is deliberately not set, because a deterministic startup failure such as a failed migration would otherwise become a restart loop, and because recovery actions do not apply to start failures at all. Startup diagnostics are therefore carried by the Windows application event log, whose source the installer registers, rather than by automatic restarts.
 
 ## 19. Update Policy
 

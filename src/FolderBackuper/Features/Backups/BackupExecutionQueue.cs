@@ -67,7 +67,11 @@ public sealed class BackupExecutionWorker(
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await startupRecovery.WaitAsync(stoppingToken);
+        if (!await startupRecovery.WaitAsync(stoppingToken))
+        {
+            return;
+        }
+
         queue.Signal(); // Durable rows may predate this process.
         while (!stoppingToken.IsCancellationRequested)
         {
