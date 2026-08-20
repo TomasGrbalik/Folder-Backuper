@@ -1,7 +1,10 @@
+using System.Net;
 using Bunit;
 using FolderBackuper.Components.Pages;
 using FolderBackuper.Features.Notifications;
 using FolderBackuper.Features.Settings;
+using FolderBackuper.Features.Updates;
+using FolderBackuper.Infrastructure.Versioning;
 using Microsoft.Extensions.DependencyInjection;
 using MudBlazor;
 using MudBlazor.Services;
@@ -15,7 +18,8 @@ public sealed class SettingsPageTests
     private static BunitContext CreateContext(
         TemporaryDatabase database,
         TimeProvider clock,
-        IRunNotificationSender? sender = null)
+        IRunNotificationSender? sender = null,
+        FakeHttpMessageHandler? releaseFeed = null)
     {
         var context = new BunitContext();
         context.JSInterop.Mode = JSRuntimeMode.Loose;
@@ -25,6 +29,17 @@ public sealed class SettingsPageTests
         context.Services.AddSingleton(new InstallationIdentityService(database.ContextFactory, clock));
         context.Services.AddSingleton(NotificationTestFactory.Settings(database, clock));
         context.Services.AddSingleton<IRunNotificationSender>(sender ?? new FakeRunNotificationSender());
+
+        // The about card lives on the same page. Its release feed is a fake that answers "nothing
+        // published" unless a test scripts something else, so no test here reaches the network.
+        var store = new UpdateStatusStore();
+        context.Services.AddSingleton(store);
+        context.Services.AddSingleton(UpdateTestFactory.Settings(database, clock));
+        context.Services.AddSingleton(UpdateTestFactory.Checks(
+            releaseFeed ?? FakeHttpMessageHandler.Returning(HttpStatusCode.NotFound, """{"message":"Not Found"}"""),
+            database,
+            store,
+            clock));
         return context;
     }
 
@@ -203,5 +218,98 @@ public sealed class SettingsPageTests
         Assert.Equal("backups@example.test", saved.FromAddress);
         Assert.Equal(["operator@example.test"], saved.Recipients);
         Assert.True(saved.HasApiKey);
+    }
+
+    [Fact]
+    public async Task Page_NamesTheInstalledVersionAndWhatTheUpdateCheckSends()
+    {
+        var clock = new TestTimeProvider(Now);
+        await using var database = new TemporaryDatabase(clock);
+        await database.Initializer.InitializeAsync();
+        await using var context = CreateContext(database, clock);
+
+        var component = context.Render<Settings>();
+        component.WaitForState(() => component.Markup.Contains("About and updates", StringComparison.Ordinal));
+
+        Assert.Contains($"Version {ProductVersion.Display}", component.Markup, StringComparison.Ordinal);
+
+        // What the check discloses has to be visible where it is switched on and off, not only in the
+        // documentation, exactly as the external-processing notice is for email.
+        Assert.Contains("anonymous", component.Markup, StringComparison.Ordinal);
+        Assert.Contains("no installation identity", component.Markup, StringComparison.Ordinal);
+        Assert.Contains("Nothing is ever", component.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CheckNow_ReportsANewerVersionAndOffersTheLink()
+    {
+        var clock = new TestTimeProvider(Now);
+        await using var database = new TemporaryDatabase(clock);
+        await database.Initializer.InitializeAsync();
+        var feed = FakeHttpMessageHandler.Returning(
+            HttpStatusCode.OK,
+            UpdateTestFactory.ReleasePayload("v99.0.0", "https://example.test/releases/99"));
+        await using var context = CreateContext(database, clock, releaseFeed: feed);
+
+        var component = context.Render<Settings>();
+        component.WaitForState(() => component.Markup.Contains("Check now", StringComparison.Ordinal));
+
+        component.FindAll("button")
+            .Single(item => item.TextContent.Contains("Check now", StringComparison.Ordinal))
+            .Click();
+
+        component.WaitForAssertion(() => Assert.Contains(
+            "Version 99.0.0 is available", component.Markup, StringComparison.Ordinal));
+        Assert.Contains("The newest release is 99.0.0", component.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CheckNow_ReportsAnInconclusiveCheckWithoutClaimingAnythingAboutVersions()
+    {
+        var clock = new TestTimeProvider(Now);
+        await using var database = new TemporaryDatabase(clock);
+        await database.Initializer.InitializeAsync();
+        var feed = FakeHttpMessageHandler.Throwing(new HttpRequestException("no route"));
+        await using var context = CreateContext(database, clock, releaseFeed: feed);
+
+        var component = context.Render<Settings>();
+        component.WaitForState(() => component.Markup.Contains("Check now", StringComparison.Ordinal));
+
+        component.FindAll("button")
+            .Single(item => item.TextContent.Contains("Check now", StringComparison.Ordinal))
+            .Click();
+
+        // A failed check must not be dressed up as an error, and must not imply the build is current.
+        component.WaitForAssertion(() => Assert.Contains(
+            "The last check did not get an answer", component.Markup, StringComparison.Ordinal));
+        Assert.Contains(
+            "This says nothing about whether a newer version exists",
+            component.Markup,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("is available", component.Markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SwitchingOffTheUpdateCheck_SavesAtOnceAndStopsAskingGitHub()
+    {
+        var clock = new TestTimeProvider(Now);
+        await using var database = new TemporaryDatabase(clock);
+        await database.Initializer.InitializeAsync();
+        var feed = FakeHttpMessageHandler.Returning(HttpStatusCode.OK, UpdateTestFactory.ReleasePayload("v99.0.0"));
+        await using var context = CreateContext(database, clock, releaseFeed: feed);
+
+        var component = context.Render<Settings>();
+        component.WaitForState(() => component.Markup.Contains("Check GitHub for newer versions", StringComparison.Ordinal));
+
+        // The second checkbox on the page is the update-check switch; the first belongs to the
+        // notification form above it.
+        component.FindAll("input[type=checkbox]")[1].Change(false);
+
+        component.WaitForAssertion(() => Assert.Contains(
+            "Version checking is off", component.Markup, StringComparison.Ordinal));
+
+        // It saves itself, so the notification form's Save button has nothing to do with it.
+        Assert.False(await UpdateTestFactory.Settings(database, clock).IsEnabledAsync());
+        Assert.Empty(feed.Requests);
     }
 }

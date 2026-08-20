@@ -1,0 +1,36 @@
+@* Renders nothing at all unless a newer release exists. A version notice is background information,
+   so it must never occupy space in the app bar while there is nothing to say. It is a component of
+   its own rather than markup inside MainLayout so that it can be rendered on its own in a test, and
+   so that its subscription is disposed with it. *@
+@implements IDisposable
+@inject UpdateStatusStore Updates
+
+@if (status.UpdateAvailable)
+{
+    <a class="update-notice" href="@status.DownloadUrl" target="_blank" rel="noopener noreferrer">
+        <MudIcon Icon="@Icons.Material.Filled.SystemUpdateAlt" Size="Size.Small" />
+        <span>Version @status.LatestDisplay available</span>
+    </a>
+}
+
+@code {
+    private UpdateStatus status = UpdateStatus.ForInstalledBuild();
+    private IDisposable? subscription;
+
+    protected override void OnInitialized()
+    {
+        status = Updates.Current;
+
+        // A check completed in the background, or started from the settings page, would otherwise
+        // leave this notice stale until the next navigation.
+        subscription = Updates.Subscribe(() => InvokeAsync(Reload));
+    }
+
+    private void Reload()
+    {
+        status = Updates.Current;
+        StateHasChanged();
+    }
+
+    public void Dispose() => subscription?.Dispose();
+}

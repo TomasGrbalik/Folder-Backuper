@@ -41,8 +41,8 @@ jobs:
           if-no-files-found: ignore
 
   package:
-    # Builds setup.exe and keeps it as a workflow artifact. Publishing a GitHub release is a
-    # separate, deliberate step and is not automated here.
+    # Builds setup.exe and keeps it as a workflow artifact, named for the development version. A
+    # release is published by dispatching release.yml by hand, which does its own build.
     needs: build-and-test
     runs-on: windows-latest
     timeout-minutes: 20

@@ -127,6 +127,20 @@ The service runs as `LocalSystem` and starts automatically with Windows, using d
 
 Supporting Windows on ARM or 32-bit Windows requires a separate future deployment decision.
 
+### 4.5 Version identity
+
+One version travels from source to installer to tag, and every step derives it from the previous one rather than declaring it again.
+
+`Directory.Build.props` holds `VersionPrefix` and `VersionSuffix`, and `build/Set-ProductVersion.ps1` is their only writer. Every build that the release workflow did not produce carries the suffix `dev`, so a development binary can never be mistaken for a release. `AssemblyVersion` and `FileVersion` stay `$(VersionPrefix).0`, plain numeric, because Inno Setup reads `VersionInfoVersion` out of the Win32 resource and rejects anything else. The suffix therefore reaches the outside world through `InformationalVersion`, which the SDK also stamps with the commit hash after a `+`, and which appears in the Win32 `ProductVersion` field.
+
+From there:
+
+- `Infrastructure/Versioning/ProductVersion` reads `InformationalVersion` off its own assembly, splits the commit hash off, and exposes the display version the web interface shows.
+- `installer/Build-Installer.ps1` reads the same field from the published executable, discards the commit hash, and passes the remainder to Inno Setup as `VersionLabel`. It names `setup.exe` and appears in the Apps list, while `VersionInfoVersion` stays numeric. A release therefore produces `FolderBackuper-1.2.0-setup.exe` and a development build produces `FolderBackuper-1.2.1-dev-setup.exe`.
+- The release workflow verifies that the published executable reports the version it was asked to release and that it was stamped with the commit it tagged, so a version that was not applied before publishing fails the release rather than shipping.
+
+The workflow owns the version file: it rewrites it, commits `Release v<version>`, tags that commit, builds and tests it, then commits the next `-dev` version, and pushes both commits and the tag in one atomic push. Nothing reaches the repository until every step that can fail has succeeded.
+
 ## 5. Solution Structure
 
 ```text
@@ -858,9 +872,20 @@ The service is registered as `FolderBackuper` with display name `Folder Backuper
 
 ## 19. Update Policy
 
-Automatic update and release polling are not included because no accepted use case requires them. Upgrades are performed by running a newer signed `setup.exe`.
+Automatic update and installation are not included. Nothing is ever downloaded or applied on its own; an upgrade always means a person running a newer `setup.exe`, which is the path section 18 describes.
 
-Code signing is strongly recommended for released installer and executable artifacts, but certificate acquisition and release infrastructure are outside the application architecture.
+Release **notification** is included. The earlier position that release polling was unnecessary is reversed: an installed instance that cannot tell its owner a newer version exists leaves them to discover fixes by accident, and the web interface is the only place they look. The application therefore does one thing about it.
+
+- The web interface shows the running version in the navigation drawer and on the settings page.
+- A worker asks the GitHub releases API once a day whether a newer version has been published, and the answer is shown as a hyperlink to the release. The comparison is the running `InformationalVersion` against the release tag; a release supersedes its own pre-release, so the development build that follows a release is not offered that release.
+- The request is an anonymous HTTPS GET. It carries a user agent naming the product, with no version, no installation identifier, and nothing about the machine or its backups. It sends no credential, and there is nothing in it to redact.
+- The check can be switched off on the settings page. It is on by default, including after an upgrade.
+- Every failure is inconclusive rather than an error. Offline, a proxy the service account cannot see, a rate limit, and an unreadable response are all treated the same way: the last thing that was actually known is kept, the reason is recorded next to it, and no problem is reported. A backup product that raised an error because a version check failed would teach its owner to ignore its errors. An inconclusive check is also never allowed to read as "up to date".
+- Only `releases/latest` is consulted, which excludes drafts and pre-releases, so an unfinished release can never be offered.
+
+The check reads settings from SQLite, so it waits for startup recovery like every other worker, and it waits further before its first attempt: the service starts with a delayed automatic start precisely because the network has not settled at boot. The time of the last check is not persisted, because it is worth nothing after a restart. Repeated inconclusive checks back off to the ordinary daily cadence rather than retrying hourly forever, so a permanently offline machine cannot fill the log that people read for backup diagnostics.
+
+Code signing is strongly recommended for released installer and executable artifacts, but certificate acquisition is outside the application architecture. Continuous integration publishes unsigned artifacts until a certificate exists; see section 8 of the release checklist.
 
 ## 20. Accepted Tradeoffs
 
@@ -872,6 +897,7 @@ Code signing is strongly recommended for released installer and executable artif
 - SQLite and an in-process queue fit one service instance and the expected workload.
 - DPAPI machine scope protects secrets at rest but does not defend against local administrators.
 - Destination validation checks ZIP structure and expected entries but does not perform a complete decompression and CRC readback.
+- The release check makes this the first unsolicited outbound request the product performs. A backup service that previously spoke only to its own destinations, and to Resend when configured to, now contacts one more system by default. The request is anonymous and switchable, and the alternative is an owner who cannot tell that a fix exists.
 
 ## 21. Resolved Technical Decision
 
