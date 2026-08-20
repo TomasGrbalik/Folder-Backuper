@@ -8,11 +8,11 @@
     <TreatWarningsAsErrors Condition="'$(Configuration)' == 'Release'">true</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Label="Product identity">
-    <VersionPrefix>1.0.0</VersionPrefix>
+    <VersionPrefix>1.0.1</VersionPrefix>
     <!-- Every build that the release workflow did not produce carries this suffix, so a
          development binary can never be mistaken for a release. Only build/Set-ProductVersion.ps1
          writes these two elements, and the release workflow clears the suffix for one commit. -->
-    <VersionSuffix></VersionSuffix>
+    <VersionSuffix>dev</VersionSuffix>
     <!-- Inno Setup reads the Win32 version resource, so FileVersion must be a plain numeric
          version, unaffected by the suffix. The suffix reaches the installer filename and the web
          interface through InformationalVersion, which the SDK also stamps with the commit hash. -->
