@@ -19,6 +19,7 @@
         </div>
         <MudSpacer />
         <div class="service-status"><span></span> Service online</div>
+        <UpdateNoticeChip />
         <div class="theme-toggle" role="group" aria-label="Theme">
             <button type="button" class="@(isDarkMode ? "" : "active")" @onclick="() => SetThemeAsync(false)">
                 <MudIcon Icon="@Icons.Material.Filled.LightMode" /> Light

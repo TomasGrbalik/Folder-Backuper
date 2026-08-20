@@ -16,7 +16,14 @@
 #endif
 
 #define AppExeName "FolderBackuper.exe"
+; The numeric version is read from the Win32 resource of the built executable, so setup.exe can
+; never drift from the binary it carries. VersionInfoVersion must stay numeric. The display label
+; may also carry a prerelease suffix, which a numeric version cannot express, so Build-Installer.ps1
+; reads it from the ProductVersion field of the same resource and passes it in here.
 #define AppVersion GetVersionNumbersString(AddBackslash(PublishDir) + AppExeName)
+#ifndef VersionLabel
+  #define VersionLabel AppVersion
+#endif
 #define AppName "Folder Backuper"
 #define ServiceName "FolderBackuper"
 #define EventLogSource "Folder Backuper"
@@ -33,7 +40,7 @@
 ; Never change AppId: it is how Windows recognizes an upgrade of this product.
 AppId={{8E0B4B37-7F5C-4C2B-9E4C-2A7A2C6C9E11}
 AppName={#AppName}
-AppVersion={#AppVersion}
+AppVersion={#VersionLabel}
 VersionInfoVersion={#AppVersion}
 AppPublisher=Folder Backuper
 AppCopyright=Copyright (c) Folder Backuper contributors
@@ -53,7 +60,7 @@ WizardStyle=modern
 Compression=lzma2/max
 SolidCompression=yes
 OutputDir={#OutputDir}
-OutputBaseFilename=FolderBackuper-{#AppVersion}-setup
+OutputBaseFilename=FolderBackuper-{#VersionLabel}-setup
 SetupIconFile={#PublishDir}\wwwroot\favicon.ico
 UninstallDisplayIcon={app}\{#AppExeName}
 UninstallDisplayName={#AppName}

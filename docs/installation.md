@@ -69,7 +69,22 @@ Run a newer `setup.exe`. It stops the service, replaces the application director
 
 Before applying a pending migration the application takes a validated backup of the database into `C:\ProgramData\FolderBackuper\data\migrations` and keeps the three most recent. If a migration fails, the service stops rather than running against unknown state, and that backup is your recovery point.
 
-There is no automatic update check. Upgrades happen only when you run a newer installer.
+Upgrades happen only when you run a newer installer. Nothing is downloaded or installed on its own.
+
+### Update notification
+
+Folder Backuper tells you when a newer version has been released. The version it is running is shown at the bottom of the navigation drawer and on the **Settings** page.
+
+Once a day the service asks GitHub over HTTPS whether a newer version has been published. If there is one, a notice appears in the title bar linking to its release page, where you download the new `setup.exe` and run it as described above.
+
+What that request contains:
+
+- Nothing that identifies you or this computer. No installation identifier, no configuration, no job names, no folder paths, and not even the version you are running.
+- No credentials. It is the same anonymous request a web browser makes when you open the releases page.
+
+If the request cannot get through, because the computer is offline or a proxy is in the way, nothing is reported: a failed version check is not a problem with your backups, and it never claims you are up to date. The **Settings** page shows when the last check ran and whether it got an answer.
+
+To switch it off, open **Settings**, find **About and updates**, and clear **Check GitHub for newer versions**. Nothing is then sent, and no notice appears when a new version is released. The preference survives upgrades.
 
 ## Uninstall
 

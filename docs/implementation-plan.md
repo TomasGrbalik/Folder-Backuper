@@ -54,6 +54,7 @@ Features outside the accepted use cases are not added opportunistically. New beh
 | 8 | Dashboard, progress, calendar, history, and storage presentation |
 | 9 | Selected email provider and durable notification workflow |
 | 10 | Installer, upgrade, service recovery, and release hardening |
+| 11 | Version identity, automated releases, and update notification |
 
 ## 4. Milestone 0: Technical Risk Validation
 
@@ -514,7 +515,44 @@ Deliver a reliable `setup.exe` and validate the complete unattended product life
 - No installer action changes source-folder permissions.
 - Released binaries are ready for signing and distribution.
 
-## 15. Cross-Cutting Verification
+## 15. Milestone 11: Versioning, Release Automation, and Update Notification
+
+### Goal
+
+Make every build name itself, make a release a single deliberate action that cannot produce a mislabelled artifact, and let an installed instance tell its owner that a newer version exists.
+
+### Work
+
+1. Hold the version in `Directory.Build.props` with a `dev` suffix on every build the release workflow did not produce.
+2. Make `build/Set-ProductVersion.ps1` its only writer, rewriting the file without disturbing anything else in it.
+3. Carry the display version into the installer file name and the Apps list entry while keeping the Win32 version numeric.
+4. Fail the packaging step when the built executable does not report the version that was asked for.
+5. Add a manually dispatched release workflow that validates the version, commits, tags, builds, tests, packages, and publishes.
+6. Push both commits and the tag in one atomic push, after every step that can fail has succeeded.
+7. Verify that the published artifact carries the released version and the tagged commit.
+8. Show the running version in the navigation drawer and on the settings page.
+9. Read the newest published release from the GitHub API on a slow cadence, classifying every failure as inconclusive.
+10. Compare the published version against the running build so that a release is never offered to the development build that follows it.
+11. Show an update as a hyperlink to its release page, and nothing at all when there is nothing to say.
+12. Persist the preference that switches the check off, defaulting to on for new and upgraded installations.
+13. Document what the request contains where it is switched on and off, not only in the documentation.
+
+### Deliverables
+
+- A version that travels from source to installer to tag by derivation rather than declaration.
+- A release workflow whose failure modes leave the repository untouched.
+- A version display and an update notice in the web interface.
+- Milestone 11 acceptance checklist.
+
+### Exit Criteria
+
+- A development build reports and packages itself as a pre-release version; only the workflow produces a plain release version.
+- A release produces a tag, a published release, an attached installer, and a repository left on the next development version.
+- A release cannot be published with a version that was not applied to the artifact.
+- An unreachable release feed changes nothing that a person sees except a recorded reason, and never reports a problem.
+- The update check can be switched off, and nothing is sent afterwards.
+
+## 16. Cross-Cutting Verification
 
 Every milestone must maintain:
 
@@ -544,7 +582,7 @@ Before release, execute a matrix covering:
 - Notification success, rejection, timeout, and uncertain crash boundary.
 - Install, upgrade, repair, and uninstall.
 
-## 16. Implementation Dependencies
+## 17. Implementation Dependencies
 
 ```text
 Milestone 0: risk validation
@@ -572,7 +610,7 @@ Milestone 10: installer and release hardening
 
 Milestone 9 provider selection can occur earlier, but provider implementation should not distract from backup correctness and recovery. Milestone 10 does not depend on Milestone 9, which is why implementing it after Milestone 10 required no change to the installer or release work.
 
-## 17. Definition of Complete
+## 18. Definition of Complete
 
 The initial implementation is complete only when:
 

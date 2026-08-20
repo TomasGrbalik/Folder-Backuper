@@ -47,8 +47,22 @@ dotnet publish src/FolderBackuper/FolderBackuper.csproj -c Release -r win-x64 --
 pwsh installer/Build-Installer.ps1
 ```
 
-`Build-Installer.ps1` publishes to `artifacts/publish` and then compiles `artifacts/installer/FolderBackuper-<version>-setup.exe` with [Inno Setup](https://jrsoftware.org/isinfo.php) 6.3 or newer. The installer version is read from the built executable, so `setup.exe` cannot drift from the binary it carries. Continuous integration builds the installer and keeps it as a workflow artifact; publishing a release is a separate step. The [release checklist](docs/release-checklist.md) covers signing and the pre-release matrix.
+`Build-Installer.ps1` publishes to `artifacts/publish` and then compiles `artifacts/installer/FolderBackuper-<version>-setup.exe` with [Inno Setup](https://jrsoftware.org/isinfo.php) 6.3 or newer. The installer version is read from the built executable, so `setup.exe` cannot drift from the binary it carries.
 
-Execution uses the durable queue, cancellation, retention, and startup-recovery workflow described in the [Milestone 6 acceptance checklist](docs/milestone-6-acceptance.md). Unattended scheduling and catch-up follow the [Milestone 7 acceptance checklist](docs/milestone-7-acceptance.md), the operational monitoring and history interface follows the [Milestone 8 acceptance checklist](docs/milestone-8-acceptance.md), email notifications follow the [Milestone 9 acceptance checklist](docs/milestone-9-acceptance.md), and installer and release behavior follows the [Milestone 10 acceptance checklist](docs/milestone-10-acceptance.md).
+## Versioning And Releases
+
+`Directory.Build.props` holds the version, and `build/Set-ProductVersion.ps1` is its only writer. Every build that the release workflow did not produce carries a `dev` suffix, so a development binary reports `1.0.0-dev` and produces `FolderBackuper-1.0.0-dev-setup.exe`. The suffix travels through `InformationalVersion`; `AssemblyVersion` and `FileVersion` stay numeric because Inno Setup reads them out of the Win32 resource.
+
+Releasing is one manual step. Dispatch the **Release** workflow from `main` with the version:
+
+```powershell
+gh workflow run Release -f version=1.2.0
+```
+
+It rewrites the version, commits `Release v1.2.0`, tags it, builds and tests that commit, commits the next `-dev` version, pushes both commits and the tag atomically, and publishes a GitHub release with `setup.exe` attached and generated notes. Nothing reaches the repository until every step that can fail has succeeded, and the artifact is verified to carry both the released version and the tagged commit. Work through the [release checklist](docs/release-checklist.md) first; it also covers signing, which continuous integration does not do, and the pre-release matrix.
+
+The running version is shown in the web interface. Once a day the service asks GitHub whether a newer version has been published and, if so, links to it. The request is anonymous, sends nothing about the machine, downloads nothing, and can be switched off under **Settings**.
+
+Execution uses the durable queue, cancellation, retention, and startup-recovery workflow described in the [Milestone 6 acceptance checklist](docs/milestone-6-acceptance.md). Unattended scheduling and catch-up follow the [Milestone 7 acceptance checklist](docs/milestone-7-acceptance.md), the operational monitoring and history interface follows the [Milestone 8 acceptance checklist](docs/milestone-8-acceptance.md), email notifications follow the [Milestone 9 acceptance checklist](docs/milestone-9-acceptance.md), installer and release behavior follows the [Milestone 10 acceptance checklist](docs/milestone-10-acceptance.md), and versioning, release automation, and update notification follow the [Milestone 11 acceptance checklist](docs/milestone-11-acceptance.md).
 
 Email notifications are delivered through the [Resend](https://resend.com) HTTPS API and are optional. Configuring them needs an API key and a verified sending domain; the key is protected with DPAPI. One email is sent per finished run, cancelled runs never send email, and a delivery problem is recorded separately without changing a backup outcome.

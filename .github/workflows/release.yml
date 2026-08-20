@@ -1,0 +1,298 @@
+name: Release
+
+# Publishing a release is deliberate: dispatch this workflow from main with the version to release.
+# It owns Directory.Build.props, builds and tests the commit it is about to tag, and publishes the
+# GitHub release with the installer attached.
+#
+# Nothing is pushed until every step that can fail has already succeeded, and the two commits and the
+# tag then go out in a single atomic push. A failure before that point leaves the repository
+# untouched, and the runner workspace is discarded.
+#
+# main is not branch-protected, so the built-in GITHUB_TOKEN can push the commits and the tag.
+# Introducing branch protection or a ruleset later would require a personal access token or a GitHub
+# App token allowed to bypass it, passed to actions/checkout. Note also that a GITHUB_TOKEN push
+# never triggers another workflow run, so Build does not re-run for the commits created here; they
+# were already built and tested by this run.
+#
+# The published installer is unsigned. See section 8 of docs/release-checklist.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, for example 1.2.0 (or 1.2.0-rc.1 for a pre-release)"
+        required: true
+        type: string
+      next_version:
+        description: "Version to continue development on. Defaults to a patch bump of the release."
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Refuse to release from anywhere but main
+        if: github.ref != 'refs/heads/main'
+        run: |
+          Write-Host "::error::This workflow releases from main only. It was dispatched from ${{ github.ref }}."
+          exit 1
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve and validate versions
+        id: resolve
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $requested = '${{ inputs.version }}'.Trim()
+          $parts = $requested -split '-', 2
+          $core = $parts[0]
+          $suffix = if ($parts.Count -gt 1) { $parts[1] } else { '' }
+
+          if ($core -notmatch '^\d+\.\d+\.\d+$') {
+              throw "'$requested' is not a version this workflow can release. Use three numeric parts, optionally followed by a pre-release suffix, for example 1.2.0 or 1.2.0-rc.1."
+          }
+          foreach ($part in $core.Split('.')) {
+              if ($part.Length -gt 1 -and $part.StartsWith('0')) {
+                  throw "The version part '$part' in '$requested' has a leading zero. Write it without one."
+              }
+          }
+          if ($suffix -and $suffix -notmatch '^[0-9A-Za-z][0-9A-Za-z.-]*$') {
+              throw "'$suffix' is not a usable pre-release suffix."
+          }
+          # 'dev' marks a build this workflow did not produce, so it can never name a release.
+          if ($suffix -eq 'dev') {
+              throw "'dev' is the development suffix and cannot be released."
+          }
+
+          $next = '${{ inputs.next_version }}'.Trim()
+          if (-not $next) {
+              if ($suffix) {
+                  # A pre-release keeps its own triple: development continues towards the same release.
+                  $next = $core
+              }
+              else {
+                  $numbers = $core.Split('.')
+                  $next = "$($numbers[0]).$($numbers[1]).$([int]$numbers[2] + 1)"
+              }
+          }
+          if ($next -notmatch '^\d+\.\d+\.\d+$') {
+              throw "The next development version '$next' must have three numeric parts."
+          }
+
+          $tag = "v$requested"
+          if (git tag --list $tag) {
+              throw "Tag $tag already exists in this repository."
+          }
+          if (git ls-remote --tags origin "refs/tags/$tag") {
+              throw "Tag $tag already exists on the remote."
+          }
+
+          # The releases/latest endpoint orders by publication date, not by version, so a release
+          # must never go backwards from the highest tag or the update notice would offer an older
+          # build to everyone running the newer one.
+          $published = @(
+              git tag --list 'v*' |
+                  ForEach-Object { $_.Substring(1) } |
+                  Where-Object { $_ -as [System.Management.Automation.SemanticVersion] } |
+                  ForEach-Object { [System.Management.Automation.SemanticVersion] $_ } |
+                  Sort-Object -Descending
+          )
+          if ($published.Count -gt 0) {
+              $highest = $published[0]
+              if (([System.Management.Automation.SemanticVersion] $requested) -le $highest) {
+                  throw "Version $requested does not come after the highest released version $highest."
+              }
+          }
+
+          # Guards against a merge landing on main between the dispatch and this run.
+          $head = (git rev-parse HEAD).Trim()
+          $origin = (git rev-parse origin/main).Trim()
+          if ($head -ne $origin) {
+              throw "HEAD ($head) is not origin/main ($origin). Re-dispatch the workflow."
+          }
+
+          "version=$requested" >> $env:GITHUB_OUTPUT
+          "core=$core" >> $env:GITHUB_OUTPUT
+          "suffix=$suffix" >> $env:GITHUB_OUTPUT
+          "next=$next" >> $env:GITHUB_OUTPUT
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "installer=FolderBackuper-$requested-setup.exe" >> $env:GITHUB_OUTPUT
+          Write-Host "Releasing $requested as $tag, then continuing development on $next-dev."
+
+      - name: Set up pinned .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Apply the release version
+        run: |
+          $ErrorActionPreference = 'Stop'
+          pwsh -NoProfile -File build/Set-ProductVersion.ps1 -Version '${{ steps.resolve.outputs.core }}' -Suffix '${{ steps.resolve.outputs.suffix }}'
+
+          # Only the version file may change, and only on the lines that carry the version. Anything
+          # else means the working tree was already dirty or the script rewrote the whole file.
+          $changed = @(git diff --name-only)
+          if ($changed.Count -ne 1 -or $changed[0] -ne 'Directory.Build.props') {
+              throw "Expected only Directory.Build.props to change but got: $($changed -join ', ')"
+          }
+          $added, $removed, $null = (git diff --numstat) -split '\s+'
+          if ($added -ne $removed -or [int]$added -gt 2) {
+              throw "Expected at most two changed lines in Directory.Build.props but got $added added and $removed removed."
+          }
+
+      - name: Commit and tag the release
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # The commit and the tag come before the build so that the binary is stamped with the
+          # commit that carries the release version. Both stay local until the atomic push.
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Directory.Build.props
+          git commit -m 'Release ${{ steps.resolve.outputs.tag }}'
+          git tag -a '${{ steps.resolve.outputs.tag }}' -m 'Folder Backuper ${{ steps.resolve.outputs.version }}'
+
+      - name: Restore
+        run: dotnet restore FolderBackuper.slnx
+
+      - name: Build
+        run: dotnet build FolderBackuper.slnx -c Release --no-restore
+
+      - name: Test
+        run: dotnet test FolderBackuper.slnx -c Release --no-build --logger "trx;LogFileName=tests.trx"
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: "**/TestResults/*.trx"
+          if-no-files-found: ignore
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: Build installer
+        run: pwsh -NoProfile -File installer/Build-Installer.ps1 -ExpectedVersion '${{ steps.resolve.outputs.version }}'
+
+      - name: Verify the built artifact
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $expected = '${{ steps.resolve.outputs.version }}'
+          $commit = (git rev-parse HEAD).Trim()
+
+          $productVersion = (Get-Item 'artifacts/publish/FolderBackuper.exe').VersionInfo.ProductVersion
+          $label = ($productVersion -split '\+', 2)[0]
+          if ($label -ne $expected) {
+              throw "The published executable reports version '$label' but '$expected' was expected."
+          }
+          # Provenance: the binary must be stamped with the commit that carries its version.
+          if ($productVersion -match '\+(.+)$' -and $Matches[1] -ne $commit) {
+              throw "The published executable was stamped with commit $($Matches[1]) but the release commit is $commit."
+          }
+
+          $asset = Join-Path 'artifacts/installer' '${{ steps.resolve.outputs.installer }}'
+          if (-not (Test-Path -LiteralPath $asset)) {
+              throw "The expected installer was not produced: $asset"
+          }
+          Write-Host "Verified $asset at $productVersion"
+
+      - name: Reopen development on the next version
+        run: |
+          $ErrorActionPreference = 'Stop'
+          pwsh -NoProfile -File build/Set-ProductVersion.ps1 -Version '${{ steps.resolve.outputs.next }}' -Suffix dev
+          $changed = @(git diff --name-only)
+          if ($changed.Count -ne 1 -or $changed[0] -ne 'Directory.Build.props') {
+              throw "Expected only Directory.Build.props to change but got: $($changed -join ', ')"
+          }
+          git add Directory.Build.props
+          git commit -m 'Continue development on ${{ steps.resolve.outputs.next }}-dev'
+
+      - name: Push the release commit, the development commit, and the tag
+        id: push
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # One atomic push: either both commits and the tag land, or nothing does. This is the first
+          # and only step that changes the remote.
+          git push --atomic origin main 'refs/tags/${{ steps.resolve.outputs.tag }}'
+
+      - name: Publish the GitHub release
+        id: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $arguments = @(
+              'release', 'create', '${{ steps.resolve.outputs.tag }}',
+              (Join-Path 'artifacts/installer' '${{ steps.resolve.outputs.installer }}'),
+              '--title', '${{ steps.resolve.outputs.tag }}',
+              '--generate-notes',
+              '--verify-tag'
+          )
+          if ('${{ steps.resolve.outputs.suffix }}') { $arguments += '--prerelease' }
+          gh @arguments
+          if ($LASTEXITCODE -ne 0) { throw "gh release create failed with exit code $LASTEXITCODE." }
+
+      - name: Upload installer
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer
+          path: artifacts/installer/FolderBackuper-*-setup.exe
+          if-no-files-found: ignore
+
+      - name: Summarize what happened
+        if: always()
+        run: |
+          $tag = '${{ steps.resolve.outputs.tag }}'
+          $installer = '${{ steps.resolve.outputs.installer }}'
+          $pushed = '${{ steps.push.outcome }}'
+          $published = '${{ steps.publish.outcome }}'
+          $commit = (git rev-parse HEAD 2>$null)
+
+          $lines = @(
+              "## Release $tag",
+              "",
+              "| | |",
+              "|---|---|",
+              "| Version | ${{ steps.resolve.outputs.version }} |",
+              "| Next development version | ${{ steps.resolve.outputs.next }}-dev |",
+              "| Commit | $commit |",
+              "| Installer | $installer (unsigned) |",
+              "| Pushed | $pushed |",
+              "| Release published | $published |"
+          )
+
+          if ($pushed -ne 'success') {
+              $lines += @("", "The remote was not changed. Fix the cause and dispatch the workflow again.")
+          }
+          elseif ($published -ne 'success') {
+              $lines += @(
+                  "",
+                  "**Both commits and the tag were pushed, but the GitHub release was not created.**",
+                  "Download the installer artifact from this run, then publish it by hand:",
+                  "",
+                  "    gh release create $tag $installer --title $tag --generate-notes --verify-tag",
+                  "",
+                  "Do not dispatch this workflow again: it will refuse, because $tag now exists."
+              )
+          }
+
+          ($lines -join [Environment]::NewLine) >> $env:GITHUB_STEP_SUMMARY

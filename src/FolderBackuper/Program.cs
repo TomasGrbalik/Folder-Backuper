@@ -4,6 +4,7 @@ using FolderBackuper.Features.Destinations;
 using FolderBackuper.Features.Jobs;
 using FolderBackuper.Features.Monitoring;
 using FolderBackuper.Features.Notifications;
+using FolderBackuper.Features.Updates;
 using FolderBackuper.Infrastructure.Database;
 using FolderBackuper.Infrastructure.Filesystem;
 using FolderBackuper.Infrastructure.Maintenance;
@@ -125,6 +126,7 @@ try
     builder.Services.AddSingleton<CalendarOccurrenceService>();
     builder.Services.AddMonitoringServices();
     builder.Services.AddNotifications();
+builder.Services.AddUpdateChecks();
     builder.Services.AddHostedService<StartupInitializationService>();
     builder.Services.AddHostedService<BackupSchedulerWorker>();
     builder.Services.AddScoped<DestinationService>();

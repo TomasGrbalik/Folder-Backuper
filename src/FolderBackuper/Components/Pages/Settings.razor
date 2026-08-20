@@ -1,8 +1,12 @@
 @page "/settings"
 @using FolderBackuper.Features.Notifications
 @inject NotificationSettingsService NotificationSettings
+@inject UpdateCheckSettingsService UpdateCheckSettings
+@inject UpdateCheckService UpdateChecks
+@inject UpdateStatusStore Updates
 @inject IDialogService DialogService
 @inject NavigationManager Navigation
+@implements IDisposable
 
 <PageTitle>Settings | Folder Backuper</PageTitle>
 <NavigationLock ConfirmExternalNavigation="dirty" OnBeforeInternalNavigation="BeforeInternalNavigation" />
@@ -115,6 +119,45 @@ else
                 </MudButton>
             </div>
         </MudPaper>
+
+        <MudPaper Class="job-form" Elevation="0">
+            <section>
+                <MudText Typo="Typo.h5">About and updates</MudText>
+                <div class="verification-line">
+                    <MudChip T="string" Size="Size.Small"
+                             Color="@(updateStatus.UpdateAvailable ? Color.Info : Color.Default)">
+                        Version @updateStatus.InstalledDisplay
+                    </MudChip>
+                    <span>@BuildText</span>
+                </div>
+                <MudText Typo="Typo.body2" Class="page-lead">
+                    Folder Backuper asks GitHub once a day whether a newer version has been released,
+                    over HTTPS. The request is anonymous: it sends no installation identity, no
+                    configuration, and nothing about this machine or its backups. Nothing is ever
+                    downloaded or installed on its own; an upgrade always means running a newer
+                    installer yourself.
+                </MudText>
+                <label class="field field-wide">
+                    <span>
+                        <input type="checkbox" checked="@updateCheckEnabled" @onchange="UpdateCheckEnabledChanged" />
+                        Check GitHub for newer versions
+                    </span>
+                </label>
+                <div class="form-tools">
+                    <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Outlined.Refresh"
+                               Disabled="@(checkingForUpdate || !updateCheckEnabled)" OnClick="CheckForUpdateAsync">
+                        @(checkingForUpdate ? "Checking..." : "Check now")
+                    </MudButton>
+                    @if (updateStatus.UpdateAvailable)
+                    {
+                        <MudLink Href="@updateStatus.DownloadUrl" Target="_blank" rel="noopener noreferrer">
+                            Version @updateStatus.LatestDisplay is available
+                        </MudLink>
+                    }
+                </div>
+                <MudText Typo="Typo.caption">@UpdateCheckText</MudText>
+            </section>
+        </MudPaper>
     </div>
 }
 
@@ -132,7 +175,36 @@ else
     private string? outcome;
     private bool outcomeError;
 
-    protected override async Task OnInitializedAsync() => await ReloadAsync();
+    // The about card keeps its own state on purpose. It is saved as it is changed, so it must not
+    // participate in the notification form's dirty tracking or arm the navigation lock.
+    private UpdateStatus updateStatus = UpdateStatus.ForInstalledBuild();
+    private bool updateCheckEnabled = true;
+    private bool checkingForUpdate;
+    private IDisposable? updateSubscription;
+
+    protected override async Task OnInitializedAsync()
+    {
+        updateStatus = Updates.Current;
+        updateSubscription = Updates.Subscribe(() => InvokeAsync(() =>
+        {
+            updateStatus = Updates.Current;
+            StateHasChanged();
+        }));
+
+        try
+        {
+            updateCheckEnabled = await UpdateCheckSettings.IsEnabledAsync();
+        }
+        catch (Exception)
+        {
+            // The about card is informational. Failing to read one preference must not stop the
+            // notification settings from being shown or saved.
+        }
+
+        await ReloadAsync();
+    }
+
+    public void Dispose() => updateSubscription?.Dispose();
 
     private async Task ReloadAsync()
     {
@@ -222,6 +294,74 @@ else
     {
         if (errors.TryGetValue(field, out var message)) builder.AddContent(0, message);
     };
+
+    private async Task UpdateCheckEnabledChanged(ChangeEventArgs args)
+    {
+        updateCheckEnabled = args.Value is true;
+        try
+        {
+            await UpdateCheckSettings.SetEnabledAsync(updateCheckEnabled);
+
+            // Switching it on asks straight away, because waiting up to a day to learn the answer
+            // would make the switch feel broken. Switching it off clears the notice at once.
+            await RunUpdateCheckAsync();
+        }
+        catch (Exception)
+        {
+            updateCheckEnabled = !updateCheckEnabled;
+            SetOutcome("The update preference could not be saved. Try again or check the application logs.", true);
+        }
+    }
+
+    private async Task CheckForUpdateAsync() => await RunUpdateCheckAsync();
+
+    private async Task RunUpdateCheckAsync()
+    {
+        checkingForUpdate = true;
+        try
+        {
+            await UpdateChecks.CheckNowAsync();
+        }
+        catch (Exception)
+        {
+            // CheckNowAsync classifies every reachable failure itself and records it on the status,
+            // so anything arriving here is unexpected and is already logged by the service.
+        }
+        finally
+        {
+            checkingForUpdate = false;
+        }
+    }
+
+    private string BuildText => ProductVersion.ShortCommitSha is { } sha
+        ? $"Build {sha}"
+        : "No build identifier";
+
+    private string UpdateCheckText
+    {
+        get
+        {
+            if (!updateCheckEnabled)
+            {
+                return "Version checking is off. Nothing is sent to GitHub, and no notice appears when a newer version is released.";
+            }
+
+            if (updateStatus.LastProblem is { } problem)
+            {
+                return $"The last check did not get an answer: {problem} This says nothing about whether a newer version exists.";
+            }
+
+            if (updateStatus.LastCheckedUtc is not { } checkedAt)
+            {
+                return "Not checked yet in this session. The first check runs a few minutes after the service starts.";
+            }
+
+            var when = DisplayFormat.LocalDateTime(checkedAt);
+            return updateStatus.LatestDisplay is { } latest
+                ? $"Checked {when}. The newest release is {latest}."
+                : $"Checked {when}. No release has been published yet.";
+        }
+    }
 
     private async Task BeforeInternalNavigation(LocationChangingContext context)
     {
