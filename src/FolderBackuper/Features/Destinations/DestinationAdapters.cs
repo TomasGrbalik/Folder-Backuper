@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using FolderBackuper.Infrastructure.Security;
 
+using FolderBackuper.Infrastructure.Localization;
 namespace FolderBackuper.Features.Destinations;
 
 public interface IDestinationAdapter
@@ -41,9 +42,9 @@ public abstract class DestinationAdapterBase : IDestinationAdapter
                     var bytesMatch = CryptographicOperations.FixedTimeEquals(bytes, actual);
                     try { File.Delete(path); }
                     catch (Exception cleanup) when (cleanup is IOException or UnauthorizedAccessException)
-                    { return new(false, DestinationAccessResult.CleanupFailed, "The test file could not be cleaned up exactly.", cleanup.HResult & 0xFFFF); }
+                    { return new(false, DestinationAccessResult.CleanupFailed, UiMessage.For(DestinationMessage.TestFileNotCleanedUp), cleanup.HResult & 0xFFFF); }
                     created = false;
-                    if (!bytesMatch) return new(false, DestinationAccessResult.Failed, "The destination did not preserve the test bytes.");
+                    if (!bytesMatch) return new(false, DestinationAccessResult.Failed, UiMessage.For(DestinationMessage.TestBytesNotPreserved));
                 }
                 catch
                 {
@@ -51,11 +52,11 @@ public abstract class DestinationAdapterBase : IDestinationAdapter
                     {
                         try { File.Delete(path); }
                         catch (Exception cleanup) when (cleanup is IOException or UnauthorizedAccessException)
-                        { return new(false, DestinationAccessResult.CleanupFailed, "The test file could not be cleaned up exactly.", cleanup.HResult & 0xFFFF); }
+                        { return new(false, DestinationAccessResult.CleanupFailed, UiMessage.For(DestinationMessage.TestFileNotCleanedUp), cleanup.HResult & 0xFFFF); }
                     }
                     throw;
                 }
-                return DestinationOperationResult.Success("Write, flush, readback, and exact cleanup succeeded.",
+                return DestinationOperationResult.Success(DestinationMessage.TestSucceeded,
                     await GetAvailableBytesCoreAsync(configuration.RootPath));
             });
         }
@@ -91,13 +92,13 @@ public abstract class DestinationAdapterBase : IDestinationAdapter
         };
         var message = result switch
         {
-            DestinationAccessResult.AccessDenied => "Access to the destination was denied.",
-            DestinationAccessResult.AuthenticationFailed => "The SMB credentials were rejected.",
-            DestinationAccessResult.InvalidPath => "The destination path is invalid.",
-            DestinationAccessResult.Unavailable => "The destination is unavailable.",
-            _ => "The destination access test failed."
+            DestinationAccessResult.AccessDenied => DestinationMessage.AccessDenied,
+            DestinationAccessResult.AuthenticationFailed => DestinationMessage.CredentialsRejected,
+            DestinationAccessResult.InvalidPath => DestinationMessage.PathInvalid,
+            DestinationAccessResult.Unavailable => DestinationMessage.Unavailable,
+            _ => DestinationMessage.AccessTestFailed
         };
-        return new(false, result, message, code);
+        return new(false, result, UiMessage.For(message), code);
     }
 
     [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]

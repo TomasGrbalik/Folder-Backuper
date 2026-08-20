@@ -53,7 +53,10 @@ public sealed class Destination
     public DestinationAccessResult LastAccessResult { get; set; }
     public DestinationAccessSource? LastAccessSource { get; set; }
     public DateTimeOffset? LastAccessedAtUtc { get; set; }
-    public string? LastAccessErrorSummary { get; set; }
+    /// <summary>The message code of the last access failure, or null when the last access succeeded.</summary>
+    public string? LastAccessMessageKey { get; set; }
+
+    public string? LastAccessMessageArguments { get; set; }
     public DateTimeOffset CreatedAtUtc { get; init; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
 

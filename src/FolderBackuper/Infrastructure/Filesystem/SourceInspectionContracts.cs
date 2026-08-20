@@ -1,3 +1,5 @@
+using FolderBackuper.Infrastructure.Localization;
+
 namespace FolderBackuper.Infrastructure.Filesystem;
 
 public enum SourceEntryType
@@ -15,7 +17,7 @@ public sealed record SourceEntry(
     SourceEntryType EntryType,
     long? FileSize,
     DateTimeOffset? ModifiedTime,
-    string? AccessProblem,
+    UiMessage? AccessProblem,
     bool IsHidden,
     bool IsSystem,
     bool IsReparsePoint);
@@ -33,9 +35,9 @@ public sealed record SourceBrowseResult(
     IReadOnlyList<SourceEntry> Entries,
     int? NextOffset,
     string? Continuation,
-    string? AccessProblem);
+    UiMessage? AccessProblem);
 
-public sealed record SourceAccessProblem(string Path, string Problem);
+public sealed record SourceAccessProblem(string Path, UiMessage Problem);
 
 public sealed record SourcePreviewSnapshot(
     string Path,

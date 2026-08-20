@@ -163,7 +163,7 @@ public sealed class ZipArchiveService
             cancellationToken.ThrowIfCancellationRequested();
             if (!ArchiveOwnership.TryParse(archive.Comment, out var foundOwnership) || foundOwnership != ownership)
             {
-                return [InvalidArchive(phase, archivePath, "The archive ownership comment is missing or invalid.")];
+                return [InvalidArchive(phase, archivePath, BackupProblemMessage.OwnershipCommentInvalid)];
             }
 
             var expected = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase)
@@ -178,7 +178,7 @@ public sealed class ZipArchiveService
 
             if (archive.Entries.Count != expected.Count)
             {
-                return [InvalidArchive(phase, archivePath, "The archive entry count does not match the source manifest.")];
+                return [InvalidArchive(phase, archivePath, BackupProblemMessage.EntryCountMismatch)];
             }
 
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -188,7 +188,7 @@ public sealed class ZipArchiveService
                 if (!seen.Add(entry.FullName) || !expected.TryGetValue(entry.FullName, out var expectedLength) ||
                     entry.Length != expectedLength)
                 {
-                    return [InvalidArchive(phase, archivePath, "The archive entries do not match the source manifest.")];
+                    return [InvalidArchive(phase, archivePath, BackupProblemMessage.EntriesMismatch)];
                 }
             }
 
@@ -204,8 +204,8 @@ public sealed class ZipArchiveService
                 BackupProblemSeverity.Error,
                 BackupProblemCategory.InvalidArchive,
                 phase,
-                "Validate ZIP archive",
-                "The ZIP archive could not be validated.",
+                BackupOperation.ValidateZipArchive,
+                BackupProblemMessage.ZipValidationFailed,
                 archivePath,
                 exception.HResult & 0xFFFF)];
         }
@@ -227,7 +227,7 @@ public sealed class ZipArchiveService
         if (exception is SourceChangedException changed)
         {
             return new(BackupProblemSeverity.Error, BackupProblemCategory.SourceChanged,
-                RunPhase.Compressing, "Read source file", "The source file changed during compression.", changed.SourcePath);
+                RunPhase.Compressing, BackupOperation.ReadSourceFile, BackupProblemMessage.SourceFileChanged, changed.SourcePath);
         }
 
         if (exception is SourceReadException sourceRead)
@@ -237,8 +237,8 @@ public sealed class ZipArchiveService
             return new(BackupProblemSeverity.Error,
                 denied ? BackupProblemCategory.SourceInaccessible : BackupProblemCategory.SourceUnavailable,
                 RunPhase.Compressing,
-                "Read source file",
-                denied ? "The source file could not be read because access was denied." : "The source file could not be read.",
+                BackupOperation.ReadSourceFile,
+                denied ? BackupProblemMessage.SourceFileAccessDenied : BackupProblemMessage.SourceFileUnreadable,
                 sourceRead.SourcePath,
                 sourceRead.InnerException?.HResult & 0xFFFF);
         }
@@ -250,19 +250,19 @@ public sealed class ZipArchiveService
                 ? BackupProblemCategory.StagingInaccessible
                 : BackupProblemCategory.GeneralIo;
         return new(BackupProblemSeverity.Error, category, RunPhase.Compressing,
-            "Create staging archive",
+            BackupOperation.CreateStagingArchive,
             category == BackupProblemCategory.StagingInsufficientSpace
-                ? "The staging volume has insufficient free space."
-                : "The staging archive could not be created.",
+                ? BackupProblemMessage.StagingInsufficientSpace
+                : BackupProblemMessage.StagingArchiveNotCreated,
             category == BackupProblemCategory.GeneralIo ? sourcePath : stagingRoot,
             code);
     }
 
-    private static BackupProblem InvalidArchive(RunPhase phase, string path, string message) => new(
+    private static BackupProblem InvalidArchive(RunPhase phase, string path, BackupProblemMessage message) => new(
         BackupProblemSeverity.Error,
         BackupProblemCategory.InvalidArchive,
         phase,
-        "Validate ZIP archive",
+        BackupOperation.ValidateZipArchive,
         message,
         path);
 
@@ -276,8 +276,8 @@ public sealed class ZipArchiveService
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             problems?.Add(new(BackupProblemSeverity.Warning, BackupProblemCategory.CleanupFailed,
-                RunPhase.Compressing, "Clean staging archive",
-                "The incomplete staging archive could not be removed.", path, exception.HResult & 0xFFFF));
+                RunPhase.Compressing, BackupOperation.CleanStagingArchive,
+                BackupProblemMessage.StagingArchiveNotRemoved, path, exception.HResult & 0xFFFF));
         }
     }
 

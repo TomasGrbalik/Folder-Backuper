@@ -55,6 +55,7 @@ Features outside the accepted use cases are not added opportunistically. New beh
 | 9 | Selected email provider and durable notification workflow |
 | 10 | Installer, upgrade, service recovery, and release hardening |
 | 11 | Version identity, automated releases, and update notification |
+| 12 | Slovak interface language and an in-application language switcher |
 
 ## 4. Milestone 0: Technical Risk Validation
 
@@ -552,7 +553,45 @@ Make every build name itself, make a release a single deliberate action that can
 - An unreachable release feed changes nothing that a person sees except a recorded reason, and never reports a problem.
 - The update check can be switched off, and nothing is sent afterwards.
 
-## 16. Cross-Cutting Verification
+## 16. Milestone 12: Interface Language
+
+### Goal
+
+Let the person the product was built for read it in their own language, and make the second language a property of the application rather than a translation pass over the markup.
+
+### Work
+
+1. Amend the requirements and technical design before implementation, because an English-only interface is what they currently promise.
+2. Store the selected language on the application settings row, defaulting an installation that has never chosen one to the Windows installed interface language.
+3. Apply the language once as the process-wide culture default, at startup after migrations and again on every change, so that the static render, every circuit, the scheduler, and the notification worker all agree.
+4. Offer the choice in the application bar beside the theme control and again on the settings page, forcing a reload so that the root document, the reconnect markup, and the component library's own text are all reproduced.
+5. Hold translated text in resource files reached through a generated strongly typed accessor, so that no resource key is ever written as a literal.
+6. Carry text that originates below the presentation layer as a message code with arguments instead of a finished sentence, and resolve it for display.
+7. Store run problems, error summaries, and pipeline operations as codes, so that permanent history renders in whatever language it is later read in.
+8. Choose plural forms by rule rather than by an English `(s)` suffix, because Slovak distinguishes one, few, and many.
+9. Localize the component library's own strings rather than relying on which of its satellite languages happen to ship.
+10. Derive weekday and month names from the culture everywhere, replacing the abbreviations that were built from enum member names.
+11. Translate notification email, keeping the run's own time zone and an invariant timestamp format because the mail is read off the machine.
+12. Make an incomplete translation a test failure rather than a discovery in the interface.
+
+### Deliverables
+
+- An English and Slovak interface selected from the application bar and the settings page.
+- A language preference that survives restart and upgrade with the rest of the application data.
+- Resource-backed text with no user-facing English literal left in the presentation or service layers.
+- History and email that render in the language they are read in.
+- Milestone 12 acceptance checklist.
+
+### Exit Criteria
+
+- Every page, dialog, status chip, validation error, and operation outcome reads Slovak with the Slovak language selected, and English with English selected.
+- Dates, numbers, file sizes, weekdays, and the calendar's first day of week follow the selected language, while archive filenames stay locale-independent.
+- A run that failed in one language renders its problems in the other after the language is changed.
+- Notification email is produced in the selected language by work that no browser is attached to.
+- A resource key present in one language and missing in the other fails the test suite.
+- The published application carries the Slovak satellite assembly and the installer packages it.
+
+## 17. Cross-Cutting Verification
 
 Every milestone must maintain:
 
@@ -582,7 +621,7 @@ Before release, execute a matrix covering:
 - Notification success, rejection, timeout, and uncertain crash boundary.
 - Install, upgrade, repair, and uninstall.
 
-## 17. Implementation Dependencies
+## 18. Implementation Dependencies
 
 ```text
 Milestone 0: risk validation
@@ -606,11 +645,15 @@ Milestone 8: monitoring UI
 Milestone 9: notifications
                   |
 Milestone 10: installer and release hardening
+                  |
+Milestone 11: versioning, releases, and update notification
+                  |
+Milestone 12: interface language
 ```
 
-Milestone 9 provider selection can occur earlier, but provider implementation should not distract from backup correctness and recovery. Milestone 10 does not depend on Milestone 9, which is why implementing it after Milestone 10 required no change to the installer or release work.
+Milestone 9 provider selection can occur earlier, but provider implementation should not distract from backup correctness and recovery. Milestone 10 does not depend on Milestone 9, which is why implementing it after Milestone 10 required no change to the installer or release work. Milestone 12 depends on every milestone that produced text, which is why it comes last: a second language is cheapest to add once the vocabulary has stopped moving.
 
-## 18. Definition of Complete
+## 19. Definition of Complete
 
 The initial implementation is complete only when:
 

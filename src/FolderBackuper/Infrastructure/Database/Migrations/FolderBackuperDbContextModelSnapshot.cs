@@ -158,8 +158,12 @@ namespace FolderBackuper.Infrastructure.Database.Migrations
                     b.Property<DateTimeOffset>("DueAtUtc")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("ErrorSummary")
+                    b.Property<string>("ErrorMessageArguments")
                         .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ErrorMessageKey")
+                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.Property<long>("FileCount")
@@ -179,8 +183,12 @@ namespace FolderBackuper.Infrastructure.Database.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("NotificationErrorSummary")
+                    b.Property<string>("NotificationMessageArguments")
                         .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NotificationMessageKey")
+                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("NotificationState")
@@ -284,13 +292,22 @@ namespace FolderBackuper.Infrastructure.Database.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("MessageArguments")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MessageKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("NativeErrorCode")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Operation")
                         .IsRequired()
-                        .HasMaxLength(200)
+                        .HasMaxLength(60)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Path")
@@ -308,11 +325,6 @@ namespace FolderBackuper.Infrastructure.Database.Migrations
                     b.Property<string>("Severity")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("UserMessage")
-                        .IsRequired()
-                        .HasMaxLength(2000)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -375,8 +387,12 @@ namespace FolderBackuper.Infrastructure.Database.Migrations
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("LastAccessErrorSummary")
+                    b.Property<string>("LastAccessMessageArguments")
                         .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastAccessMessageKey")
+                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastAccessResult")
@@ -573,8 +589,12 @@ namespace FolderBackuper.Infrastructure.Database.Migrations
                     b.Property<DateTimeOffset?>("FailedAtUtc")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("LastSafeError")
+                    b.Property<string>("LastSafeErrorArguments")
                         .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastSafeErrorKey")
+                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PayloadSnapshot")
@@ -639,6 +659,10 @@ namespace FolderBackuper.Infrastructure.Database.Migrations
 
                     b.Property<string>("RecipientList")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UiLanguage")
+                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("UpdateCheckEnabled")

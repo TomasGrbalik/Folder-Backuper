@@ -1,3 +1,4 @@
+@using System.Globalization
 @implements IDisposable
 @inject BackupProgressRegistry ProgressRegistry
 @inject BackupExecutionService BackupExecution
@@ -5,7 +6,7 @@
 <MudPaper Class="active-run-card" Elevation="0">
     <div class="active-run-head">
         <div>
-            <MudText Typo="Typo.overline">Active backup</MudText>
+            <MudText Typo="Typo.overline">@UiStrings.ActiveRunHeading</MudText>
             <MudText Typo="Typo.h5">@Run.JobName</MudText>
             <MudText Typo="Typo.body2" Class="active-run-source">@Run.SourcePath</MudText>
         </div>
@@ -18,12 +19,12 @@
     @if (Indeterminate)
     {
         <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="active-run-bar" />
-        <MudText Typo="Typo.caption">@(CurrentPhase == RunPhase.Scanning ? "Scanning source to establish total work…" : "Preparing…")</MudText>
+        <MudText Typo="Typo.caption">@(CurrentPhase == RunPhase.Scanning ? UiStrings.ActiveRunScanning : UiStrings.ActiveRunPreparing)</MudText>
     }
     else
     {
         <MudProgressLinear Value="@ProgressPercent" Color="Color.Primary" Class="active-run-bar" />
-        <MudText Typo="Typo.caption">@ProgressPercent.ToString("0")% complete</MudText>
+        <MudText Typo="Typo.caption">@string.Format(CultureInfo.CurrentCulture, UiStrings.ActiveRunPercentComplete, ProgressPercent.ToString("0", CultureInfo.CurrentCulture))</MudText>
     }
 
     @if (snapshot is { } s)
@@ -33,39 +34,39 @@
             <MudText Typo="Typo.body2" Class="active-run-file">@s.CurrentRelativePath</MudText>
         }
         <div class="preview-metrics">
-            <span><strong>@s.FilesProcessed.ToString("N0")</strong> files processed</span>
-            <span><strong>@DisplayFormat.Bytes(s.BytesProcessed)</strong> source read</span>
-            <span><strong>@DisplayFormat.Bytes(s.ArchiveBytes)</strong> archive size</span>
+            <span><strong>@s.FilesProcessed.ToString("N0", CultureInfo.CurrentCulture)</strong> @Plural.Choose(s.FilesProcessed, UiStrings.CountFilesProcessed_One, UiStrings.CountFilesProcessed_Few, UiStrings.CountFilesProcessed_Many)</span>
+            <span><strong>@DisplayFormat.Bytes(s.BytesProcessed)</strong> @UiStrings.ActiveRunSourceRead</span>
+            <span><strong>@DisplayFormat.Bytes(s.ArchiveBytes)</strong> @UiStrings.ActiveRunArchiveSize</span>
             @if (CurrentPhase == RunPhase.Compressing)
             {
-                <span><strong>@DisplayFormat.Rate(s.ThroughputBytesPerSecond)</strong> compression</span>
+                <span><strong>@DisplayFormat.Rate(s.ThroughputBytesPerSecond)</strong> @UiStrings.ActiveRunCompression</span>
             }
             @if (CurrentPhase == RunPhase.Transferring)
             {
-                <span><strong>@DisplayFormat.Bytes(s.TransferBytes)</strong> @TransferVerb.ToLowerInvariant()</span>
-                <span><strong>@DisplayFormat.Rate(s.ThroughputBytesPerSecond)</strong> @TransferVerb.ToLowerInvariant()</span>
+                <span><strong>@DisplayFormat.Bytes(s.TransferBytes)</strong> @TransferVerbLower</span>
+                <span><strong>@DisplayFormat.Rate(s.ThroughputBytesPerSecond)</strong> @TransferVerbLower</span>
             }
-            <span><strong>@DisplayFormat.Duration(s.Elapsed)</strong> elapsed</span>
+            <span><strong>@DisplayFormat.Duration(s.Elapsed)</strong> @UiStrings.ActiveRunElapsed</span>
             @if (s.EstimatedRemaining is { } remaining)
             {
-                <span><strong>@DisplayFormat.Duration(remaining)</strong> remaining</span>
+                <span><strong>@DisplayFormat.Duration(remaining)</strong> @UiStrings.ActiveRunRemaining</span>
             }
         </div>
     }
     else
     {
-        <MudText Typo="Typo.caption">Live progress is unavailable; showing durable phase from the last saved state.</MudText>
+        <MudText Typo="Typo.caption">@UiStrings.ActiveRunLiveUnavailable</MudText>
     }
 
     @if (message is not null)
     {
-        <MudAlert Severity="Severity.Info" Dense="true" Class="mt-2">@message</MudAlert>
+        <MudAlert Severity="Severity.Info" Dense="true" Class="mt-2">@MessageText.Resolve(message)</MudAlert>
     }
 
     <div class="active-run-actions">
         <MudButton Color="Color.Error" Variant="Variant.Outlined" Disabled="@(cancelling || !CancellationAvailable)"
                    StartIcon="@Icons.Material.Filled.Cancel" OnClick="CancelAsync">
-            @(cancelling ? "Cancelling…" : "Cancel")
+            @(cancelling ? UiStrings.ActiveRunCancelling : UiStrings.ActiveRunCancel)
         </MudButton>
     </div>
 </MudPaper>
@@ -78,7 +79,7 @@
     private Guid subscribedRunId;
     private BackupProgressSnapshot? snapshot;
     private bool cancelling;
-    private string? message;
+    private UiMessage? message;
 
     protected override void OnParametersSet()
     {
@@ -104,6 +105,10 @@
     private RunPhase CurrentPhase => snapshot?.Phase ?? Run.Phase;
     private string PhaseLabel => MonitoringDisplay.PhaseLabel(CurrentPhase);
     private string TransferVerb => MonitoringDisplay.TransferVerb(Run.DestinationType);
+
+    // Lowercased with the current culture rather than invariantly, because the verb is a translated
+    // word and only the reading language knows how to lowercase it.
+    private string TransferVerbLower => TransferVerb.ToLower(CultureInfo.CurrentCulture);
     private bool CancellationAvailable => (snapshot?.CancellationAvailable ?? true) && !Run.CancellationRequested;
 
     private bool Indeterminate => snapshot is not { } s ||

@@ -7,23 +7,20 @@
         {
             <MudStack AlignItems="AlignItems.Center" Spacing="2">
                 <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
-                <MudText>Sending a test email through the saved configuration...</MudText>
+                <MudText>@UiStrings.TestEmailSending</MudText>
             </MudStack>
         }
         else if (result is not null)
         {
-            <MudAlert Severity="@Severity(result.Status)">@result.Message</MudAlert>
+            <MudAlert Severity="@Severity(result.Status)">@MessageText.Resolve(result.Message)</MudAlert>
             @if (result.Succeeded)
             {
-                <MudText Class="mt-3" Typo="Typo.body2">
-                    Check the configured recipients. Delivery to the inbox depends on the receiving mail
-                    service, which Folder Backuper cannot observe.
-                </MudText>
+                <MudText Class="mt-3" Typo="Typo.body2">@UiStrings.TestEmailDeliveryNote</MudText>
             }
         }
     </DialogContent>
     <DialogActions>
-        <MudButton Color="Color.Primary" Disabled="sending" OnClick="Close">Close</MudButton>
+        <MudButton Color="Color.Primary" Disabled="sending" OnClick="Close">@UiStrings.ActionClose</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -41,7 +38,7 @@
         catch (Exception)
         {
             result = new NotificationSendResult(NotificationSendStatus.Uncertain,
-                "The test email could not be completed. Try again or check the application logs.");
+                NotificationResultMessage.TestCouldNotBeCompleted);
         }
         finally
         {

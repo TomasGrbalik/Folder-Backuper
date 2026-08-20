@@ -1,3 +1,4 @@
+using FolderBackuper.Infrastructure.Localization;
 namespace FolderBackuper.Features.Jobs;
 
 public sealed record JobSummary(
@@ -42,7 +43,13 @@ public sealed record SaveJobCommand(
     bool Activate = false,
     bool ConfirmDestinationPathChange = false);
 
-public sealed record JobValidationError(string Field, string Message);
+public sealed record JobValidationError(string Field, UiMessage Message)
+{
+    public JobValidationError(string field, JobValidationMessage message)
+        : this(field, UiMessage.For(message))
+    {
+    }
+}
 
 public enum JobOperationStatus
 {
@@ -59,12 +66,17 @@ public enum JobOperationStatus
 
 public sealed record JobOperationResult(
     JobOperationStatus Status,
-    string Message,
+    UiMessage Message,
     JobDetails? Job = null,
     IReadOnlyList<JobValidationError>? ValidationErrors = null)
 {
     public bool Succeeded => Status == JobOperationStatus.Succeeded;
 
+    public JobOperationResult(JobOperationStatus status, JobMessage message, JobDetails? job = null)
+        : this(status, UiMessage.For(message), job)
+    {
+    }
+
     public static JobOperationResult Validation(IReadOnlyList<JobValidationError> errors) =>
-        new(JobOperationStatus.ValidationFailed, "The job configuration is invalid.", ValidationErrors: errors);
+        new(JobOperationStatus.ValidationFailed, UiMessage.For(JobMessage.ConfigurationInvalid), ValidationErrors: errors);
 }

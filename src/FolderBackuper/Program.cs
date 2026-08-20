@@ -4,9 +4,11 @@ using FolderBackuper.Features.Destinations;
 using FolderBackuper.Features.Jobs;
 using FolderBackuper.Features.Monitoring;
 using FolderBackuper.Features.Notifications;
+using FolderBackuper.Features.Settings;
 using FolderBackuper.Features.Updates;
 using FolderBackuper.Infrastructure.Database;
 using FolderBackuper.Infrastructure.Filesystem;
+using FolderBackuper.Infrastructure.Localization;
 using FolderBackuper.Infrastructure.Maintenance;
 using FolderBackuper.Infrastructure.Security;
 using FolderBackuper.Infrastructure.ServiceHosting;
@@ -118,6 +120,7 @@ try
     builder.Services.AddSingleton<IDestinationAdapter, SmbDestinationAdapter>();
     builder.Services.AddJobCoreServices();
     builder.Services.AddBackupEngine();
+    builder.Services.AddSingleton<UiLanguageSettingsService>();
     builder.Services.AddSingleton<SourceBrowser>();
     builder.Services.AddSingleton<SourcePreview>();
     builder.Services.AddSingleton<ScheduleOccurrenceCalculator>();
@@ -132,6 +135,11 @@ builder.Services.AddUpdateChecks();
     builder.Services.AddScoped<DestinationService>();
     builder.Services.AddFolderBackuperDatabase(paths);
     builder.Services.AddRazorComponents().AddInteractiveServerComponents();
+    // No MudLocalizer is registered. The component library's own text was checked against a recording
+    // localizer, and none of the components this application renders — table, pager, select, text field,
+    // dialog, popover — ask one for anything; MudBlazor 9 routes only its data grid and pickers that way,
+    // and this application uses neither. The one library string a person sees is the table pager's, and
+    // it is set directly on the two pagers that render it.
     builder.Services.AddMudServices();
     builder.Services.PostConfigure<HostFilteringOptions>(LoopbackHosting.ConfigureHostFiltering);
 

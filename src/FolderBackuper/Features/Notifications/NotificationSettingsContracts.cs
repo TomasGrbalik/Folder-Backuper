@@ -1,3 +1,4 @@
+using FolderBackuper.Infrastructure.Localization;
 namespace FolderBackuper.Features.Notifications;
 
 /// <summary>The only provider this build implements. Persisted so a future provider can be told apart.</summary>
@@ -43,18 +44,18 @@ public enum NotificationSettingsStatus
 
 public sealed record NotificationSettingsResult(
     NotificationSettingsStatus Status,
-    string Message,
-    IReadOnlyDictionary<string, string>? FieldErrors = null)
+    UiMessage Message,
+    IReadOnlyDictionary<string, UiMessage>? FieldErrors = null)
 {
     public bool Succeeded => Status == NotificationSettingsStatus.Succeeded;
 
-    public static NotificationSettingsResult Success(string message) =>
-        new(NotificationSettingsStatus.Succeeded, message);
+    public static NotificationSettingsResult Success(NotificationResultMessage message) =>
+        new(NotificationSettingsStatus.Succeeded, UiMessage.For(message));
 
     public static NotificationSettingsResult Invalid(
-        string message,
-        IReadOnlyDictionary<string, string>? fieldErrors = null) =>
-        new(NotificationSettingsStatus.ValidationFailed, message, fieldErrors);
+        NotificationResultMessage message,
+        IReadOnlyDictionary<string, UiMessage>? fieldErrors = null) =>
+        new(NotificationSettingsStatus.ValidationFailed, UiMessage.For(message), fieldErrors);
 }
 
 /// <summary>

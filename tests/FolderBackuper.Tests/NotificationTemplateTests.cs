@@ -1,4 +1,5 @@
 using FolderBackuper.Features.Backups;
+using FolderBackuper.Features.Destinations;
 using FolderBackuper.Features.Notifications;
 using FolderBackuper.Infrastructure.Formatting;
 
@@ -66,10 +67,14 @@ public sealed class NotificationTemplateTests
     public void RunResult_EncodesMarkupCharactersFoundInPathsAndMessages()
     {
         var payload = Payload(RunOutcome.Failed, [
+            // The markup characters arrive as a message argument rather than as a whole sentence,
+            // which is how arbitrary text reaches a template now that messages come from resources.
             MonitoringTestSeed.Problem(
                 Guid.NewGuid(),
                 BackupProblemSeverity.Error,
-                "Access denied to <config> & retry",
+                UiMessage.For(
+                    DestinationMessage.OverlapsConfiguredSource,
+                    UiMessageArgument.FromText("<config> & retry")),
                 @"C:\Data\R&D\<draft>.txt")
         ]);
 
@@ -78,6 +83,7 @@ public sealed class NotificationTemplateTests
         // The raw characters must not survive into the markup, or a path could inject elements.
         Assert.DoesNotContain("<draft>", message.Html, StringComparison.Ordinal);
         Assert.DoesNotContain("<config>", message.Html, StringComparison.Ordinal);
+        Assert.Contains("&lt;config&gt;", message.Html, StringComparison.Ordinal);
         Assert.Contains("&lt;draft&gt;", message.Html, StringComparison.Ordinal);
         Assert.Contains("&amp;", message.Html, StringComparison.Ordinal);
 
@@ -89,8 +95,12 @@ public sealed class NotificationTemplateTests
     public void RunResult_StatesTheTotalWhenTheProblemListIsTruncated()
     {
         var runId = Guid.NewGuid();
+        // The problems are distinguished by their path rather than by their text, because every
+        // problem of one kind now renders the same translated sentence.
         var problems = Enumerable.Range(0, 150)
-            .Select(index => MonitoringTestSeed.Problem(runId, BackupProblemSeverity.Warning, $"Problem {index}"))
+            .Select(index => MonitoringTestSeed.Problem(
+                runId, BackupProblemSeverity.Warning, BackupProblemMessage.SourceEntryChanged,
+                $@"C:\Data\File{index}.txt"))
             .ToList();
 
         var message = NotificationTemplates.RunResult(Payload(RunOutcome.SuccessfulWithWarnings, problems));
@@ -101,8 +111,8 @@ public sealed class NotificationTemplateTests
             Assert.Contains("local run details", body, StringComparison.Ordinal);
         }
 
-        Assert.Contains("Problem 99", message.Text, StringComparison.Ordinal);
-        Assert.DoesNotContain("Problem 100", message.Text, StringComparison.Ordinal);
+        Assert.Contains(@"File99.txt", message.Text, StringComparison.Ordinal);
+        Assert.DoesNotContain(@"File100.txt", message.Text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -115,9 +125,9 @@ public sealed class NotificationTemplateTests
                 RunId = Guid.NewGuid(),
                 Phase = RunPhase.Finalizing,
                 Severity = BackupProblemSeverity.Warning,
-                Operation = "Remove expired backup",
+                Operation = BackupOperation.DeleteRetainedArchive,
                 ErrorCategory = nameof(BackupProblemCategory.CleanupFailed),
-                UserMessage = "An older backup could not be removed."
+                MessageKey = UiMessage.KeyFor(BackupProblemMessage.RetainedArchiveNotDeleted)
             }
         };
 
@@ -132,8 +142,10 @@ public sealed class NotificationTemplateTests
     {
         var message = NotificationTemplates.RunResult(Payload(RunOutcome.Failed));
 
-        Assert.Contains("Simulated failure.", message.Text, StringComparison.Ordinal);
-        Assert.Contains("Simulated failure.", message.Html, StringComparison.Ordinal);
+        // The summary is a message code now, so the expected text is what that code renders to.
+        var expected = MessageAssert.Text(UiMessage.For(BackupProblemMessage.UnexpectedFailure));
+        Assert.Contains(expected, message.Text, StringComparison.Ordinal);
+        Assert.Contains(expected, message.Html, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -158,7 +170,8 @@ public sealed class NotificationTemplateTests
         var problems = new List<RunProblem>
         {
             MonitoringTestSeed.Problem(
-                Guid.NewGuid(), BackupProblemSeverity.Error, "Access denied.", @"C:\Source\open.docx")
+                Guid.NewGuid(), BackupProblemSeverity.Error,
+                BackupProblemMessage.SourceFileAccessDenied, @"C:\Source\open.docx")
         };
 
         var message = NotificationTemplates.RunResult(Payload(RunOutcome.Failed, problems));

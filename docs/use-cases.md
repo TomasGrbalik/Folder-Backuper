@@ -541,7 +541,19 @@ The initial web interface is accessible only from the backup PC through localhos
 
 Binding the interface to the wider network is deferred. Remote access must not be enabled without revisiting authentication, authorization, transport security, and exposure of local filesystem information.
 
-The initial interface is English-only. Displayed dates, times, numbers, and file sizes follow the Windows PC's regional settings. Archive filenames use a fixed, locale-independent, sortable timestamp format.
+The interface is available in English and Slovak. A language control in the application bar, mirrored by a
+setting on the settings page, selects the interface language, and the choice is stored with the rest of the
+application data so that it survives a service restart and an upgrade. An installation that has never been
+given a language follows the Windows installed interface language, choosing Slovak only when Windows itself
+is Slovak.
+
+The selected language also determines how dates, times, numbers, and file sizes are displayed, so a Slovak
+interface never mixes Slovak labels with English weekday names or English decimal separators. Archive
+filenames remain in a fixed, locale-independent, sortable timestamp format regardless of the language.
+
+Operator-facing text outside the web interface stays English: Windows event-log entries, installer console
+output, and the application log. Those are read by whoever is diagnosing the machine rather than by the
+person whose folders are being backed up, and keeping them in one language keeps them searchable.
 
 ## 18. Acceptance Summary
 

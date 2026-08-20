@@ -1,3 +1,4 @@
+@using System.Globalization
 @* Renders nothing at all unless a newer release exists. A version notice is background information,
    so it must never occupy space in the app bar while there is nothing to say. It is a component of
    its own rather than markup inside MainLayout so that it can be rendered on its own in a test, and
@@ -9,7 +10,7 @@
 {
     <a class="update-notice" href="@status.DownloadUrl" target="_blank" rel="noopener noreferrer">
         <MudIcon Icon="@Icons.Material.Filled.SystemUpdateAlt" Size="Size.Small" />
-        <span>Version @status.LatestDisplay available</span>
+        <span>@string.Format(CultureInfo.CurrentCulture, UiStrings.UpdateNoticeAvailable, status.LatestDisplay)</span>
     </a>
 }
 

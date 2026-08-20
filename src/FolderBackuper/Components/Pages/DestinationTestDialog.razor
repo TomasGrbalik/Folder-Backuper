@@ -1,3 +1,4 @@
+@using System.Globalization
 @inject DestinationService DestinationService
 
 <MudDialog>
@@ -6,16 +7,16 @@
         {
             <MudStack AlignItems="AlignItems.Center" Spacing="2">
                 <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
-                <MudText>Writing and reading a private test file at @Destination.Name...</MudText>
+                <MudText>@string.Format(CultureInfo.CurrentCulture, UiStrings.DestinationTestRunning, Destination.Name)</MudText>
             </MudStack>
         }
         else if (result is not null)
         {
-            <MudAlert Severity="@(result.Succeeded ? Severity.Success : Severity.Error)">@result.Message</MudAlert>
-            @if (result.AvailableBytes is long bytes) { <MudText Class="mt-3">@($"{bytes:N0} bytes available")</MudText> }
+            <MudAlert Severity="@(result.Succeeded ? Severity.Success : Severity.Error)">@MessageText.Resolve(result.Message)</MudAlert>
+            @if (result.AvailableBytes is long bytes) { <MudText Class="mt-3">@string.Format(CultureInfo.CurrentCulture, UiStrings.DestinationTestSpaceAvailable, bytes.ToString("N0", CultureInfo.CurrentCulture))</MudText> }
         }
     </DialogContent>
-    <DialogActions><MudButton Color="Color.Primary" Disabled="testing" OnClick="Close">Close</MudButton></DialogActions>
+    <DialogActions><MudButton Color="Color.Primary" Disabled="testing" OnClick="Close">@UiStrings.ActionClose</MudButton></DialogActions>
 </MudDialog>
 
 @code {

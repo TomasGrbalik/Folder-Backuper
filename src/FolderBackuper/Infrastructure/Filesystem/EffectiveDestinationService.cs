@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using FolderBackuper.Features.Destinations;
+using FolderBackuper.Infrastructure.Localization;
 using FolderBackuper.Infrastructure.Security;
 
 namespace FolderBackuper.Infrastructure.Filesystem;
@@ -15,11 +16,20 @@ public enum EffectiveDestinationResult
 
 public sealed record EffectiveDestinationOutcome(
     EffectiveDestinationResult Result,
-    string Message,
+    UiMessage Message,
     string? EffectivePath = null,
     string? OwnershipKey = null)
 {
     public bool Succeeded => Result == EffectiveDestinationResult.Ready;
+
+    public EffectiveDestinationOutcome(
+        EffectiveDestinationResult result,
+        EffectiveDestinationMessage message,
+        string? effectivePath = null,
+        string? ownershipKey = null)
+        : this(result, UiMessage.For(message), effectivePath, ownershipKey)
+    {
+    }
 }
 
 public sealed class EffectiveDestinationService(
@@ -57,12 +67,12 @@ public sealed class EffectiveDestinationService(
         }
         catch (Exception exception) when (exception is ArgumentException or IOException or NotSupportedException)
         {
-            return new(EffectiveDestinationResult.InvalidSubfolder, "The effective destination path is invalid.");
+            return new(EffectiveDestinationResult.InvalidSubfolder, EffectiveDestinationMessage.EffectivePathInvalid);
         }
 
         if (!PathOverlap.IsSameOrDescendant(effective, root))
         {
-            return new(EffectiveDestinationResult.OutsideRoot, "The effective destination must remain inside its destination root.");
+            return new(EffectiveDestinationResult.OutsideRoot, EffectiveDestinationMessage.MustRemainInsideRoot);
         }
 
         var configuration = Configuration(destination);
@@ -74,7 +84,7 @@ public sealed class EffectiveDestinationService(
                 if (create && !Directory.Exists(root))
                 {
                     return new EffectiveDestinationOutcome(EffectiveDestinationResult.AccessFailed,
-                        "The destination root must exist before an effective folder can be created.");
+                        EffectiveDestinationMessage.RootMustExistFirst);
                 }
 
                 var resolvedRoot = PathOverlap.ResolveProjected(root);
@@ -98,18 +108,18 @@ public sealed class EffectiveDestinationService(
                 if (Directory.Exists(effective))
                 {
                     return new EffectiveDestinationOutcome(EffectiveDestinationResult.Ready,
-                        "The effective destination is ready.", projectedEffective,
+                        EffectiveDestinationMessage.ReadyExisting, projectedEffective,
                         $"FS:{WindowsFilesystemInterop.GetIdentity(projectedEffective)}");
                 }
 
                 return new EffectiveDestinationOutcome(EffectiveDestinationResult.Ready,
-                    "The effective destination path is valid.", projectedEffective,
+                    EffectiveDestinationMessage.ReadyPathValid, projectedEffective,
                     $"PATH:{destination.Type}:{projectedEffective.ToUpperInvariant()}");
             }, cancellationToken));
         }
         catch (Exception exception) when (exception is ArgumentException or IOException or UnauthorizedAccessException or Win32Exception or NotSupportedException)
         {
-            return new(EffectiveDestinationResult.AccessFailed, "The effective destination could not be accessed.");
+            return new(EffectiveDestinationResult.AccessFailed, EffectiveDestinationMessage.AccessFailed);
         }
     }
 
@@ -129,7 +139,7 @@ public sealed class EffectiveDestinationService(
         if (!PathOverlap.IsSameOrDescendant(projectedEffective, resolvedRoot))
         {
             return new(EffectiveDestinationResult.OutsideRoot,
-                "The effective destination resolves outside its destination root.");
+                EffectiveDestinationMessage.ResolvesOutsideRoot);
         }
 
         if (resolvedSources.Any(source =>
@@ -137,7 +147,7 @@ public sealed class EffectiveDestinationService(
                 PathOverlap.Overlaps(projectedEffective, source)))
         {
             return new(EffectiveDestinationResult.SourceOverlap,
-                "The destination root or effective destination overlaps the source folder.");
+                EffectiveDestinationMessage.OverlapsSource);
         }
 
         return null;

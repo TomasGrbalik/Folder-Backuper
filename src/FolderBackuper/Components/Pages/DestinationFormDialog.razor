@@ -5,27 +5,27 @@
     <DialogContent>
         <MudForm @ref="form">
             <MudStack Spacing="3">
-                <MudTextField @bind-Value="name" Label="Name" Required="true" MaxLength="200" Variant="Variant.Outlined" />
-                <MudSelect T="DestinationType" @bind-Value="type" Label="Storage type" Variant="Variant.Outlined" Disabled="@(Destination is not null)">
-                    <MudSelectItem Value="DestinationType.Local">Local folder</MudSelectItem>
-                    <MudSelectItem Value="DestinationType.Smb">SMB network share</MudSelectItem>
+                <MudTextField @bind-Value="name" Label="@UiStrings.DestinationFormName" Required="true" MaxLength="200" Variant="Variant.Outlined" />
+                <MudSelect T="DestinationType" @bind-Value="type" Label="@UiStrings.DestinationFormStorageType" Variant="Variant.Outlined" Disabled="@(Destination is not null)">
+                    <MudSelectItem Value="DestinationType.Local">@UiStrings.DestinationFormLocalFolder</MudSelectItem>
+                    <MudSelectItem Value="DestinationType.Smb">@UiStrings.DestinationFormSmbShare</MudSelectItem>
                 </MudSelect>
-                <MudTextField @bind-Value="rootPath" Label="Root path" Required="true" Variant="Variant.Outlined"
-                              HelperText="@(type == DestinationType.Local ? @"Example: D:\Backups" : @"Example: \\nas\backups")" />
+                <MudTextField @bind-Value="rootPath" Label="@UiStrings.DestinationFormRootPath" Required="true" Variant="Variant.Outlined"
+                              HelperText="@(type == DestinationType.Local ? UiStrings.DestinationFormLocalExample : UiStrings.DestinationFormSmbExample)" />
                 @if (type == DestinationType.Smb)
                 {
-                    <MudTextField @bind-Value="username" Label="Username" Required="true" Variant="Variant.Outlined" />
-                    <MudTextField @bind-Value="password" Label="@(Destination?.HasPassword == true ? "Replacement password (optional)" : "Password")"
+                    <MudTextField @bind-Value="username" Label="@UiStrings.DestinationFormUsername" Required="true" Variant="Variant.Outlined" />
+                    <MudTextField @bind-Value="password" Label="@(Destination?.HasPassword == true ? UiStrings.DestinationFormPasswordReplacement : UiStrings.DestinationFormPassword)"
                                   Required="@(Destination?.HasPassword != true)" InputType="InputType.Password" Variant="Variant.Outlined"
-                                  HelperText="Saved passwords are never displayed. Leave blank to keep the existing password." />
+                                  HelperText="@UiStrings.DestinationFormPasswordHelp" />
                 }
                 @if (error is not null) { <MudAlert Severity="Severity.Error" Dense="true">@error</MudAlert> }
             </MudStack>
         </MudForm>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="saving" OnClick="SaveAsync">Save</MudButton>
+        <MudButton OnClick="Cancel">@UiStrings.ActionCancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="saving" OnClick="SaveAsync">@UiStrings.ActionSave</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -57,19 +57,27 @@
             {
                 var result = await DestinationService.EditAsync(Destination.Id, command);
                 if (!result.Succeeded && result.Status == DestinationOperationStatus.ValidationFailed &&
-                    result.Message.Contains("confirmation", StringComparison.OrdinalIgnoreCase))
+                    result.Message.Key == UiMessage.KeyFor(DestinationMessage.RootChangeNeedsConfirmation))
                 {
-                    var confirmed = await DialogService.ShowMessageBoxAsync("Change storage root?",
-                        "Changing this root pauses affected jobs and makes retained artifacts unmanaged. Continue?",
-                        yesText: "Change root", cancelText: "Keep current root");
+                    var confirmed = await DialogService.ShowMessageBoxAsync(
+                        UiStrings.DestinationFormChangeRootTitle,
+                        UiStrings.DestinationFormChangeRootBody,
+                        yesText: UiStrings.DestinationFormChangeRootConfirm,
+                        cancelText: UiStrings.DestinationFormChangeRootKeep);
                     if (confirmed == true)
                         result = await DestinationService.EditAsync(Destination.Id, command with { ConfirmRootPathChange = true });
                 }
-                if (!result.Succeeded) { error = result.Message; return; }
+                if (!result.Succeeded) { error = MessageText.Resolve(result.Message); return; }
             }
             Dialog.Close(DialogResult.Ok(true));
         }
-        catch (Exception exception) when (exception is ArgumentException or InvalidOperationException) { error = exception.Message; }
+        catch (DestinationValidationException rejected) { error = MessageText.Resolve(rejected.Reason); }
+        catch (Exception exception) when (exception is ArgumentException or InvalidOperationException)
+        {
+            // A rejected configuration carries its reason as a code; anything else reports a generic
+            // localized failure rather than surfacing the exception's own untranslatable text.
+            error = UiStrings.DestinationFormSaveFailed;
+        }
         finally { password = null; saving = false; }
     }
 }

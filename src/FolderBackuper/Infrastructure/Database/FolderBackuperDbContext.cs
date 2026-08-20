@@ -46,7 +46,8 @@ public sealed class FolderBackuperDbContext(DbContextOptions<FolderBackuperDbCon
         entity.Property(x => x.Lifecycle).HasConversion<string>().HasMaxLength(20);
         entity.Property(x => x.LastAccessResult).HasConversion<string>().HasMaxLength(30);
         entity.Property(x => x.LastAccessSource).HasConversion<string>().HasMaxLength(30);
-        entity.Property(x => x.LastAccessErrorSummary).HasMaxLength(2000);
+        entity.Property(x => x.LastAccessMessageKey).HasMaxLength(200);
+        entity.Property(x => x.LastAccessMessageArguments).HasMaxLength(2000);
     }
 
     private static void ConfigureJob(ModelBuilder modelBuilder)
@@ -104,8 +105,12 @@ public sealed class FolderBackuperDbContext(DbContextOptions<FolderBackuperDbCon
         entity.Property(x => x.Phase).HasConversion<string>().HasMaxLength(30);
         entity.Property(x => x.Outcome).HasConversion<string>().HasMaxLength(40);
         entity.Property(x => x.NotificationState).HasConversion<string>().HasMaxLength(40);
-        entity.Property(x => x.ErrorSummary).HasMaxLength(2000);
-        entity.Property(x => x.NotificationErrorSummary).HasMaxLength(2000);
+        // A message code is a short identifier; only its arguments can approach the old two-thousand
+        // character budget, so the budget moves to the arguments column and the key gets its own.
+        entity.Property(x => x.ErrorMessageKey).HasMaxLength(200);
+        entity.Property(x => x.ErrorMessageArguments).HasMaxLength(2000);
+        entity.Property(x => x.NotificationMessageKey).HasMaxLength(200);
+        entity.Property(x => x.NotificationMessageArguments).HasMaxLength(2000);
         entity.HasIndex(x => new { x.JobId, x.Outcome });
         entity.HasIndex(x => new { x.DueAtUtc, x.QueuedAtUtc, x.Id });
         entity.Property(x => x.StagingPath).HasMaxLength(2048);
@@ -151,10 +156,11 @@ public sealed class FolderBackuperDbContext(DbContextOptions<FolderBackuperDbCon
         entity.Property(x => x.Path).HasMaxLength(2048);
         entity.Property(x => x.Phase).HasConversion<string>().HasMaxLength(30);
         entity.Property(x => x.Severity).HasConversion<string>().HasMaxLength(20);
-        entity.Property(x => x.Operation).HasMaxLength(200);
+        entity.Property(x => x.Operation).HasConversion<string>().HasMaxLength(60);
         entity.Property(x => x.ErrorCategory).HasMaxLength(100);
         entity.Property(x => x.NativeErrorCode).HasMaxLength(100);
-        entity.Property(x => x.UserMessage).HasMaxLength(2000);
+        entity.Property(x => x.MessageKey).HasMaxLength(200);
+        entity.Property(x => x.MessageArguments).HasMaxLength(2000);
         entity.HasIndex(x => x.RunId);
         entity.HasOne(x => x.Run)
             .WithMany(x => x.Problems)
@@ -194,7 +200,8 @@ public sealed class FolderBackuperDbContext(DbContextOptions<FolderBackuperDbCon
         entity.HasKey(x => x.Id);
         entity.Property(x => x.RunOutcome).HasConversion<string>().HasMaxLength(40);
         entity.Property(x => x.State).HasConversion<string>().HasMaxLength(40);
-        entity.Property(x => x.LastSafeError).HasMaxLength(2000);
+        entity.Property(x => x.LastSafeErrorKey).HasMaxLength(200);
+        entity.Property(x => x.LastSafeErrorArguments).HasMaxLength(2000);
         entity.HasIndex(x => x.RunId).IsUnique();
         entity.HasIndex(x => new { x.State, x.CreatedAtUtc });
         entity.HasOne(x => x.Run)
@@ -210,5 +217,6 @@ public sealed class FolderBackuperDbContext(DbContextOptions<FolderBackuperDbCon
         entity.HasKey(x => x.Id);
         entity.HasIndex(x => x.InstallationId).IsUnique();
         entity.Property(x => x.NotificationProvider).HasMaxLength(100);
+        entity.Property(x => x.UiLanguage).HasMaxLength(50);
     }
 }

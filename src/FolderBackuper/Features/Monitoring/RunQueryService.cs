@@ -3,6 +3,7 @@ using FolderBackuper.Features.Notifications;
 using FolderBackuper.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 
+using FolderBackuper.Infrastructure.Localization;
 namespace FolderBackuper.Features.Monitoring;
 
 /// <summary>
@@ -104,9 +105,12 @@ public sealed class RunQueryService(IDbContextFactory<FolderBackuperDbContext> c
             run.DueAtUtc, run.QueuedAtUtc, run.StartedAtUtc, run.CompletedAtUtc,
             run.StartedAtUtc is not null && run.CompletedAtUtc is not null ? run.CompletedAtUtc - run.StartedAtUtc : null,
             run.FileCount, run.DirectoryCount, run.SourceBytes, run.ArchiveBytes,
-            run.CompressionDuration, run.TransferDuration, run.ErrorSummary,
+            run.CompressionDuration, run.TransferDuration,
+            StoredMessage.Decode(run.ErrorMessageKey, run.ErrorMessageArguments),
             run.Artifact?.FinalFileName, run.Artifact?.EffectivePath, run.Artifact?.Size, run.Artifact?.State,
-            run.NotificationState, run.NotificationErrorSummary, problemCount);
+            run.NotificationState,
+            StoredMessage.Decode(run.NotificationMessageKey, run.NotificationMessageArguments),
+            problemCount);
     }
 
     public async Task<RunProblemPage> ListRunProblemsAsync(
@@ -121,13 +125,23 @@ public sealed class RunQueryService(IDbContextFactory<FolderBackuperDbContext> c
 
         var query = context.RunProblems.AsNoTracking().Where(x => x.RunId == runId);
         var total = await query.CountAsync(cancellationToken);
-        var rows = await query
+        // Projected to the stored columns first and decoded afterwards, because rebuilding a message
+        // from its key and arguments is not something the database provider can translate.
+        var stored = await query
             .OrderByDescending(x => x.Severity).ThenBy(x => x.Id)
             .Skip(page * pageSize).Take(pageSize)
-            .Select(x => new RunProblemRow(
+            .Select(x => new
+            {
                 x.Id, x.Path, x.Phase, x.Severity, x.Operation, x.ErrorCategory,
-                x.NativeErrorCode, x.UserMessage, x.DiagnosticDetail))
+                x.NativeErrorCode, x.MessageKey, x.MessageArguments, x.DiagnosticDetail
+            })
             .ToListAsync(cancellationToken);
+
+        var rows = stored
+            .Select(x => new RunProblemRow(
+                x.Id, x.Path, x.Phase, x.Severity, x.Operation, x.ErrorCategory, x.NativeErrorCode,
+                StoredMessage.Decode(x.MessageKey, x.MessageArguments)!, x.DiagnosticDetail))
+            .ToList();
 
         return new RunProblemPage(rows, total, page, pageSize);
     }

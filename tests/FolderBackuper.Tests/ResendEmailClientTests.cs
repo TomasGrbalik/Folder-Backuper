@@ -28,7 +28,7 @@ public sealed class ResendEmailClientTests
 
         Assert.Equal(NotificationSendStatus.Delivered, result.Status);
         Assert.True(result.Succeeded);
-        Assert.Contains("abc-123", result.Message, StringComparison.Ordinal);
+        Assert.Contains("abc-123", MessageAssert.Text(result.Message), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public sealed class ResendEmailClientTests
         var result = await NotificationTestFactory.Client(handler).SendAsync(Message(), ApiKey);
 
         Assert.Equal(NotificationSendStatus.Rejected, result.Status);
-        Assert.Contains("Domain is not verified", result.Message, StringComparison.Ordinal);
+        Assert.Contains("Domain is not verified", MessageAssert.Text(result.Message), StringComparison.Ordinal);
     }
 
     [Theory]
@@ -69,7 +69,7 @@ public sealed class ResendEmailClientTests
         var result = await NotificationTestFactory.Client(handler).SendAsync(Message(), ApiKey);
 
         Assert.Equal(NotificationSendStatus.Uncertain, result.Status);
-        Assert.Contains("unknown", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("unknown", MessageAssert.Text(result.Message), StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -92,7 +92,7 @@ public sealed class ResendEmailClientTests
         var result = await NotificationTestFactory.Client(handler).SendAsync(Message(), ApiKey);
 
         Assert.Equal(NotificationSendStatus.Rejected, result.Status);
-        Assert.Contains("could not be reached", result.Message, StringComparison.Ordinal);
+        MessageAssert.Is(NotificationResultMessage.ProviderUnreachable, result.Message);
     }
 
     [Fact]
@@ -138,7 +138,7 @@ public sealed class ResendEmailClientTests
 
         var result = await NotificationTestFactory.Client(handler).SendAsync(Message(), ApiKey);
 
-        Assert.DoesNotContain("re_secret_value", result.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("re_secret_value", MessageAssert.Text(result.Message), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -150,7 +150,11 @@ public sealed class ResendEmailClientTests
 
         var result = await NotificationTestFactory.Client(handler).SendAsync(Message(), ApiKey);
 
-        Assert.True(result.Message.Length < 2000, $"The safe error was {result.Message.Length} characters.");
+        // The provider's detail is what can be verbose, and it is stored as a message argument, so
+        // the length that has to fit the column is the encoded arguments rather than the sentence.
+        var stored = StoredMessage.EncodeArguments(result.Message);
+        Assert.NotNull(stored);
+        Assert.True(stored.Length < 2000, $"The stored arguments were {stored.Length} characters.");
     }
 
     [Fact]

@@ -59,7 +59,7 @@ public sealed class DestinationServiceTests
         await database.Initializer.InitializeAsync();
         var adapter = new FakeAdapter(DestinationType.Local)
         {
-            TestResult = new(false, DestinationAccessResult.CleanupFailed, "Cleanup failed", 5)
+            TestResult = new(false, DestinationAccessResult.CleanupFailed, UiMessage.For(DestinationMessage.TestFileNotCleanedUp), 5)
         };
         var service = Service(database, adapter);
         var created = await service.CreateAsync(new("Primary", DestinationType.Local, database.Paths.Staging));
@@ -70,7 +70,7 @@ public sealed class DestinationServiceTests
         Assert.Equal(DestinationAccessResult.CleanupFailed, result.Result);
         Assert.Equal(DestinationVerificationResult.Failed, destination.VerificationResult);
         Assert.Equal(DestinationAccessSource.Management, destination.LastAccessSource);
-        Assert.Equal("Cleanup failed", destination.LastAccessErrorSummary);
+        Assert.Equal(UiMessage.KeyFor(DestinationMessage.TestFileNotCleanedUp), destination.LastAccessMessageKey);
     }
 
     [Fact]
@@ -79,7 +79,9 @@ public sealed class DestinationServiceTests
         await using var database = new TemporaryDatabase();
         await database.Initializer.InitializeAsync();
         var service = Service(database, new FakeAdapter(DestinationType.Smb), new AlwaysLocalDetector());
-        await Assert.ThrowsAsync<ArgumentException>(() => service.CreateAsync(new("Local share", DestinationType.Smb, @"\\localhost\share", "user", "secret")));
+        var rejected = await Assert.ThrowsAsync<DestinationValidationException>(
+            () => service.CreateAsync(new("Local share", DestinationType.Smb, @"\\localhost\share", "user", "secret")));
+        MessageAssert.Is(DestinationMessage.SmbHostedLocallyMustBeLocalPath, rejected.Reason);
     }
 
     [Fact]
@@ -99,9 +101,9 @@ public sealed class DestinationServiceTests
         var service = Service(database, new FakeAdapter(DestinationType.Local));
         var nestedDestination = Path.Combine(database.Paths.Staging, "Backups");
 
-        var exception = await Assert.ThrowsAsync<ArgumentException>(
+        var exception = await Assert.ThrowsAsync<DestinationValidationException>(
             () => service.CreateAsync(new("Unsafe", DestinationType.Local, nestedDestination)));
-        Assert.Contains("overlaps configured source", exception.Message, StringComparison.Ordinal);
+        MessageAssert.Is(DestinationMessage.OverlapsConfiguredSource, exception.Reason);
     }
 
     [Fact]
@@ -191,7 +193,7 @@ public sealed class DestinationServiceTests
 
         var edited = await service.EditAsync(destination.Id,
             new("Primary", DestinationType.Local, newRoot, ConfirmRootPathChange: true));
-        Assert.True(edited.Succeeded, edited.Message);
+        Assert.True(edited.Succeeded, MessageAssert.Text(edited.Message));
         Assert.Equal(1, edited.PausedJobCount);
         await using var inspection = await database.ContextFactory.CreateDbContextAsync();
         Assert.Equal(JobLifecycle.Paused, (await inspection.Jobs.SingleAsync()).Lifecycle);
@@ -237,7 +239,7 @@ public sealed class DestinationServiceTests
         var result = await Service(database, new LocalDestinationAdapter()).EditAsync(destination.Id,
             new("Primary", DestinationType.Local, newRoot, ConfirmRootPathChange: true));
 
-        Assert.True(result.Succeeded, result.Message);
+        Assert.True(result.Succeeded, MessageAssert.Text(result.Message));
         Assert.Equal(1, result.UnmanagedArtifactCount);
         await using var inspection = await database.ContextFactory.CreateDbContextAsync();
         Assert.Equal(ArtifactState.Unmanaged, (await inspection.BackupArtifacts.SingleAsync()).State);
@@ -374,7 +376,7 @@ public sealed class DestinationServiceTests
     {
         public DestinationType Type => type;
         public int CapacityAttempts { get; private set; }
-        public DestinationOperationResult TestResult { get; set; } = DestinationOperationResult.Success("Passed", 1234);
+        public DestinationOperationResult TestResult { get; set; } = DestinationOperationResult.Success(DestinationMessage.TestSucceeded, 1234);
         public Task<DestinationOperationResult> TestAsync(DestinationAccessConfiguration configuration, CancellationToken cancellationToken) => Task.FromResult(TestResult);
         public Task<long?> GetAvailableBytesAsync(DestinationAccessConfiguration configuration, CancellationToken cancellationToken)
         { CapacityAttempts++; return Task.FromResult<long?>(1234); }

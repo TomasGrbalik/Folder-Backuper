@@ -1,5 +1,6 @@
 using FolderBackuper.Infrastructure.Versioning;
 
+using FolderBackuper.Infrastructure.Localization;
 namespace FolderBackuper.Features.Updates;
 
 /// <summary>
@@ -17,7 +18,7 @@ public sealed record UpdateStatus(
     string? LatestReleaseUrl,
     bool UpdateAvailable,
     DateTimeOffset? LastCheckedUtc,
-    string? LastProblem)
+    UiMessage? LastProblem)
 {
     /// <summary>
     /// The state before anything has been looked up, and the state a switched-off check returns to.

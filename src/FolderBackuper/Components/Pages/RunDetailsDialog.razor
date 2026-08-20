@@ -1,3 +1,4 @@
+@using System.Globalization
 @inject RunQueryService Runs
 
 <MudDialog>
@@ -18,71 +19,71 @@
                 </div>
 
                 <dl class="run-details-facts">
-                    <div><dt>Source</dt><dd>@details.SourcePath</dd></div>
-                    <div><dt>Destination</dt><dd>@details.DestinationName (@details.DestinationRootPath\@details.DestinationSubfolder)</dd></div>
-                    <div><dt>Scheduled</dt><dd>@DisplayFormat.LocalDateTime(details.DueAtUtc)</dd></div>
-                    <div><dt>Started</dt><dd>@DisplayFormat.LocalDateTime(details.StartedAtUtc)</dd></div>
-                    <div><dt>Completed</dt><dd>@DisplayFormat.LocalDateTime(details.CompletedAtUtc)</dd></div>
-                    <div><dt>Duration</dt><dd>@DisplayFormat.Duration(details.Duration)</dd></div>
-                    <div><dt>Phase reached</dt><dd>@MonitoringDisplay.PhaseLabel(details.Phase)</dd></div>
-                    <div><dt>Files / folders</dt><dd>@details.FileCount.ToString("N0") / @details.DirectoryCount.ToString("N0")</dd></div>
-                    <div><dt>Source size</dt><dd>@DisplayFormat.Bytes(details.SourceBytes)</dd></div>
-                    <div><dt>Archive size</dt><dd>@DisplayFormat.Bytes(details.ArchiveBytes)</dd></div>
-                    <div><dt>Retention</dt><dd>keep @details.RetentionCount</dd></div>
-                    <div><dt>Time zone</dt><dd>@details.TimeZoneId</dd></div>
+                    <div><dt>@UiStrings.RunDetailsSource</dt><dd>@details.SourcePath</dd></div>
+                    <div><dt>@UiStrings.RunDetailsDestination</dt><dd>@details.DestinationName (@details.DestinationRootPath\@details.DestinationSubfolder)</dd></div>
+                    <div><dt>@UiStrings.RunDetailsScheduled</dt><dd>@DisplayFormat.LocalDateTime(details.DueAtUtc)</dd></div>
+                    <div><dt>@UiStrings.RunDetailsStarted</dt><dd>@DisplayFormat.LocalDateTime(details.StartedAtUtc)</dd></div>
+                    <div><dt>@UiStrings.RunDetailsCompleted</dt><dd>@DisplayFormat.LocalDateTime(details.CompletedAtUtc)</dd></div>
+                    <div><dt>@UiStrings.RunDetailsDuration</dt><dd>@DisplayFormat.Duration(details.Duration)</dd></div>
+                    <div><dt>@UiStrings.RunDetailsPhaseReached</dt><dd>@MonitoringDisplay.PhaseLabel(details.Phase)</dd></div>
+                    <div><dt>@UiStrings.RunDetailsFilesFolders</dt><dd>@Count(details.FileCount) / @Count(details.DirectoryCount)</dd></div>
+                    <div><dt>@UiStrings.RunDetailsSourceSize</dt><dd>@DisplayFormat.Bytes(details.SourceBytes)</dd></div>
+                    <div><dt>@UiStrings.RunDetailsArchiveSize</dt><dd>@DisplayFormat.Bytes(details.ArchiveBytes)</dd></div>
+                    <div><dt>@UiStrings.RunDetailsRetention</dt><dd>@string.Format(CultureInfo.CurrentCulture, UiStrings.RunDetailsRetentionKeep, details.RetentionCount)</dd></div>
+                    <div><dt>@UiStrings.RunDetailsTimeZone</dt><dd>@details.TimeZoneId</dd></div>
                 </dl>
 
                 @if (details.ArchiveFinalFileName is not null)
                 {
                     <MudPaper Class="run-archive" Elevation="0">
-                        <MudText Typo="Typo.subtitle2">Archive</MudText>
+                        <MudText Typo="Typo.subtitle2">@UiStrings.RunDetailsArchive</MudText>
                         <MudText Typo="Typo.body2" Class="archive-name">@details.ArchiveFinalFileName</MudText>
                         <MudText Typo="Typo.caption">@details.ArchiveEffectivePath</MudText>
                         <div>
                             <MudChip T="string" Size="Size.Small" Color="@MonitoringDisplay.ArtifactColor(details.ArtifactState)">@MonitoringDisplay.ArtifactLabel(details.ArtifactState)</MudChip>
-                            <span>@DisplayFormat.Bytes(details.ArchiveSize, "—")</span>
+                            <span>@DisplayFormat.Bytes(details.ArchiveSize, UiStrings.ValueUnknownDash)</span>
                         </div>
                     </MudPaper>
                 }
 
                 <MudText Typo="Typo.body2">
-                    Notification:
+                    @UiStrings.RunDetailsNotification
                     <MudChip T="string" Size="Size.Small" Color="@MonitoringDisplay.NotificationColor(details.NotificationState)">@MonitoringDisplay.NotificationLabel(details.NotificationState)</MudChip>
-                    @if (details.NotificationErrorSummary is not null) { <span>@details.NotificationErrorSummary</span> }
+                    @if (details.NotificationErrorSummary is not null) { <span>@MessageText.Resolve(details.NotificationErrorSummary)</span> }
                 </MudText>
 
                 @if (details.ErrorSummary is not null)
                 {
-                    <MudAlert Severity="Severity.Error" Dense="true">@details.ErrorSummary</MudAlert>
+                    <MudAlert Severity="Severity.Error" Dense="true">@MessageText.Resolve(details.ErrorSummary)</MudAlert>
                 }
 
-                <MudText Typo="Typo.h6" Class="mt-3">Problems (@details.ProblemCount)</MudText>
+                <MudText Typo="Typo.h6" Class="mt-3">@string.Format(CultureInfo.CurrentCulture, UiStrings.RunDetailsProblems, details.ProblemCount)</MudText>
                 @if (details.ProblemCount == 0)
                 {
-                    <MudText Typo="Typo.body2">No problems were recorded for this run.</MudText>
+                    <MudText Typo="Typo.body2">@UiStrings.RunDetailsNoProblems</MudText>
                 }
                 else
                 {
                     <MudTable T="RunProblemRow" ServerData="LoadProblemsAsync" @ref="problemTable" Dense="true" Hover="true"
                               Virtualize="false" RowsPerPage="RunQueryService.DefaultPageSize" Class="problem-table">
                         <HeaderContent>
-                            <MudTh>Severity</MudTh>
-                            <MudTh>Phase</MudTh>
-                            <MudTh>Operation</MudTh>
-                            <MudTh>Path</MudTh>
-                            <MudTh>Message</MudTh>
+                            <MudTh>@UiStrings.RunDetailsColumnSeverity</MudTh>
+                            <MudTh>@UiStrings.RunDetailsColumnPhase</MudTh>
+                            <MudTh>@UiStrings.RunDetailsColumnOperation</MudTh>
+                            <MudTh>@UiStrings.RunDetailsColumnPath</MudTh>
+                            <MudTh>@UiStrings.RunDetailsColumnMessage</MudTh>
                         </HeaderContent>
                         <RowTemplate>
-                            <MudTd DataLabel="Severity">
-                                <MudChip T="string" Size="Size.Small" Color="@(context.Severity == BackupProblemSeverity.Error ? Color.Error : Color.Warning)">@context.Severity</MudChip>
+                            <MudTd DataLabel="@UiStrings.RunDetailsColumnSeverity">
+                                <MudChip T="string" Size="Size.Small" Color="@(context.Severity == BackupProblemSeverity.Error ? Color.Error : Color.Warning)">@MonitoringDisplay.SeverityLabel(context.Severity)</MudChip>
                             </MudTd>
-                            <MudTd DataLabel="Phase">@MonitoringDisplay.PhaseLabel(context.Phase)</MudTd>
-                            <MudTd DataLabel="Operation">@context.Operation</MudTd>
-                            <MudTd DataLabel="Path" Class="problem-path">@context.Path</MudTd>
-                            <MudTd DataLabel="Message">@context.UserMessage</MudTd>
+                            <MudTd DataLabel="@UiStrings.RunDetailsColumnPhase">@MonitoringDisplay.PhaseLabel(context.Phase)</MudTd>
+                            <MudTd DataLabel="@UiStrings.RunDetailsColumnOperation">@EnumText.For(context.Operation)</MudTd>
+                            <MudTd DataLabel="@UiStrings.RunDetailsColumnPath" Class="problem-path">@context.Path</MudTd>
+                            <MudTd DataLabel="@UiStrings.RunDetailsColumnMessage">@MessageText.Resolve(context.Message)</MudTd>
                         </RowTemplate>
                         <PagerContent>
-                            <MudTablePager PageSizeOptions="new[] { 50, 100, 200 }" />
+                            <MudTablePager PageSizeOptions="new[] { 50, 100, 200 }" RowsPerPageString="@UiStrings.PagerRowsPerPage" InfoFormat="@UiStrings.PagerInfoFormat" />
                         </PagerContent>
                     </MudTable>
                 }
@@ -90,7 +91,7 @@
         }
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="() => Dialog.Close()">Close</MudButton>
+        <MudButton OnClick="() => Dialog.Close()">@UiStrings.ActionClose</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -102,6 +103,10 @@
     private MudTable<RunProblemRow>? problemTable;
 
     protected override async Task OnInitializedAsync() => details = await Runs.GetRunDetailsAsync(RunId);
+
+    // Counts are formatted with an explicit culture so that the selected language decides the group
+    // separator rather than whatever the thread happened to inherit.
+    private static string Count(long value) => value.ToString("N0", CultureInfo.CurrentCulture);
 
     private async Task<TableData<RunProblemRow>> LoadProblemsAsync(TableState state, CancellationToken cancellationToken)
     {

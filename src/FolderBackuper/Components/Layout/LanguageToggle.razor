@@ -1,0 +1,54 @@
+@* Selects the interface language. A component of its own rather than markup inside MainLayout so that
+   it can be rendered on its own in a test, matching UpdateNoticeChip.
+
+   Switching forces a full reload rather than a re-render. The root document's lang attribute, the
+   statically rendered reconnect banner, and the component library's own strings are all produced
+   outside this circuit, so re-rendering would leave the page in two languages at once. *@
+@inject UiLanguageSettingsService Languages
+@inject NavigationManager Navigation
+
+<div class="language-toggle" role="group" aria-label="@UiStrings.LanguageGroupLabel">
+    @foreach (var language in InterfaceLanguages.All)
+    {
+        <button type="button"
+                class="@(language == selected ? "active" : "")"
+                lang="@language.ToLanguageTag()"
+                title="@LongName(language)"
+                aria-pressed="@(language == selected ? "true" : "false")"
+                @onclick="() => SelectAsync(language)">
+            @ShortName(language)
+        </button>
+    }
+</div>
+
+@code {
+    private InterfaceLanguage selected = InterfaceLanguages.Current;
+
+    protected override async Task OnInitializedAsync() => selected = await Languages.GetAsync();
+
+    private async Task SelectAsync(InterfaceLanguage language)
+    {
+        if (language == selected)
+        {
+            return;
+        }
+
+        await Languages.SetAsync(language);
+        selected = language;
+
+        // Reload rather than re-render, for the reason given at the top of this file.
+        Navigation.Refresh(forceReload: true);
+    }
+
+    private static string ShortName(InterfaceLanguage language) => language switch
+    {
+        InterfaceLanguage.Slovak => UiStrings.LanguageSlovakShort,
+        _ => UiStrings.LanguageEnglishShort
+    };
+
+    private static string LongName(InterfaceLanguage language) => language switch
+    {
+        InterfaceLanguage.Slovak => UiStrings.LanguageSlovak,
+        _ => UiStrings.LanguageEnglish
+    };
+}

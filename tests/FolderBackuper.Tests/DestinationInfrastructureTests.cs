@@ -24,7 +24,7 @@ public sealed class DestinationInfrastructureTests : IDisposable
     {
         var adapter = new LocalDestinationAdapter();
         var result = await adapter.TestAsync(new(DestinationType.Local, root, null, null), default);
-        Assert.True(result.Succeeded, result.Message);
+        Assert.True(result.Succeeded, MessageAssert.Text(result.Message));
         Assert.NotNull(result.AvailableBytes);
         Assert.Empty(Directory.EnumerateFileSystemEntries(root));
     }

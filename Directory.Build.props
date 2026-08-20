@@ -21,7 +21,10 @@
     <Product>Folder Backuper</Product>
     <Company>Folder Backuper</Company>
     <Copyright>Copyright (c) Folder Backuper contributors</Copyright>
-    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <!-- English is the neutral resource language and Slovak is the one satellite the product ships.
+         Widening this list ships satellite assemblies nobody asked for; narrowing it silently strips
+         the Slovak interface from publish output, which docs/release-checklist.md asserts against. -->
+    <SatelliteResourceLanguages>en;sk</SatelliteResourceLanguages>
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
 </Project>

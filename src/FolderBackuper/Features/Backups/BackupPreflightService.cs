@@ -3,6 +3,7 @@ using FolderBackuper.Features.Jobs;
 using FolderBackuper.Infrastructure.Filesystem;
 using FolderBackuper.Infrastructure.ServiceHosting;
 
+using FolderBackuper.Infrastructure.Localization;
 namespace FolderBackuper.Features.Backups;
 
 public sealed record BackupPreflightResult(
@@ -33,7 +34,7 @@ public sealed class BackupPreflightService(
         if (job.Lifecycle == JobLifecycle.Archived)
         {
             problems.Add(Problem(BackupProblemCategory.SourceUnavailable, RunPhase.Scanning,
-                "Validate job lifecycle", "An archived job cannot be executed.", job.SourcePath));
+                BackupOperation.ValidateJobLifecycle, UiMessage.For(BackupProblemMessage.ArchivedJobCannotRun), job.SourcePath));
         }
 
         string? source = null;
@@ -43,8 +44,15 @@ public sealed class BackupPreflightService(
         }
         catch (Exception exception) when (exception is ArgumentException or IOException or UnauthorizedAccessException)
         {
+            // A rejected source path carries its reason as a code; anything else is an unexpected
+            // filesystem failure and is reported as one rather than by leaking the exception's own text.
             problems.Add(Problem(BackupProblemCategory.SourceUnavailable, RunPhase.Scanning,
-                "Validate source", exception.Message, job.SourcePath, exception));
+                BackupOperation.ValidateSource,
+                exception is SourcePathException rejected
+                    ? rejected.Reason
+                    : UiMessage.For(SourceMessage.DirectoryInvalid),
+                job.SourcePath,
+                exception));
         }
 
         if (destination.Lifecycle != DestinationLifecycle.Active ||
@@ -52,7 +60,7 @@ public sealed class BackupPreflightService(
             string.IsNullOrWhiteSpace(destination.VerificationFingerprint))
         {
             problems.Add(Problem(BackupProblemCategory.DestinationUnavailable, RunPhase.Scanning,
-                "Validate destination verification", "The destination must have a current successful verification.", destination.RootPath));
+                BackupOperation.ValidateDestinationVerification, UiMessage.For(BackupProblemMessage.DestinationNeedsVerification), destination.RootPath));
         }
 
         if (destination.Type == DestinationType.Smb)
@@ -62,13 +70,13 @@ public sealed class BackupPreflightService(
                 if (localHostUncDetector.IsHostedLocally(destination.RootPath))
                 {
                     problems.Add(Problem(BackupProblemCategory.InvalidPath, RunPhase.Scanning,
-                        "Validate SMB destination", "An SMB destination hosted by this computer is not supported.", destination.RootPath));
+                        BackupOperation.ValidateSmbDestination, UiMessage.For(BackupProblemMessage.SmbHostedLocallyUnsupported), destination.RootPath));
                 }
             }
             catch (ArgumentException exception)
             {
                 problems.Add(Problem(BackupProblemCategory.InvalidPath, RunPhase.Scanning,
-                    "Validate SMB destination", exception.Message, destination.RootPath, exception));
+                    BackupOperation.ValidateSmbDestination, UiMessage.For(PathMessage.UncInvalid), destination.RootPath, exception));
             }
         }
 
@@ -87,8 +95,8 @@ public sealed class BackupPreflightService(
                     ? BackupProblemCategory.InvalidPath
                     : BackupProblemCategory.DestinationUnavailable,
                 RunPhase.Scanning,
-                "Validate effective destination",
-                effective.Succeeded ? "The effective destination directory does not exist." : effective.Message,
+                BackupOperation.ValidateEffectiveDestination,
+                effective.Succeeded ? UiMessage.For(BackupProblemMessage.EffectiveDestinationMissing) : effective.Message,
                 effective.EffectivePath ?? destination.RootPath));
             return new(source, null, problems.AsReadOnly());
         }
@@ -101,13 +109,13 @@ public sealed class BackupPreflightService(
             if (marker.Result != OwnershipMarkerResult.Owned)
             {
                 problems.Add(Problem(BackupProblemCategory.DestinationInaccessible, RunPhase.Scanning,
-                    "Verify destination ownership", marker.Message, effective.EffectivePath));
+                    BackupOperation.VerifyDestinationOwnership, marker.Message, effective.EffectivePath));
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
         {
             problems.Add(Problem(BackupProblemCategory.DestinationInaccessible, RunPhase.Scanning,
-                "Verify destination ownership", "The destination ownership marker could not be verified.",
+                BackupOperation.VerifyDestinationOwnership, UiMessage.For(BackupProblemMessage.OwnershipMarkerUnverified),
                 effective.EffectivePath, exception));
         }
 
@@ -120,7 +128,7 @@ public sealed class BackupPreflightService(
         if (!validation.IsValid || !Directory.Exists(applicationPaths.Staging))
         {
             problems.Add(Problem(BackupProblemCategory.StagingUnavailable, RunPhase.Scanning,
-                "Validate staging", validation.Error ?? "The staging directory does not exist.", applicationPaths.Staging));
+                BackupOperation.ValidateStaging, validation.Error ?? UiMessage.For(BackupProblemMessage.StagingDirectoryMissing), applicationPaths.Staging));
             return;
         }
 
@@ -130,21 +138,21 @@ public sealed class BackupPreflightService(
             if (overlap is not null)
             {
                 problems.Add(Problem(BackupProblemCategory.InvalidPath, RunPhase.Scanning,
-                    "Validate staging overlap", "The staging directory overlaps a configured source.", applicationPaths.Staging));
+                    BackupOperation.ValidateStagingOverlap, UiMessage.For(BackupProblemMessage.StagingOverlapsSource), applicationPaths.Staging));
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
         {
             problems.Add(Problem(BackupProblemCategory.StagingInaccessible, RunPhase.Scanning,
-                "Validate staging", "The staging directory could not be resolved safely.", applicationPaths.Staging, exception));
+                BackupOperation.ValidateStaging, UiMessage.For(BackupProblemMessage.StagingNotResolvable), applicationPaths.Staging, exception));
         }
     }
 
     private static BackupProblem Problem(
         BackupProblemCategory category,
         RunPhase phase,
-        string operation,
-        string message,
+        BackupOperation operation,
+        UiMessage message,
         string? path,
         Exception? exception = null) => new(
             BackupProblemSeverity.Error,

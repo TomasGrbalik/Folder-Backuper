@@ -48,7 +48,8 @@ public sealed class NotificationPayloadTests
         var run = MonitoringTestSeed.Terminal(job, destination, RunOutcome.SuccessfulWithWarnings, Utc(9));
         var problems = Enumerable.Range(0, 250)
             .Select(index => MonitoringTestSeed.Problem(
-                run.Id, BackupProblemSeverity.Warning, $"Problem {index}", $@"C:\Data\File{index}.txt"))
+                run.Id, BackupProblemSeverity.Warning, BackupProblemMessage.SourceEntryChanged,
+                $@"C:\Data\File{index}.txt"))
             .ToList();
 
         var payload = NotificationPayloadBuilder.Build(run, problems, null);
@@ -68,14 +69,16 @@ public sealed class NotificationPayloadTests
         // A hundred warnings recorded before the single error would push it past the cap if the
         // builder preserved insertion order.
         var problems = Enumerable.Range(0, 120)
-            .Select(index => MonitoringTestSeed.Problem(run.Id, BackupProblemSeverity.Warning, $"Warning {index}"))
-            .Append(MonitoringTestSeed.Problem(run.Id, BackupProblemSeverity.Error, "The source became unavailable."))
+            .Select(_ => MonitoringTestSeed.Problem(
+                run.Id, BackupProblemSeverity.Warning, BackupProblemMessage.SourceEntryChanged))
+            .Append(MonitoringTestSeed.Problem(
+                run.Id, BackupProblemSeverity.Error, BackupProblemMessage.SourceFileUnreadable))
             .ToList();
 
         var payload = NotificationPayloadBuilder.Build(run, problems, null);
 
         Assert.Equal(BackupProblemSeverity.Error, payload.Problems[0].Severity);
-        Assert.Equal("The source became unavailable.", payload.Problems[0].Message);
+        MessageAssert.Is(BackupProblemMessage.SourceFileUnreadable, payload.Problems[0].Message);
         Assert.Equal(121, payload.TotalProblemCount);
     }
 
@@ -87,9 +90,10 @@ public sealed class NotificationPayloadTests
         var run = MonitoringTestSeed.Terminal(job, destination, RunOutcome.SuccessfulWithWarnings, Utc(9));
         var problems = new List<RunProblem>
         {
-            RetentionWarning(run.Id, "An older backup could not be removed."),
-            RetentionWarning(run.Id, "A second older backup could not be removed."),
-            MonitoringTestSeed.Problem(run.Id, BackupProblemSeverity.Warning, "A source file was skipped.")
+            RetentionWarning(run.Id),
+            RetentionWarning(run.Id),
+            MonitoringTestSeed.Problem(
+                run.Id, BackupProblemSeverity.Warning, BackupProblemMessage.ReparsePointSkipped)
         };
 
         var payload = NotificationPayloadBuilder.Build(run, problems, null);
@@ -165,13 +169,13 @@ public sealed class NotificationPayloadTests
         Assert.False(NotificationOutboxWriter.IsNotifiable(RunOutcome.Cancelled));
     }
 
-    private static RunProblem RetentionWarning(Guid runId, string message) => new()
+    private static RunProblem RetentionWarning(Guid runId) => new()
     {
         RunId = runId,
         Phase = RunPhase.Finalizing,
         Severity = BackupProblemSeverity.Warning,
-        Operation = "Remove expired backup",
+        Operation = BackupOperation.DeleteRetainedArchive,
         ErrorCategory = nameof(BackupProblemCategory.CleanupFailed),
-        UserMessage = message
+        MessageKey = UiMessage.KeyFor(BackupProblemMessage.RetainedArchiveNotDeleted)
     };
 }

@@ -22,7 +22,7 @@ public sealed class NotificationSettingsServiceTests
         var service = NotificationTestFactory.Settings(database, clock);
 
         var saved = await service.SaveAsync(Valid(recipients: "one@example.test\ntwo@example.test"));
-        Assert.True(saved.Succeeded, saved.Message);
+        Assert.True(saved.Succeeded, MessageAssert.Text(saved.Message));
 
         var view = await service.GetAsync();
 
@@ -70,7 +70,7 @@ public sealed class NotificationSettingsServiceTests
         await service.SaveAsync(Valid(apiKey: "re_original_key"));
         var saved = await service.SaveAsync(Valid(apiKey: "   ", recipients: "changed@example.test"));
 
-        Assert.True(saved.Succeeded, saved.Message);
+        Assert.True(saved.Succeeded, MessageAssert.Text(saved.Message));
         var configuration = await service.GetDeliveryConfigurationAsync();
 
         Assert.NotNull(configuration);
@@ -121,8 +121,8 @@ public sealed class NotificationSettingsServiceTests
         // Turning notifications off must stay possible even when nothing valid is configured.
         var result = await service.SaveAsync(new SaveNotificationSettingsCommand(false, "", null, "", null));
 
-        Assert.True(result.Succeeded, result.Message);
-        Assert.Contains("turned off", result.Message, StringComparison.Ordinal);
+        Assert.True(result.Succeeded, MessageAssert.Text(result.Message));
+        MessageAssert.Is(NotificationResultMessage.SettingsSavedNotificationsOff, result.Message);
         var view = await service.GetAsync();
         Assert.False(view.Enabled);
         Assert.False(view.IsDeliverable);

@@ -8,7 +8,7 @@ public sealed class WindowsPathTests
     public void Local_NormalizesAbsolutePath()
     {
         var result = WindowsPath.Local(Path.Combine(Path.GetTempPath(), "FolderBackuper", "."));
-        Assert.True(result.IsValid, result.Error);
+        Assert.True(result.IsValid, MessageAssert.Text(result.Error));
         Assert.False(Path.EndsInDirectorySeparator(result.Path));
     }
 

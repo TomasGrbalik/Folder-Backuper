@@ -3,6 +3,7 @@ using FolderBackuper.Features.Destinations;
 using FolderBackuper.Features.Jobs;
 using FolderBackuper.Features.Notifications;
 
+using FolderBackuper.Infrastructure.Localization;
 namespace FolderBackuper.Features.Monitoring;
 
 /// <summary>Durable projection of the single non-terminal run. Live progress is joined from the registry.</summary>
@@ -81,13 +82,13 @@ public sealed record RunDetailsView(
     long ArchiveBytes,
     TimeSpan? CompressionDuration,
     TimeSpan? TransferDuration,
-    string? ErrorSummary,
+    UiMessage? ErrorSummary,
     string? ArchiveFinalFileName,
     string? ArchiveEffectivePath,
     long? ArchiveSize,
     ArtifactState? ArtifactState,
     NotificationDeliveryState? NotificationState,
-    string? NotificationErrorSummary,
+    UiMessage? NotificationErrorSummary,
     int ProblemCount);
 
 public sealed record RunProblemRow(
@@ -95,10 +96,10 @@ public sealed record RunProblemRow(
     string? Path,
     RunPhase Phase,
     BackupProblemSeverity Severity,
-    string Operation,
+    BackupOperation Operation,
     string ErrorCategory,
     string? NativeErrorCode,
-    string UserMessage,
+    UiMessage Message,
     string? DiagnosticDetail);
 
 public sealed record RunProblemPage(IReadOnlyList<RunProblemRow> Rows, int TotalCount, int Page, int PageSize);

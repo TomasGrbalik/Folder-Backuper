@@ -1,5 +1,6 @@
 using FolderBackuper.Features.Backups;
 
+using FolderBackuper.Infrastructure.Localization;
 namespace FolderBackuper.Features.Notifications;
 
 /// <summary>
@@ -9,10 +10,10 @@ namespace FolderBackuper.Features.Notifications;
 public sealed record NotificationProblem(
     BackupProblemSeverity Severity,
     RunPhase Phase,
-    string Operation,
+    BackupOperation Operation,
     string Category,
     string? Path,
-    string Message);
+    UiMessage Message);
 
 /// <summary>
 /// Provider-neutral snapshot of everything a run-result notification may render. Persisted as the
@@ -41,7 +42,7 @@ public sealed record NotificationPayload(
     int TotalProblemCount,
     int RetentionWarningCount,
     IReadOnlyList<NotificationProblem> Problems,
-    string? ErrorSummary)
+    UiMessage? ErrorSummary)
 {
     /// <summary>
     /// Email carries at most this many problems. The complete structured list remains in SQLite,

@@ -1,0 +1,629 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="BackupProblemMessage_ArchivedJobCannotRun" xml:space="preserve">
+    <value>An archived job cannot be executed.</value>
+  </data>
+  <data name="BackupProblemMessage_Cancelled" xml:space="preserve">
+    <value>The backup was cancelled.</value>
+  </data>
+  <data name="BackupProblemMessage_DestinationAccessDenied" xml:space="preserve">
+    <value>Access to the destination archive was denied.</value>
+  </data>
+  <data name="BackupProblemMessage_DestinationAccessNotRecorded" xml:space="preserve">
+    <value>The destination access result could not be recorded.</value>
+  </data>
+  <data name="BackupProblemMessage_DestinationInsufficientSpace" xml:space="preserve">
+    <value>The destination has insufficient free space.</value>
+  </data>
+  <data name="BackupProblemMessage_DestinationNeedsVerification" xml:space="preserve">
+    <value>The destination must have a current successful verification.</value>
+  </data>
+  <data name="BackupProblemMessage_DestinationOperationFailed" xml:space="preserve">
+    <value>The destination archive operation failed.</value>
+  </data>
+  <data name="BackupProblemMessage_DestinationPartialNotRemoved" xml:space="preserve">
+    <value>The incomplete destination archive could not be removed.</value>
+  </data>
+  <data name="BackupProblemMessage_DestinationPathInvalid" xml:space="preserve">
+    <value>The destination archive path is invalid or unsafe.</value>
+  </data>
+  <data name="BackupProblemMessage_DestinationUnavailable" xml:space="preserve">
+    <value>The destination became unavailable.</value>
+  </data>
+  <data name="BackupProblemMessage_DuplicateActiveWorkReconciled" xml:space="preserve">
+    <value>Duplicate active work was reconciled during the durable execution upgrade.</value>
+  </data>
+  <data name="BackupProblemMessage_EffectiveDestinationMissing" xml:space="preserve">
+    <value>The effective destination directory does not exist.</value>
+  </data>
+  <data name="BackupProblemMessage_EntriesMismatch" xml:space="preserve">
+    <value>The archive entries do not match the source manifest.</value>
+  </data>
+  <data name="BackupProblemMessage_EntryCountMismatch" xml:space="preserve">
+    <value>The archive entry count does not match the source manifest.</value>
+  </data>
+  <data name="BackupProblemMessage_ExecutionInterrupted" xml:space="preserve">
+    <value>Backup execution was interrupted and could not be committed safely.</value>
+  </data>
+  <data name="BackupProblemMessage_FinalizationPendingUninspectable" xml:space="preserve">
+    <value>Finalization remains pending because the destination could not be inspected safely.</value>
+  </data>
+  <data name="BackupProblemMessage_InterruptedPathLeftUntouched" xml:space="preserve">
+    <value>A recorded temporary or final path was left untouched because ownership could not be proven.</value>
+  </data>
+  <data name="BackupProblemMessage_JobOrDestinationMissing" xml:space="preserve">
+    <value>The job or destination no longer exists.</value>
+  </data>
+  <data name="BackupProblemMessage_ManifestPathInvalid" xml:space="preserve">
+    <value>A source path could not be represented in the archive.</value>
+  </data>
+  <data name="BackupProblemMessage_OwnershipCommentInvalid" xml:space="preserve">
+    <value>The archive ownership comment is missing or invalid.</value>
+  </data>
+  <data name="BackupProblemMessage_OwnershipMarkerUnverified" xml:space="preserve">
+    <value>The destination ownership marker could not be verified.</value>
+  </data>
+  <data name="BackupProblemMessage_PartialLengthMismatch" xml:space="preserve">
+    <value>The destination partial length does not match the staging archive.</value>
+  </data>
+  <data name="BackupProblemMessage_ReparsePointSkipped" xml:space="preserve">
+    <value>A reparse point was skipped and was not included in the backup.</value>
+  </data>
+  <data name="BackupProblemMessage_RetainedArchiveNotDeleted" xml:space="preserve">
+    <value>The retained archive could not be inspected or deleted.</value>
+  </data>
+  <data name="BackupProblemMessage_RetentionOwnershipUnproven" xml:space="preserve">
+    <value>The registered archive was not deleted because ownership could not be proven.</value>
+  </data>
+  <data name="BackupProblemMessage_SmbHostedLocallyUnsupported" xml:space="preserve">
+    <value>An SMB destination hosted by this computer is not supported.</value>
+  </data>
+  <data name="BackupProblemMessage_SourceEntryAdded" xml:space="preserve">
+    <value>The source entry was added during backup.</value>
+  </data>
+  <data name="BackupProblemMessage_SourceEntryChanged" xml:space="preserve">
+    <value>The source entry changed during backup.</value>
+  </data>
+  <data name="BackupProblemMessage_SourceEntryRemoved" xml:space="preserve">
+    <value>The source entry was removed during backup.</value>
+  </data>
+  <data name="BackupProblemMessage_SourceFileAccessDenied" xml:space="preserve">
+    <value>The source file could not be read because access was denied.</value>
+  </data>
+  <data name="BackupProblemMessage_SourceFileChanged" xml:space="preserve">
+    <value>The source file changed during compression.</value>
+  </data>
+  <data name="BackupProblemMessage_SourceFileUnreadable" xml:space="preserve">
+    <value>The source file could not be read.</value>
+  </data>
+  <data name="BackupProblemMessage_StagingArchiveNotCreated" xml:space="preserve">
+    <value>The staging archive could not be created.</value>
+  </data>
+  <data name="BackupProblemMessage_StagingArchiveNotRemoved" xml:space="preserve">
+    <value>The incomplete staging archive could not be removed.</value>
+  </data>
+  <data name="BackupProblemMessage_StagingDirectoryMissing" xml:space="preserve">
+    <value>The staging directory does not exist.</value>
+  </data>
+  <data name="BackupProblemMessage_StagingInsufficientSpace" xml:space="preserve">
+    <value>The staging volume has insufficient free space.</value>
+  </data>
+  <data name="BackupProblemMessage_StagingNotResolvable" xml:space="preserve">
+    <value>The staging directory could not be resolved safely.</value>
+  </data>
+  <data name="BackupProblemMessage_StagingOverlapsSource" xml:space="preserve">
+    <value>The staging directory overlaps a configured source.</value>
+  </data>
+  <data name="BackupProblemMessage_UnexpectedFailure" xml:space="preserve">
+    <value>The backup failed unexpectedly.</value>
+  </data>
+  <data name="BackupProblemMessage_ZipValidationFailed" xml:space="preserve">
+    <value>The ZIP archive could not be validated.</value>
+  </data>
+  <data name="ConfigurationMutationMessage_BackupWorkPending" xml:space="preserve">
+    <value>Configuration cannot be changed while backup work is pending or running.</value>
+  </data>
+  <data name="ConfigurationMutationMessage_Completed" xml:space="preserve">
+    <value>The configuration operation completed.</value>
+  </data>
+  <data name="DestinationMessage_AccessDenied" xml:space="preserve">
+    <value>Access to the destination was denied.</value>
+  </data>
+  <data name="DestinationMessage_AccessTestFailed" xml:space="preserve">
+    <value>The destination access test failed.</value>
+  </data>
+  <data name="DestinationMessage_ActiveNotFound" xml:space="preserve">
+    <value>The active destination was not found.</value>
+  </data>
+  <data name="DestinationMessage_AlreadyArchived" xml:space="preserve">
+    <value>The destination is already archived.</value>
+  </data>
+  <data name="DestinationMessage_Archived" xml:space="preserve">
+    <value>The destination was archived.</value>
+  </data>
+  <data name="DestinationMessage_CredentialsRejected" xml:space="preserve">
+    <value>The SMB credentials were rejected.</value>
+  </data>
+  <data name="DestinationMessage_FolderReservedByAnotherJob" xml:space="preserve">
+    <value>A folder under the new destination configuration is already reserved by another job.</value>
+  </data>
+  <data name="DestinationMessage_NameOrFolderReserved" xml:space="preserve">
+    <value>The destination update conflicts with an existing name or folder reservation.</value>
+  </data>
+  <data name="DestinationMessage_NameTooLong" xml:space="preserve">
+    <value>A destination name of at most 200 characters is required.</value>
+  </data>
+  <data name="DestinationMessage_NewFolderNotClaimed" xml:space="preserve">
+    <value>The new destination folder for job '{0}' could not be claimed: {1}</value>
+  </data>
+  <data name="DestinationMessage_NotFound" xml:space="preserve">
+    <value>The destination was not found.</value>
+  </data>
+  <data name="DestinationMessage_OldMarkerNotReleased" xml:space="preserve">
+    <value>The old ownership marker for job '{0}' could not be released: {1}</value>
+  </data>
+  <data name="DestinationMessage_OnlyArchivedCanBeRestored" xml:space="preserve">
+    <value>Only an archived destination can be restored.</value>
+  </data>
+  <data name="DestinationMessage_OverlapsConfiguredSource" xml:space="preserve">
+    <value>The destination overlaps configured source '{0}'.</value>
+  </data>
+  <data name="DestinationMessage_OwnershipCompensationIncomplete" xml:space="preserve">
+    <value>The destination update failed and ownership compensation was incomplete: {0}</value>
+  </data>
+  <data name="DestinationMessage_PathInvalid" xml:space="preserve">
+    <value>The destination path is invalid.</value>
+  </data>
+  <data name="DestinationMessage_ReferencedByJobs" xml:space="preserve">
+    <value>The destination is referenced by {0} active or paused job(s) and cannot be archived.</value>
+  </data>
+  <data name="DestinationMessage_RestoredNeedsVerification" xml:space="preserve">
+    <value>The destination was restored and must be verified.</value>
+  </data>
+  <data name="DestinationMessage_RootChangeNeedsConfirmation" xml:space="preserve">
+    <value>Changing the destination root path or type requires explicit confirmation.</value>
+  </data>
+  <data name="DestinationMessage_SmbHostedLocallyMustBeLocalPath" xml:space="preserve">
+    <value>An SMB destination hosted by this computer must be configured as a local path.</value>
+  </data>
+  <data name="DestinationMessage_SmbPasswordRequired" xml:space="preserve">
+    <value>An SMB password is required.</value>
+  </data>
+  <data name="DestinationMessage_SmbUsernameRequired" xml:space="preserve">
+    <value>An SMB username is required.</value>
+  </data>
+  <data name="DestinationMessage_TestBytesNotPreserved" xml:space="preserve">
+    <value>The destination did not preserve the test bytes.</value>
+  </data>
+  <data name="DestinationMessage_TestFileNotCleanedUp" xml:space="preserve">
+    <value>The test file could not be cleaned up exactly.</value>
+  </data>
+  <data name="DestinationMessage_TestSucceeded" xml:space="preserve">
+    <value>Write, flush, readback, and exact cleanup succeeded.</value>
+  </data>
+  <data name="DestinationMessage_Unavailable" xml:space="preserve">
+    <value>The destination is unavailable.</value>
+  </data>
+  <data name="DestinationMessage_Updated" xml:space="preserve">
+    <value>The destination was updated.</value>
+  </data>
+  <data name="DestinationMessage_UpdatedAndVerificationInvalidated" xml:space="preserve">
+    <value>The destination was updated and verification invalidated. Paused {0} job(s); marked {1} retained artifact(s) unmanaged.</value>
+  </data>
+  <data name="EffectiveDestinationMessage_AccessFailed" xml:space="preserve">
+    <value>The effective destination could not be accessed.</value>
+  </data>
+  <data name="EffectiveDestinationMessage_EffectivePathInvalid" xml:space="preserve">
+    <value>The effective destination path is invalid.</value>
+  </data>
+  <data name="EffectiveDestinationMessage_MustRemainInsideRoot" xml:space="preserve">
+    <value>The effective destination must remain inside its destination root.</value>
+  </data>
+  <data name="EffectiveDestinationMessage_OverlapsSource" xml:space="preserve">
+    <value>The destination root or effective destination overlaps the source folder.</value>
+  </data>
+  <data name="EffectiveDestinationMessage_ReadyExisting" xml:space="preserve">
+    <value>The effective destination is ready.</value>
+  </data>
+  <data name="EffectiveDestinationMessage_ReadyPathValid" xml:space="preserve">
+    <value>The effective destination path is valid.</value>
+  </data>
+  <data name="EffectiveDestinationMessage_ResolvesOutsideRoot" xml:space="preserve">
+    <value>The effective destination resolves outside its destination root.</value>
+  </data>
+  <data name="EffectiveDestinationMessage_RootMustExistFirst" xml:space="preserve">
+    <value>The destination root must exist before an effective folder can be created.</value>
+  </data>
+  <data name="JobDestinationTestMessage_CleanupFailedAndMarkerNotReleased" xml:space="preserve">
+    <value>The verification file could not be removed, and the newly claimed ownership marker also could not be released: {0}</value>
+  </data>
+  <data name="JobDestinationTestMessage_DestinationNotAccessible" xml:space="preserve">
+    <value>The destination could not be accessed.</value>
+  </data>
+  <data name="JobDestinationTestMessage_ExactVerificationFileNotRemoved" xml:space="preserve">
+    <value>The exact destination verification file could not be removed.</value>
+  </data>
+  <data name="JobDestinationTestMessage_NewlyClaimedMarkerNotReleased" xml:space="preserve">
+    <value>The newly claimed ownership marker could not be released: {0}</value>
+  </data>
+  <data name="JobDestinationTestMessage_OwnedFolderNotAccessibleForCleanup" xml:space="preserve">
+    <value>The owned destination folder could not be accessed for marker cleanup.</value>
+  </data>
+  <data name="JobDestinationTestMessage_OwnedFolderNotVerifiableForCleanup" xml:space="preserve">
+    <value>The owned destination folder could not be verified for marker cleanup.</value>
+  </data>
+  <data name="JobDestinationTestMessage_OwnershipAndWriteVerified" xml:space="preserve">
+    <value>Ownership and write verification succeeded.</value>
+  </data>
+  <data name="JobDestinationTestMessage_VerificationBytesNotPreserved" xml:space="preserve">
+    <value>The destination did not preserve the verification bytes.</value>
+  </data>
+  <data name="JobDestinationTestMessage_VerificationFileCleanupFailed" xml:space="preserve">
+    <value>The destination verification file cleanup failed.</value>
+  </data>
+  <data name="JobDestinationTestMessage_WriteVerificationFailed" xml:space="preserve">
+    <value>The destination write verification failed.</value>
+  </data>
+  <data name="JobMessage_AlreadyArchived" xml:space="preserve">
+    <value>The job is already archived.</value>
+  </data>
+  <data name="JobMessage_ConfigurationInvalid" xml:space="preserve">
+    <value>The job configuration is invalid.</value>
+  </data>
+  <data name="JobMessage_Created" xml:space="preserve">
+    <value>The job was created.</value>
+  </data>
+  <data name="JobMessage_DestinationNeedsManagementVerification" xml:space="preserve">
+    <value>The destination must have a current successful management verification.</value>
+  </data>
+  <data name="JobMessage_EffectiveFolderReserved" xml:space="preserve">
+    <value>The effective destination folder is already reserved by another job.</value>
+  </data>
+  <data name="JobMessage_EffectiveFolderTestFailed" xml:space="preserve">
+    <value>The effective folder test could not be completed. Try again or check the application logs.</value>
+  </data>
+  <data name="JobMessage_JobOrDestinationNotFound" xml:space="preserve">
+    <value>The job or destination was not found.</value>
+  </data>
+  <data name="JobMessage_MarkerNotReleasedNotArchived" xml:space="preserve">
+    <value>The destination ownership marker could not be verified and released; the job was not archived.</value>
+  </data>
+  <data name="JobMessage_NameOrFolderReserved" xml:space="preserve">
+    <value>The job name or destination folder is already reserved.</value>
+  </data>
+  <data name="JobMessage_NotFound" xml:space="preserve">
+    <value>The job was not found.</value>
+  </data>
+  <data name="JobMessage_NowActive" xml:space="preserve">
+    <value>The job is now active.</value>
+  </data>
+  <data name="JobMessage_NowArchived" xml:space="preserve">
+    <value>The job is now archived.</value>
+  </data>
+  <data name="JobMessage_NowPaused" xml:space="preserve">
+    <value>The job is now paused.</value>
+  </data>
+  <data name="JobMessage_OldMarkerNotReleased" xml:space="preserve">
+    <value>The old destination ownership marker could not be verified and released.</value>
+  </data>
+  <data name="JobMessage_OnlyActiveCanBePaused" xml:space="preserve">
+    <value>Only an active job can be paused.</value>
+  </data>
+  <data name="JobMessage_OnlyArchivedCanBeRestored" xml:space="preserve">
+    <value>Only an archived job can be restored.</value>
+  </data>
+  <data name="JobMessage_OnlyPausedCanBeReactivated" xml:space="preserve">
+    <value>Only a paused job can be reactivated.</value>
+  </data>
+  <data name="JobMessage_RestoredAndActivated" xml:space="preserve">
+    <value>The job was restored and activated.</value>
+  </data>
+  <data name="JobMessage_RestoredNameOrFolderReserved" xml:space="preserve">
+    <value>The restored job name or destination folder is already reserved.</value>
+  </data>
+  <data name="JobMessage_RestoredPaused" xml:space="preserve">
+    <value>The job was restored paused because activation requirements were not satisfied.</value>
+  </data>
+  <data name="JobMessage_Updated" xml:space="preserve">
+    <value>The job was updated.</value>
+  </data>
+  <data name="JobMessage_VerifyDestinationRootFirst" xml:space="preserve">
+    <value>Verify the destination root before testing the job folder.</value>
+  </data>
+  <data name="JobValidationMessage_ActiveDestinationRequired" xml:space="preserve">
+    <value>An active destination is required.</value>
+  </data>
+  <data name="JobValidationMessage_ConfirmDestinationPathChange" xml:space="preserve">
+    <value>Changing the destination path requires explicit confirmation.</value>
+  </data>
+  <data name="JobValidationMessage_NameAlreadyExists" xml:space="preserve">
+    <value>A job with this name already exists.</value>
+  </data>
+  <data name="JobValidationMessage_NameRequired" xml:space="preserve">
+    <value>A nonblank job name of at most 200 characters is required.</value>
+  </data>
+  <data name="JobValidationMessage_RetentionAtLeastOne" xml:space="preserve">
+    <value>Retention must be at least one.</value>
+  </data>
+  <data name="JobValidationMessage_SourceCannotBeReparsePoint" xml:space="preserve">
+    <value>The source folder cannot be a reparse point.</value>
+  </data>
+  <data name="JobValidationMessage_SourceMustBeReadableLocalFolder" xml:space="preserve">
+    <value>The source must be an existing readable local folder.</value>
+  </data>
+  <data name="JobValidationMessage_WeekdayRequired" xml:space="preserve">
+    <value>At least one valid weekday is required.</value>
+  </data>
+  <data name="NotificationResultMessage_Accepted" xml:space="preserve">
+    <value>The email provider accepted the message.</value>
+  </data>
+  <data name="NotificationResultMessage_AcceptedWithId" xml:space="preserve">
+    <value>Accepted by the email provider (id {0}).</value>
+  </data>
+  <data name="NotificationResultMessage_ApiKeyRejected" xml:space="preserve">
+    <value>The email provider rejected the API key.</value>
+  </data>
+  <data name="NotificationResultMessage_ApiKeyRequired" xml:space="preserve">
+    <value>A Resend API key is required.</value>
+  </data>
+  <data name="NotificationResultMessage_AttemptFailedUnexpectedly" xml:space="preserve">
+    <value>The delivery attempt failed unexpectedly. Delivery is unknown.</value>
+  </data>
+  <data name="NotificationResultMessage_ConnectionLost" xml:space="preserve">
+    <value>The connection to the email provider was lost while sending. Delivery is unknown.</value>
+  </data>
+  <data name="NotificationResultMessage_InterruptedMidAttempt" xml:space="preserve">
+    <value>The service stopped after the delivery attempt began. Whether the email was sent is unknown, and it is deliberately not retried so that no duplicate can be sent.</value>
+  </data>
+  <data name="NotificationResultMessage_NotConfigured" xml:space="preserve">
+    <value>Email notifications are not configured. Add a Resend API key, a verified sender address, and at least one recipient on the settings page.</value>
+  </data>
+  <data name="NotificationResultMessage_ProviderServerError" xml:space="preserve">
+    <value>The email provider reported a server error ({0}). Delivery is unknown.</value>
+  </data>
+  <data name="NotificationResultMessage_ProviderTimedOut" xml:space="preserve">
+    <value>The email provider did not respond before the request timed out. Delivery is unknown.</value>
+  </data>
+  <data name="NotificationResultMessage_ProviderUnreachable" xml:space="preserve">
+    <value>The email provider could not be reached. Check the internet connection on the backup PC.</value>
+  </data>
+  <data name="NotificationResultMessage_ReasonWithProviderDetail" xml:space="preserve">
+    <value>{0} {1}</value>
+    <comment>A reason followed by the provider's own detail. Only the spacing differs between languages.</comment>
+  </data>
+  <data name="NotificationResultMessage_RecipientAddressInvalid" xml:space="preserve">
+    <value>Not a valid email address: {0}.</value>
+  </data>
+  <data name="NotificationResultMessage_RecipientRequired" xml:space="preserve">
+    <value>Enter at least one recipient address.</value>
+  </data>
+  <data name="NotificationResultMessage_RequestFailedAfterStarting" xml:space="preserve">
+    <value>The request to the email provider failed after it started. Delivery is unknown.</value>
+  </data>
+  <data name="NotificationResultMessage_RequestRejected" xml:space="preserve">
+    <value>The email provider rejected the request ({0}).</value>
+  </data>
+  <data name="NotificationResultMessage_SenderAddressInvalid" xml:space="preserve">
+    <value>Enter a valid email address.</value>
+  </data>
+  <data name="NotificationResultMessage_SenderAddressRequired" xml:space="preserve">
+    <value>A verified sender address is required.</value>
+  </data>
+  <data name="NotificationResultMessage_SenderDomainUnverified" xml:space="preserve">
+    <value>The email provider rejected the message. Check that the sender domain is verified.</value>
+  </data>
+  <data name="NotificationResultMessage_SenderNameTooLong" xml:space="preserve">
+    <value>Enter a sender name of at most 200 characters.</value>
+  </data>
+  <data name="NotificationResultMessage_SettingsInvalid" xml:space="preserve">
+    <value>Notification settings could not be saved. Correct the highlighted fields.</value>
+  </data>
+  <data name="NotificationResultMessage_SettingsSaved" xml:space="preserve">
+    <value>Notification settings saved.</value>
+  </data>
+  <data name="NotificationResultMessage_SettingsSavedNotificationsOff" xml:space="preserve">
+    <value>Notification settings saved. Email notifications are turned off.</value>
+  </data>
+  <data name="NotificationResultMessage_StoredContentUnreadable" xml:space="preserve">
+    <value>The saved notification content could not be read and was not sent.</value>
+  </data>
+  <data name="NotificationResultMessage_TestCouldNotBeCompleted" xml:space="preserve">
+    <value>The test email could not be completed. Try again or check the application logs.</value>
+  </data>
+  <data name="NotificationResultMessage_Throttled" xml:space="preserve">
+    <value>The email provider throttled the request and did not accept the message.</value>
+  </data>
+  <data name="NotificationResultMessage_TooManyRecipients" xml:space="preserve">
+    <value>Enter at most {0} recipient addresses.</value>
+  </data>
+  <data name="OwnershipMessage_Claimed" xml:space="preserve">
+    <value>The destination folder was claimed.</value>
+  </data>
+  <data name="OwnershipMessage_IncompleteMarkerNotRemoved" xml:space="preserve">
+    <value>An incomplete ownership marker could not be removed.</value>
+  </data>
+  <data name="OwnershipMessage_IncompleteMarkerReplaced" xml:space="preserve">
+    <value>The incomplete ownership marker was replaced and was not removed.</value>
+  </data>
+  <data name="OwnershipMessage_MarkerInvalid" xml:space="preserve">
+    <value>The ownership marker is invalid.</value>
+  </data>
+  <data name="OwnershipMessage_MarkerMissing" xml:space="preserve">
+    <value>The ownership marker is missing.</value>
+  </data>
+  <data name="OwnershipMessage_OwnedByAnotherInstallation" xml:space="preserve">
+    <value>The folder is owned by another Folder Backuper installation.</value>
+  </data>
+  <data name="OwnershipMessage_OwnedByAnotherJob" xml:space="preserve">
+    <value>The folder is owned by another job.</value>
+  </data>
+  <data name="OwnershipMessage_OwnedByThisJob" xml:space="preserve">
+    <value>The folder is owned by this job.</value>
+  </data>
+  <data name="OwnershipMessage_Released" xml:space="preserve">
+    <value>The ownership marker was released.</value>
+  </data>
+  <data name="OwnershipMessage_VerifiedMarkerNotRemoved" xml:space="preserve">
+    <value>The verified ownership marker could not be removed.</value>
+  </data>
+  <data name="PathMessage_DevicePathUnsupported" xml:space="preserve">
+    <value>Device paths are not supported.</value>
+  </data>
+  <data name="PathMessage_LocalAbsoluteRequired" xml:space="preserve">
+    <value>A local absolute drive path is required.</value>
+  </data>
+  <data name="PathMessage_LocalPathUnavailable" xml:space="preserve">
+    <value>The local path is invalid or unavailable.</value>
+  </data>
+  <data name="PathMessage_MappedNetworkDriveUnsupported" xml:space="preserve">
+    <value>Mapped network drives are not supported; use an SMB destination.</value>
+  </data>
+  <data name="PathMessage_ParentTraversalUnsupported" xml:space="preserve">
+    <value>Parent traversal is not supported.</value>
+  </data>
+  <data name="PathMessage_Required" xml:space="preserve">
+    <value>A path is required.</value>
+  </data>
+  <data name="PathMessage_SubfolderMustBeRelative" xml:space="preserve">
+    <value>The subfolder must be relative and cannot contain parent traversal.</value>
+  </data>
+  <data name="PathMessage_UncInvalid" xml:space="preserve">
+    <value>The UNC path is invalid.</value>
+  </data>
+  <data name="PathMessage_UncNeedsServerAndShare" xml:space="preserve">
+    <value>The UNC path must include a server and share.</value>
+  </data>
+  <data name="PathMessage_UncRequired" xml:space="preserve">
+    <value>A conventional UNC path is required.</value>
+  </data>
+  <data name="RunOperationMessage_CancellationRequested" xml:space="preserve">
+    <value>Cancellation was requested.</value>
+  </data>
+  <data name="RunOperationMessage_FinalizationStarted" xml:space="preserve">
+    <value>The backup can no longer be cancelled because finalization has started.</value>
+  </data>
+  <data name="RunOperationMessage_JobOrDestinationUnavailable" xml:space="preserve">
+    <value>The job or destination is unavailable for a manual backup.</value>
+  </data>
+  <data name="RunOperationMessage_Queued" xml:space="preserve">
+    <value>The backup was queued.</value>
+  </data>
+  <data name="RunOperationMessage_QueuedRunCancelled" xml:space="preserve">
+    <value>The queued backup was cancelled.</value>
+  </data>
+  <data name="RunOperationMessage_RunAlreadyFinished" xml:space="preserve">
+    <value>The backup run has already finished.</value>
+  </data>
+  <data name="RunOperationMessage_RunNotFound" xml:space="preserve">
+    <value>The backup run was not found.</value>
+  </data>
+  <data name="RunOperationMessage_WorkAlreadyPending" xml:space="preserve">
+    <value>The job already has backup work pending or running.</value>
+  </data>
+  <data name="SourceMessage_AccessDenied" xml:space="preserve">
+    <value>Access was denied.</value>
+  </data>
+  <data name="SourceMessage_DirectoryInvalid" xml:space="preserve">
+    <value>The source directory is invalid or unavailable.</value>
+  </data>
+  <data name="SourceMessage_DirectoryMissing" xml:space="preserve">
+    <value>The source directory does not exist or is unavailable.</value>
+  </data>
+  <data name="SourceMessage_DriveNotFixedOrRemovable" xml:space="preserve">
+    <value>The source must be on an attached fixed or removable drive.</value>
+  </data>
+  <data name="SourceMessage_EntryUnavailable" xml:space="preserve">
+    <value>The entry is no longer available.</value>
+  </data>
+  <data name="SourceMessage_MetadataUnreadable" xml:space="preserve">
+    <value>Filesystem metadata could not be read.</value>
+  </data>
+  <data name="SourceMessage_PathTooLong" xml:space="preserve">
+    <value>The path is too long.</value>
+  </data>
+  <data name="SourceMessage_ReparsePointNotTraversable" xml:space="preserve">
+    <value>Reparse points may be reported but cannot be traversed.</value>
+  </data>
+  <data name="UpdateProblemMessage_ConnectionLost" xml:space="preserve">
+    <value>The connection to the release feed was lost.</value>
+  </data>
+  <data name="UpdateProblemMessage_EmptyResponse" xml:space="preserve">
+    <value>The release feed returned an empty response.</value>
+  </data>
+  <data name="UpdateProblemMessage_RateLimited" xml:space="preserve">
+    <value>The release feed is temporarily rate limited.</value>
+  </data>
+  <data name="UpdateProblemMessage_TagIsNotAVersion" xml:space="preserve">
+    <value>The newest release is tagged '{0}', which is not a version.</value>
+  </data>
+  <data name="UpdateProblemMessage_Timeout" xml:space="preserve">
+    <value>The release feed did not respond in time.</value>
+  </data>
+  <data name="UpdateProblemMessage_UnexpectedStatus" xml:space="preserve">
+    <value>The release feed answered {0}.</value>
+  </data>
+  <data name="UpdateProblemMessage_Unreachable" xml:space="preserve">
+    <value>The release feed could not be reached.</value>
+  </data>
+  <data name="UpdateProblemMessage_UnreadableResponse" xml:space="preserve">
+    <value>The release feed returned an unreadable response.</value>
+  </data>
+</root>

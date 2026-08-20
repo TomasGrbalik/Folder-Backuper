@@ -14,7 +14,7 @@
 - Explicit storage refresh reconciles retained artifacts: present owned archives stay retained and totals refresh; a deleted or ownership-mismatched archive is marked found-missing and drops from managed totals; an unavailable destination preserves the last-confirmed totals and timestamp untouched.
 - Dashboard job cards show managed total, retained count versus configured count, latest size, last-confirmed time, a derived stale indicator, missing-archive count, and unmanaged-archive count separately.
 - No password value and no raw-log viewer or export action appear in any monitoring page.
-- Dates, times, numbers, and sizes render through the shared `DisplayFormat` helper using the current regional culture and local time; archive file names are shown verbatim in their invariant format.
+- Dates, times, numbers, and sizes render through the shared `DisplayFormat` helper using the current culture and local time; archive file names are shown verbatim in their invariant format. Milestone 12 made that culture follow the selected interface language rather than the Windows regional settings; the requirement that everything route through the one helper is unchanged.
 
 ## Manual checks
 

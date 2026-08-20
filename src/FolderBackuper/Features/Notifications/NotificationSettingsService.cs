@@ -7,6 +7,7 @@ using FolderBackuper.Infrastructure.Database;
 using FolderBackuper.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 
+using FolderBackuper.Infrastructure.Localization;
 namespace FolderBackuper.Features.Notifications;
 
 /// <summary>
@@ -103,8 +104,7 @@ public sealed class NotificationSettingsService(
 
         if (!TryNormalize(command, keepStoredKey, storedKey is { Length: > 0 }, out var normalized, out var errors))
         {
-            return NotificationSettingsResult.Invalid(
-                "Notification settings could not be saved. Correct the highlighted fields.", errors);
+            return NotificationSettingsResult.Invalid(NotificationResultMessage.SettingsInvalid, errors);
         }
 
         settings.NotificationProvider = NotificationProviders.Resend;
@@ -119,8 +119,8 @@ public sealed class NotificationSettingsService(
 
         await context.SaveChangesAsync(cancellationToken);
         return NotificationSettingsResult.Success(normalized.Enabled
-            ? "Notification settings saved."
-            : "Notification settings saved. Email notifications are turned off.");
+            ? NotificationResultMessage.SettingsSaved
+            : NotificationResultMessage.SettingsSavedNotificationsOff);
     }
 
     /// <summary>Splits a newline-, comma-, or semicolon-separated recipient list into addresses.</summary>
@@ -133,9 +133,9 @@ public sealed class NotificationSettingsService(
         bool keepStoredKey,
         bool hasStoredKey,
         [NotNullWhen(true)] out NormalizedSettings? normalized,
-        out IReadOnlyDictionary<string, string> errors)
+        out IReadOnlyDictionary<string, UiMessage> errors)
     {
-        var found = new Dictionary<string, string>(StringComparer.Ordinal);
+        var found = new Dictionary<string, UiMessage>(StringComparer.Ordinal);
         normalized = null;
 
         var fromAddress = command.FromAddress?.Trim() ?? "";
@@ -150,40 +150,40 @@ public sealed class NotificationSettingsService(
         {
             if (fromAddress.Length == 0)
             {
-                found[nameof(command.FromAddress)] = "A verified sender address is required.";
+                found[nameof(command.FromAddress)] = UiMessage.For(NotificationResultMessage.SenderAddressRequired);
             }
             else if (!IsEmailAddress(fromAddress))
             {
-                found[nameof(command.FromAddress)] = "Enter a valid email address.";
+                found[nameof(command.FromAddress)] = UiMessage.For(NotificationResultMessage.SenderAddressInvalid);
             }
 
             if (recipients.Count == 0)
             {
-                found[nameof(command.Recipients)] = "Enter at least one recipient address.";
+                found[nameof(command.Recipients)] = UiMessage.For(NotificationResultMessage.RecipientRequired);
             }
 
             if (keepStoredKey && !hasStoredKey)
             {
-                found[nameof(command.ApiKey)] = "A Resend API key is required.";
+                found[nameof(command.ApiKey)] = UiMessage.For(NotificationResultMessage.ApiKeyRequired);
             }
         }
 
         if (recipients.Count > MaxRecipients)
         {
-            found[nameof(command.Recipients)] = $"Enter at most {MaxRecipients} recipient addresses.";
+            found[nameof(command.Recipients)] = UiMessage.For(NotificationResultMessage.TooManyRecipients, UiMessageArgument.FromNumber(MaxRecipients));
         }
         else
         {
             var invalid = recipients.Where(address => !IsEmailAddress(address)).ToList();
             if (invalid.Count > 0)
             {
-                found[nameof(command.Recipients)] = $"Not a valid email address: {string.Join(", ", invalid)}.";
+                found[nameof(command.Recipients)] = UiMessage.For(NotificationResultMessage.RecipientAddressInvalid, UiMessageArgument.FromText(string.Join(", ", invalid)));
             }
         }
 
         if (fromName is { Length: > 200 })
         {
-            found[nameof(command.FromName)] = "Enter a sender name of at most 200 characters.";
+            found[nameof(command.FromName)] = UiMessage.For(NotificationResultMessage.SenderNameTooLong);
         }
 
         errors = found;

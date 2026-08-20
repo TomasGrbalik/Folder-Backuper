@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Security.Cryptography;
 using FolderBackuper.Features.Destinations;
 using FolderBackuper.Infrastructure.Filesystem;
+using FolderBackuper.Infrastructure.Localization;
 
 namespace FolderBackuper.Features.Jobs;
 
@@ -17,12 +18,22 @@ public enum JobDestinationTestResult
 
 public sealed record JobDestinationTestOutcome(
     JobDestinationTestResult Result,
-    string Message,
+    UiMessage Message,
     string? EffectivePath = null,
     string? OwnershipKey = null,
     bool NewlyClaimed = false)
 {
     public bool Succeeded => Result == JobDestinationTestResult.Succeeded;
+
+    public JobDestinationTestOutcome(
+        JobDestinationTestResult result,
+        JobDestinationTestMessage message,
+        string? effectivePath = null,
+        string? ownershipKey = null,
+        bool newlyClaimed = false)
+        : this(result, UiMessage.For(message), effectivePath, ownershipKey, newlyClaimed)
+    {
+    }
 }
 
 public sealed class JobDestinationTestService(
@@ -77,7 +88,7 @@ public sealed class JobDestinationTestService(
                             if (cleanup is not null) return cleanup;
                             created = false;
                             return new(JobDestinationTestResult.AccessFailed,
-                                "The destination did not preserve the verification bytes.");
+                                JobDestinationTestMessage.VerificationBytesNotPreserved);
                         }
 
                         try
@@ -90,11 +101,11 @@ public sealed class JobDestinationTestService(
                             var cleanup = await CleanupFailureAsync(probe, created, resolved.EffectivePath!,
                                 newlyClaimed, installationId, jobId);
                             return cleanup ?? new(JobDestinationTestResult.CleanupFailed,
-                                "The destination verification file cleanup failed.");
+                                JobDestinationTestMessage.VerificationFileCleanupFailed);
                         }
 
                         return new(JobDestinationTestResult.Succeeded,
-                            "Ownership and write verification succeeded.", resolved.EffectivePath, resolved.OwnershipKey,
+                            JobDestinationTestMessage.OwnershipAndWriteVerified, resolved.EffectivePath, resolved.OwnershipKey,
                             newlyClaimed);
                     }
                     catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -102,21 +113,21 @@ public sealed class JobDestinationTestService(
                         var cleanup = await CleanupFailureAsync(probe, created, resolved.EffectivePath!,
                             newlyClaimed, installationId, jobId);
                         if (cleanup is not null) return cleanup;
-                        return new(JobDestinationTestResult.AccessFailed, "The destination write verification failed.");
+                        return new(JobDestinationTestResult.AccessFailed, JobDestinationTestMessage.WriteVerificationFailed);
                     }
                     catch (OperationCanceledException)
                     {
                         var cleanup = await CleanupFailureAsync(probe, created, resolved.EffectivePath!,
                             newlyClaimed, installationId, jobId);
                         if (cleanup is not null)
-                            throw new InvalidOperationException(cleanup.Message);
+                            throw new InvalidOperationException(cleanup.Message.Key);
                         throw;
                     }
                 });
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or Win32Exception)
         {
-            return new(JobDestinationTestResult.AccessFailed, "The destination could not be accessed.");
+            return new(JobDestinationTestResult.AccessFailed, JobDestinationTestMessage.DestinationNotAccessible);
         }
     }
 
@@ -132,7 +143,7 @@ public sealed class JobDestinationTestService(
         if (!resolved.Succeeded || resolved.EffectivePath is null)
         {
             return new(OwnershipMarkerResult.CleanupFailed,
-                "The owned destination folder could not be verified for marker cleanup.");
+                UiMessage.For(JobDestinationTestMessage.OwnedFolderNotVerifiableForCleanup));
         }
 
         try
@@ -142,12 +153,12 @@ public sealed class JobDestinationTestService(
                 () => Directory.Exists(resolved.EffectivePath)
                     ? markers.ReleaseAsync(resolved.EffectivePath, installationId, jobId, cancellationToken)
                     : Task.FromResult(new OwnershipMarkerOutcome(
-                        OwnershipMarkerResult.Missing, "The ownership marker is missing.")));
+                        OwnershipMarkerResult.Missing, OwnershipMessage.MarkerMissing)));
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or Win32Exception)
         {
             return new(OwnershipMarkerResult.CleanupFailed,
-                "The owned destination folder could not be accessed for marker cleanup.");
+                UiMessage.For(JobDestinationTestMessage.OwnedFolderNotAccessibleForCleanup));
         }
     }
 
@@ -166,29 +177,41 @@ public sealed class JobDestinationTestService(
         Guid installationId,
         Guid jobId)
     {
-        string? cleanupFailure = null;
+        // Composed as a message with the ownership reason as an argument rather than by concatenating
+        // English fragments, so a nested reason is rendered in the reading language too.
+        var probeFailed = false;
         if (probeCreated)
         {
             try { File.Delete(probe); }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
-                cleanupFailure = "The exact destination verification file could not be removed.";
+                probeFailed = true;
             }
         }
 
+        UiMessage? releaseFailure = null;
         if (newlyClaimed)
         {
             var released = await markers.ReleaseAsync(effectivePath, installationId, jobId, CancellationToken.None);
             if (!released.Succeeded)
             {
-                cleanupFailure = cleanupFailure is null
-                    ? $"The newly claimed ownership marker could not be released: {released.Message}"
-                    : $"{cleanupFailure} The newly claimed ownership marker also could not be released: {released.Message}";
+                releaseFailure = released.Message;
             }
         }
 
-        return cleanupFailure is null
-            ? null
-            : new(JobDestinationTestResult.CleanupFailed, cleanupFailure);
+        if (releaseFailure is not null)
+        {
+            return new(
+                JobDestinationTestResult.CleanupFailed,
+                UiMessage.For(
+                    probeFailed
+                        ? JobDestinationTestMessage.CleanupFailedAndMarkerNotReleased
+                        : JobDestinationTestMessage.NewlyClaimedMarkerNotReleased,
+                    UiMessageArgument.FromMessage(releaseFailure)));
+        }
+
+        return probeFailed
+            ? new(JobDestinationTestResult.CleanupFailed, JobDestinationTestMessage.ExactVerificationFileNotRemoved)
+            : null;
     }
 }

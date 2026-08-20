@@ -65,10 +65,29 @@ public sealed class SourcePreviewTests : IDisposable
         Assert.Equal(2, final.FolderCount);
         Assert.Equal(4, final.TotalBytes);
         Assert.Equal(1, final.SkippedReparsePointCount);
-        await Assert.ThrowsAsync<ArgumentException>(async () =>
+        var rejected = await Assert.ThrowsAsync<SourcePathException>(async () =>
         {
             await foreach (var _ in new SourcePreview().InspectAsync(link)) { }
         });
+        MessageAssert.Is(SourceMessage.ReparsePointNotTraversable, rejected.Reason);
+    }
+
+    [Fact]
+    public void Preview_RejectsAReparsePointEvenWithoutThePrivilegeToCreateOne()
+    {
+        // The symlink test above returns early on a machine without the privilege to create one, which
+        // is most development machines, so the reparse guard went untested there and a regression in it
+        // surfaced only in CI. This exercises the same guard against a reparse point Windows already
+        // ships, so it runs everywhere.
+        var junction = new[] { @"C:\Users\All Users", @"C:\Documents and Settings", @"C:\ProgramData\Application Data" }
+            .FirstOrDefault(path => Directory.Exists(path)
+                                    && File.GetAttributes(path).HasFlag(FileAttributes.ReparsePoint));
+
+        Assert.NotNull(junction);
+
+        var rejected = Assert.Throws<SourcePathException>(
+            () => SourceInspection.ValidateBrowsableDirectory(junction));
+        MessageAssert.Is(SourceMessage.ReparsePointNotTraversable, rejected.Reason);
     }
 
     [Fact]

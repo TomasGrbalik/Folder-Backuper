@@ -24,18 +24,18 @@ public sealed class SourceManifestBuilder
         {
             if (!actualByPath.TryGetValue(entry.RelativePath, out var found))
             {
-                problems.Add(Changed(entry.RelativePath, "The source entry was removed during backup."));
+                problems.Add(Changed(entry.RelativePath, BackupProblemMessage.SourceEntryRemoved));
             }
             else if (entry.Type != found.Type || entry.Size != found.Size ||
                      entry.LastWriteTime != found.LastWriteTime || entry.Attributes != found.Attributes)
             {
-                problems.Add(Changed(entry.RelativePath, "The source entry changed during backup."));
+                problems.Add(Changed(entry.RelativePath, BackupProblemMessage.SourceEntryChanged));
             }
         }
 
         foreach (var entry in actual.Entries.Where(entry => !expectedByPath.ContainsKey(entry.RelativePath)))
         {
-            problems.Add(Changed(entry.RelativePath, "The source entry was added during backup."));
+            problems.Add(Changed(entry.RelativePath, BackupProblemMessage.SourceEntryAdded));
         }
 
         return problems;
@@ -50,7 +50,7 @@ public sealed class SourceManifestBuilder
         }
         catch (Exception exception) when (exception is ArgumentException or IOException or UnauthorizedAccessException)
         {
-            return new(null, [Problem(sourcePath, "Validate source", exception)]);
+            return new(null, [Problem(sourcePath, BackupOperation.ValidateSource, exception)]);
         }
 
         var entries = new List<BackupManifestEntry>();
@@ -86,8 +86,8 @@ public sealed class SourceManifestBuilder
                                 BackupProblemSeverity.Warning,
                                 BackupProblemCategory.SkippedReparsePoint,
                                 RunPhase.Scanning,
-                                "Skip reparse point",
-                                "A reparse point was skipped and was not included in the backup.",
+                                BackupOperation.SkipReparsePoint,
+                                BackupProblemMessage.ReparsePointSkipped,
                                 relative));
                             continue;
                         }
@@ -108,13 +108,13 @@ public sealed class SourceManifestBuilder
                     }
                     catch (Exception exception) when (SourceInspection.IsFilesystemException(exception))
                     {
-                        problems.Add(Problem(path, "Read source metadata", exception));
+                        problems.Add(Problem(path, BackupOperation.ReadSourceMetadata, exception));
                     }
                 }
             }
             catch (Exception exception) when (SourceInspection.IsFilesystemException(exception))
             {
-                problems.Add(Problem(directory, "Enumerate source directory", exception));
+                problems.Add(Problem(directory, BackupOperation.EnumerateSourceDirectory, exception));
             }
             finally
             {
@@ -131,10 +131,12 @@ public sealed class SourceManifestBuilder
         {
             return new(new BackupManifest(entries), problems.AsReadOnly());
         }
-        catch (ArgumentException exception)
+        catch (ArgumentException)
         {
+            // The exception's own text used to be persisted here, which was both untranslatable and a
+            // way for incidental detail to reach permanent history.
             problems.Add(new(BackupProblemSeverity.Error, BackupProblemCategory.InvalidPath,
-                RunPhase.Scanning, "Build source manifest", exception.Message));
+                RunPhase.Scanning, BackupOperation.BuildSourceManifest, BackupProblemMessage.ManifestPathInvalid));
             return new(null, problems.AsReadOnly());
         }
     }
@@ -147,12 +149,12 @@ public sealed class SourceManifestBuilder
         }
         catch (Exception exception) when (SourceInspection.IsFilesystemException(exception))
         {
-            problems.Add(Problem(directory, "Enumerate source directory", exception));
+            problems.Add(Problem(directory, BackupOperation.EnumerateSourceDirectory, exception));
             return false;
         }
     }
 
-    private static BackupProblem Problem(string path, string operation, Exception exception) => new(
+    private static BackupProblem Problem(string path, BackupOperation operation, Exception exception) => new(
         BackupProblemSeverity.Error,
         exception is UnauthorizedAccessException or System.Security.SecurityException
             ? BackupProblemCategory.SourceInaccessible
@@ -163,11 +165,11 @@ public sealed class SourceManifestBuilder
         path,
         exception.HResult & 0xFFFF);
 
-    private static BackupProblem Changed(string path, string message) => new(
+    private static BackupProblem Changed(string path, BackupProblemMessage message) => new(
         BackupProblemSeverity.Error,
         BackupProblemCategory.SourceChanged,
         RunPhase.Compressing,
-        "Compare source manifest",
+        BackupOperation.CompareSourceManifest,
         message,
         path);
 }

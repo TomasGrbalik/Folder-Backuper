@@ -3,6 +3,7 @@ using FolderBackuper.Features.Backups;
 using FolderBackuper.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 
+using FolderBackuper.Infrastructure.Localization;
 namespace FolderBackuper.Features.Notifications;
 
 /// <summary>
@@ -62,7 +63,8 @@ public sealed class NotificationOutboxWriter(
         });
 
         run.NotificationState = NotificationDeliveryState.Pending;
-        run.NotificationErrorSummary = null;
+        run.NotificationMessageKey = null;
+        run.NotificationMessageArguments = null;
         logger.LogInformation(
             "Queued a {Outcome} notification for run {RunId} of job {JobName}", outcome, run.Id, run.JobName);
         return true;

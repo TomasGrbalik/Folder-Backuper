@@ -30,6 +30,12 @@ public sealed class SettingsPageTests
         context.Services.AddSingleton(NotificationTestFactory.Settings(database, clock));
         context.Services.AddSingleton<IRunNotificationSender>(sender ?? new FakeRunNotificationSender());
 
+        // The language card lives on the same page and reads the preference on initialization.
+        context.Services.AddSingleton(new UiLanguageSettingsService(
+            database.ContextFactory,
+            new InstallationIdentityService(database.ContextFactory, clock),
+            clock));
+
         // The about card lives on the same page. Its release feed is a fake that answers "nothing
         // published" unless a test scripts something else, so no test here reaches the network.
         var store = new UpdateStatusStore();
@@ -123,7 +129,7 @@ public sealed class SettingsPageTests
         await database.Initializer.InitializeAsync();
         await NotificationTestFactory.ConfiguredSettingsAsync(database, clock);
         var sender = new FakeRunNotificationSender(
-            new NotificationSendResult(NotificationSendStatus.Delivered, "Accepted by the email provider."));
+            new NotificationSendResult(NotificationSendStatus.Delivered, NotificationResultMessage.Accepted));
         await using var context = CreateContext(database, clock, sender);
 
         context.Render<MudPopoverProvider>();
@@ -136,7 +142,9 @@ public sealed class SettingsPageTests
             .Click();
 
         dialogProvider.WaitForAssertion(() => Assert.Contains(
-            "Accepted by the email provider.", dialogProvider.Markup, StringComparison.Ordinal));
+            MessageAssert.Text(UiMessage.For(NotificationResultMessage.Accepted)),
+            dialogProvider.Markup,
+            StringComparison.Ordinal));
         Assert.Equal(1, sender.TestCount);
     }
 
@@ -148,7 +156,7 @@ public sealed class SettingsPageTests
         await database.Initializer.InitializeAsync();
         await NotificationTestFactory.ConfiguredSettingsAsync(database, clock);
         var sender = new FakeRunNotificationSender(
-            new NotificationSendResult(NotificationSendStatus.Uncertain, "The provider did not respond in time."));
+            new NotificationSendResult(NotificationSendStatus.Uncertain, NotificationResultMessage.ProviderTimedOut));
         await using var context = CreateContext(database, clock, sender);
 
         context.Render<MudPopoverProvider>();
@@ -161,7 +169,9 @@ public sealed class SettingsPageTests
             .Click();
 
         dialogProvider.WaitForAssertion(() => Assert.Contains(
-            "did not respond in time", dialogProvider.Markup, StringComparison.Ordinal));
+            MessageAssert.Text(UiMessage.For(NotificationResultMessage.ProviderTimedOut)),
+            dialogProvider.Markup,
+            StringComparison.Ordinal));
         Assert.Contains("mud-alert-text-warning", dialogProvider.Markup, StringComparison.Ordinal);
     }
 

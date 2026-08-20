@@ -184,13 +184,13 @@ public sealed class BackupRetentionService(
                     break;
                 case OwnedArchiveResult.OwnershipMismatch:
                     await MarkFailedAsync(artifact.Id, ownershipRefused: true, cancellationToken);
-                    warnings.Add(Warning(path, "Retention ownership verification",
-                        "The registered archive was not deleted because ownership could not be proven."));
+                    warnings.Add(Warning(path, BackupOperation.RetentionOwnershipVerification,
+                        BackupProblemMessage.RetentionOwnershipUnproven));
                     break;
                 default:
                     await MarkFailedAsync(artifact.Id, ownershipRefused: false, cancellationToken);
-                    warnings.Add(Warning(path, "Delete retained archive",
-                        "The retained archive could not be inspected or deleted."));
+                    warnings.Add(Warning(path, BackupOperation.DeleteRetainedArchive,
+                        BackupProblemMessage.RetainedArchiveNotDeleted));
                     break;
             }
         }
@@ -268,7 +268,7 @@ public sealed class BackupRetentionService(
 
     public sealed record InventoryReconcileResult(bool DestinationReachable, int Checked, int MarkedMissing);
 
-    private static BackupProblem Warning(string path, string operation, string message) =>
+    private static BackupProblem Warning(string path, BackupOperation operation, BackupProblemMessage message) =>
         new(BackupProblemSeverity.Warning, BackupProblemCategory.CleanupFailed, RunPhase.Finalizing,
             operation, message, path);
 }

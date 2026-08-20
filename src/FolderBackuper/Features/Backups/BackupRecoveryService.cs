@@ -68,8 +68,8 @@ public sealed class BackupRecoveryService(
             {
                 await runs.AppendProblemsAsync(run.Id,
                     [new(BackupProblemSeverity.Warning, BackupProblemCategory.DestinationUnavailable,
-                        RunPhase.Finalizing, "Recover final archive",
-                        "Finalization remains pending because the destination could not be inspected safely.")],
+                        RunPhase.Finalizing, BackupOperation.RecoverFinalArchive,
+                        BackupProblemMessage.FinalizationPendingUninspectable)],
                     cancellationToken);
                 return;
             }
@@ -191,13 +191,13 @@ public sealed class BackupRecoveryService(
         var problems = new List<BackupProblem>
         {
             new(BackupProblemSeverity.Error, BackupProblemCategory.GeneralIo, run.Phase,
-                "Recover interrupted backup", "Backup execution was interrupted and could not be committed safely.")
+                BackupOperation.RecoverInterruptedBackup, BackupProblemMessage.ExecutionInterrupted)
         };
         if (first is OwnedArchiveResult.OwnershipMismatch or OwnedArchiveResult.AccessFailed ||
             second is OwnedArchiveResult.OwnershipMismatch or OwnedArchiveResult.AccessFailed)
         {
             problems.Add(new(BackupProblemSeverity.Warning, BackupProblemCategory.CleanupFailed, run.Phase,
-                "Clean interrupted backup", "A recorded temporary or final path was left untouched because ownership could not be proven."));
+                BackupOperation.CleanInterruptedBackup, BackupProblemMessage.InterruptedPathLeftUntouched));
         }
         return problems.ToArray();
     }

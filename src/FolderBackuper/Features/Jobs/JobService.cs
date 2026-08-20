@@ -6,6 +6,7 @@ using FolderBackuper.Infrastructure.Database;
 using FolderBackuper.Infrastructure.Filesystem;
 using Microsoft.EntityFrameworkCore;
 
+using FolderBackuper.Infrastructure.Localization;
 namespace FolderBackuper.Features.Jobs;
 
 public sealed class JobService(
@@ -128,13 +129,13 @@ public sealed class JobService(
                 }
                 if (!cleanup.Succeeded)
                     throw new InvalidOperationException(
-                        $"The job was not saved and its new ownership marker could not be released: {cleanup.Message}", exception);
+                        $"The job was not saved and its new ownership marker could not be released: {cleanup.Message.Key}", exception);
             }
             if (exception is DbUpdateException)
-                return new(JobOperationStatus.Conflict, "The job name or destination folder is already reserved.");
+                return new(JobOperationStatus.Conflict, JobMessage.NameOrFolderReserved);
             throw;
         }
-        return new(JobOperationStatus.Succeeded, "The job was created.", Details(job, validation.Destination!));
+        return new(JobOperationStatus.Succeeded, JobMessage.Created, Details(job, validation.Destination!));
     }
 
     private async Task<JobOperationResult> EditCoreAsync(Guid id, SaveJobCommand command, CancellationToken cancellationToken)
@@ -142,7 +143,7 @@ public sealed class JobService(
         await using var read = await contextFactory.CreateDbContextAsync(cancellationToken);
         var current = await read.Jobs.AsNoTracking().Include(x => x.Destination)
             .SingleOrDefaultAsync(x => x.Id == id && x.Lifecycle != JobLifecycle.Archived, cancellationToken);
-        if (current is null) return new(JobOperationStatus.NotFound, "The job was not found.");
+        if (current is null) return new(JobOperationStatus.NotFound, JobMessage.NotFound);
 
         var validation = await ValidateAsync(command, id, cancellationToken);
         if (validation.Errors.Count != 0) return JobOperationResult.Validation(validation.Errors);
@@ -151,7 +152,7 @@ public sealed class JobService(
         if (pathChanged && !command.ConfirmDestinationPathChange)
         {
             return JobOperationResult.Validation([
-                new("ConfirmDestinationPathChange", "Changing the destination path requires explicit confirmation.")]);
+                new("ConfirmDestinationPathChange", JobValidationMessage.ConfirmDestinationPathChange)]);
         }
 
         var installationId = await installationIdentity.GetInstallationIdAsync(cancellationToken);
@@ -185,7 +186,7 @@ public sealed class JobService(
                     released.Result == OwnershipMarkerResult.Missing))
                 {
                     throw new JobOperationFailureException(new(JobOperationStatus.OwnershipFailed,
-                        "The old destination ownership marker could not be verified and released."));
+                        JobMessage.OldMarkerNotReleased));
                 }
                 oldMarkerReleased = released.Result == OwnershipMarkerResult.Released;
             }
@@ -244,7 +245,7 @@ public sealed class JobService(
             }
 
             await context.SaveChangesAsync(cancellationToken);
-            return new(JobOperationStatus.Succeeded, "The job was updated.", Details(job));
+            return new(JobOperationStatus.Succeeded, JobMessage.Updated, Details(job));
         }
         catch (Exception exception)
         {
@@ -268,7 +269,7 @@ public sealed class JobService(
                 {
                     var restored = await destinationTests.TestAndClaimAsync(current.Destination!, current.DestinationSubfolder,
                         current.SourcePath, installationId, id, CancellationToken.None);
-                    if (!restored.Succeeded) failures.Add($"old marker restoration failed: {restored.Message}");
+                    if (!restored.Succeeded) failures.Add($"old marker restoration failed: {restored.Message.Key}");
                 }
                 catch (Exception cleanupException)
                 {
@@ -280,7 +281,7 @@ public sealed class JobService(
                     $"The job update failed and ownership compensation was incomplete: {string.Join("; ", failures)}", exception);
             if (exception is JobOperationFailureException failure) return failure.Result;
             if (exception is DbUpdateException)
-                return new(JobOperationStatus.Conflict, "The job name or destination folder is already reserved.");
+                return new(JobOperationStatus.Conflict, JobMessage.NameOrFolderReserved);
             throw;
         }
     }
@@ -292,7 +293,7 @@ public sealed class JobService(
     {
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         var job = await context.Jobs.Include(x => x.Destination).SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
-        if (job is null) return new(JobOperationStatus.NotFound, "The job was not found.");
+        if (job is null) return new(JobOperationStatus.NotFound, JobMessage.NotFound);
         var now = timeProvider.GetUtcNow();
         JobDestinationTestOutcome? claimed = null;
         var markerReleased = false;
@@ -300,7 +301,7 @@ public sealed class JobService(
         if (target == JobLifecycle.Active)
         {
             if (job.Lifecycle != JobLifecycle.Paused)
-                return new(JobOperationStatus.InvalidTransition, "Only a paused job can be reactivated.");
+                return new(JobOperationStatus.InvalidTransition, JobMessage.OnlyPausedCanBeReactivated);
             var verified = await VerifyAndClaimAsync(job, job.Destination!, cancellationToken);
             if (!verified.Succeeded) return verified.Result!;
             claimed = verified.Outcome;
@@ -312,21 +313,20 @@ public sealed class JobService(
         else if (target == JobLifecycle.Paused)
         {
             if (job.Lifecycle != JobLifecycle.Active)
-                return new(JobOperationStatus.InvalidTransition, "Only an active job can be paused.");
+                return new(JobOperationStatus.InvalidTransition, JobMessage.OnlyActiveCanBePaused);
             job.Pause();
             job.StopScheduling();
         }
         else
         {
             if (job.Lifecycle == JobLifecycle.Archived)
-                return new(JobOperationStatus.InvalidTransition, "The job is already archived.");
+                return new(JobOperationStatus.InvalidTransition, JobMessage.AlreadyArchived);
             var installationId = await installationIdentity.GetInstallationIdAsync(cancellationToken);
             var released = await destinationTests.ReleaseAsync(job.Destination!, job.DestinationSubfolder,
                 installationId, job.Id, cancellationToken);
             if (!released.Succeeded && !(job.Lifecycle == JobLifecycle.Paused &&
                 released.Result == OwnershipMarkerResult.Missing))
-                return new(JobOperationStatus.OwnershipFailed,
-                    "The destination ownership marker could not be verified and released; the job was not archived.");
+                return new(JobOperationStatus.OwnershipFailed, JobMessage.MarkerNotReleasedNotArchived);
             markerReleased = released.Result == OwnershipMarkerResult.Released;
             job.Archive();
             job.StopScheduling();
@@ -344,7 +344,7 @@ public sealed class JobService(
                 var cleanup = await ReleaseClaimAsync(job, job.Destination!);
                 if (!cleanup.Succeeded)
                     throw new InvalidOperationException(
-                        $"The lifecycle change was not saved and its new marker could not be released: {cleanup.Message}", exception);
+                        $"The lifecycle change was not saved and its new marker could not be released: {cleanup.Message.Key}", exception);
             }
             if (markerReleased)
             {
@@ -353,20 +353,30 @@ public sealed class JobService(
                     job.SourcePath, installationId, job.Id, CancellationToken.None);
                 if (!restored.Succeeded)
                     throw new InvalidOperationException(
-                        $"The archive was not saved and the active database job's marker could not be restored: {restored.Message}", exception);
+                        $"The archive was not saved and the active database job's marker could not be restored: {restored.Message.Key}", exception);
             }
             throw;
         }
-        return new(JobOperationStatus.Succeeded, $"The job is now {job.Lifecycle.ToString().ToLowerInvariant()}.", Details(job));
+        // The lifecycle used to be interpolated into an English sentence by lowercasing the member
+        // name. Each state now has its own message, because no other language forms the sentence that way.
+        return new(
+            JobOperationStatus.Succeeded,
+            job.Lifecycle switch
+            {
+                JobLifecycle.Active => JobMessage.NowActive,
+                JobLifecycle.Paused => JobMessage.NowPaused,
+                _ => JobMessage.NowArchived
+            },
+            Details(job));
     }
 
     private async Task<JobOperationResult> RestoreCoreAsync(Guid id, bool restoreActive, CancellationToken cancellationToken)
     {
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         var job = await context.Jobs.Include(x => x.Destination).SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
-        if (job is null) return new(JobOperationStatus.NotFound, "The job was not found.");
+        if (job is null) return new(JobOperationStatus.NotFound, JobMessage.NotFound);
         if (job.Lifecycle != JobLifecycle.Archived)
-            return new(JobOperationStatus.InvalidTransition, "Only an archived job can be restored.");
+            return new(JobOperationStatus.InvalidTransition, JobMessage.OnlyArchivedCanBeRestored);
 
         var now = timeProvider.GetUtcNow();
         job.Restore();
@@ -400,16 +410,16 @@ public sealed class JobService(
                     installationId, job.Id, CancellationToken.None);
                 if (!released.Succeeded)
                     throw new InvalidOperationException(
-                        $"The restore was not saved and its new ownership marker could not be released: {released.Message}",
+                        $"The restore was not saved and its new ownership marker could not be released: {released.Message.Key}",
                         exception);
             }
             if (exception is DbUpdateException)
-                return new(JobOperationStatus.Conflict, "The restored job name or destination folder is already reserved.");
+                return new(JobOperationStatus.Conflict, JobMessage.RestoredNameOrFolderReserved);
             throw;
         }
         var message = job.Lifecycle == JobLifecycle.Active
-            ? "The job was restored and activated."
-            : "The job was restored paused because activation requirements were not satisfied.";
+            ? JobMessage.RestoredAndActivated
+            : JobMessage.RestoredPaused;
         return new(JobOperationStatus.Succeeded, message, Details(job));
     }
 
@@ -419,10 +429,9 @@ public sealed class JobService(
         var job = await context.Jobs.Include(x => x.Destination)
             .SingleOrDefaultAsync(x => x.Id == id && x.Lifecycle != JobLifecycle.Archived, cancellationToken);
         if (job?.Destination is null)
-            return new(JobOperationStatus.NotFound, "The job or destination was not found.");
+            return new(JobOperationStatus.NotFound, JobMessage.JobOrDestinationNotFound);
         if (job.Destination.VerificationResult != DestinationVerificationResult.Succeeded)
-            return new(JobOperationStatus.DestinationVerificationFailed,
-                "Verify the destination root before testing the job folder.");
+            return new(JobOperationStatus.DestinationVerificationFailed, JobMessage.VerifyDestinationRootFirst);
 
         var installationId = await installationIdentity.GetInstallationIdAsync(cancellationToken);
         var outcome = await destinationTests.TestAndClaimAsync(job.Destination, job.DestinationSubfolder,
@@ -444,11 +453,11 @@ public sealed class JobService(
                     installationId, job.Id, CancellationToken.None);
                 if (!released.Succeeded)
                     throw new InvalidOperationException(
-                        $"The destination test was not saved and its new marker could not be released: {released.Message}", exception);
+                        $"The destination test was not saved and its new marker could not be released: {released.Message.Key}", exception);
             }
             if (exception is DbUpdateException)
                 return new(JobOperationStatus.Conflict,
-                    "The effective destination folder is already reserved by another job.");
+                    JobMessage.EffectiveFolderReserved);
             throw;
         }
 
@@ -462,23 +471,23 @@ public sealed class JobService(
     {
         var errors = new List<JobValidationError>();
         var name = command.Name?.Trim() ?? "";
-        if (name.Length is 0 or > 200) errors.Add(new("Name", "A nonblank job name of at most 200 characters is required."));
+        if (name.Length is 0 or > 200) errors.Add(new("Name", JobValidationMessage.NameRequired));
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         if (name.Length > 0 && await context.Jobs.AsNoTracking().AnyAsync(
             x => x.Id != existingId && x.Name == name, cancellationToken))
-            errors.Add(new("Name", "A job with this name already exists."));
+            errors.Add(new("Name", JobValidationMessage.NameAlreadyExists));
 
         var source = ValidateSource(command.SourcePath, errors);
         if (command.Weekdays == ScheduledWeekdays.None || (command.Weekdays & ~AllWeekdays) != 0)
-            errors.Add(new("Weekdays", "At least one valid weekday is required."));
-        if (command.RetentionCount < 1) errors.Add(new("RetentionCount", "Retention must be at least one."));
+            errors.Add(new("Weekdays", JobValidationMessage.WeekdayRequired));
+        if (command.RetentionCount < 1) errors.Add(new("RetentionCount", JobValidationMessage.RetentionAtLeastOne));
         var relative = WindowsPath.Relative(command.DestinationSubfolder);
         if (!relative.IsValid) errors.Add(new("DestinationSubfolder", relative.Error!));
 
         var destination = await context.Destinations.AsNoTracking()
             .SingleOrDefaultAsync(x => x.Id == command.DestinationId && x.Lifecycle == DestinationLifecycle.Active,
                 cancellationToken);
-        if (destination is null) errors.Add(new("DestinationId", "An active destination is required."));
+        if (destination is null) errors.Add(new("DestinationId", JobValidationMessage.ActiveDestinationRequired));
 
         string? ownershipKey = null;
         if (destination is not null && source is not null && relative.IsValid)
@@ -511,18 +520,18 @@ public sealed class JobService(
             if (!Directory.Exists(local.Path)) throw new DirectoryNotFoundException();
             var metadata = WindowsFilesystemInterop.GetMetadata(local.Path!);
             if ((metadata.Attributes & FileAttributes.ReparsePoint) != 0)
-                throw new InvalidOperationException("The source folder cannot be a reparse point.");
+                throw new SourcePathException(UiMessage.For(JobValidationMessage.SourceCannotBeReparsePoint));
             using var entries = Directory.EnumerateFileSystemEntries(local.Path!).GetEnumerator();
             _ = entries.MoveNext();
             return metadata.FinalPath;
         }
-        catch (InvalidOperationException exception)
+        catch (SourcePathException rejected)
         {
-            errors.Add(new("SourcePath", exception.Message));
+            errors.Add(new("SourcePath", rejected.Reason));
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or Win32Exception)
         {
-            errors.Add(new("SourcePath", "The source must be an existing readable local folder."));
+            errors.Add(new("SourcePath", JobValidationMessage.SourceMustBeReadableLocalFolder));
         }
         return null;
     }
@@ -536,7 +545,7 @@ public sealed class JobService(
             destination.VerificationResult != DestinationVerificationResult.Succeeded)
         {
             return (false, null, new(JobOperationStatus.DestinationVerificationFailed,
-                "The destination must have a current successful management verification."));
+                JobMessage.DestinationNeedsManagementVerification));
         }
         return await ClaimDestinationAsync(job, destination, requireManagementVerification: true, cancellationToken);
     }
@@ -551,7 +560,7 @@ public sealed class JobService(
             destination.VerificationResult != DestinationVerificationResult.Succeeded))
         {
             return (false, null, new(JobOperationStatus.DestinationVerificationFailed,
-                "The destination must have a current successful management verification."));
+                JobMessage.DestinationNeedsManagementVerification));
         }
         var installationId = await installationIdentity.GetInstallationIdAsync(cancellationToken);
         var outcome = await destinationTests.TestAndClaimAsync(destination, job.DestinationSubfolder,

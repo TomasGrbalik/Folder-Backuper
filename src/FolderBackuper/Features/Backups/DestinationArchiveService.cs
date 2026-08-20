@@ -124,7 +124,7 @@ public sealed class DestinationArchiveService(
                     {
                         var problems = new List<BackupProblem>
                         {
-                            InvalidArchive(partialPath, "The destination partial length does not match the staging archive.")
+                            InvalidArchive(partialPath, BackupProblemMessage.PartialLengthMismatch)
                         };
                         CleanupPartial(partialPath, partialCreated, problems);
                         return Failed(expectedLength, stopwatch.Elapsed, false, problems);
@@ -254,21 +254,21 @@ public sealed class DestinationArchiveService(
         };
         var message = category switch
         {
-            BackupProblemCategory.DestinationInsufficientSpace => "The destination has insufficient free space.",
-            BackupProblemCategory.DestinationInaccessible => "Access to the destination archive was denied.",
-            BackupProblemCategory.DestinationUnavailable => "The destination became unavailable.",
-            BackupProblemCategory.InvalidPath => "The destination archive path is invalid or unsafe.",
-            _ => "The destination archive operation failed."
+            BackupProblemCategory.DestinationInsufficientSpace => BackupProblemMessage.DestinationInsufficientSpace,
+            BackupProblemCategory.DestinationInaccessible => BackupProblemMessage.DestinationAccessDenied,
+            BackupProblemCategory.DestinationUnavailable => BackupProblemMessage.DestinationUnavailable,
+            BackupProblemCategory.InvalidPath => BackupProblemMessage.DestinationPathInvalid,
+            _ => BackupProblemMessage.DestinationOperationFailed
         };
         return new(BackupProblemSeverity.Error, category, RunPhase.Transferring,
-            "Transfer destination archive", message, path, code);
+            BackupOperation.TransferDestinationArchive, message, path, code);
     }
 
-    private static BackupProblem InvalidArchive(string path, string message) => new(
+    private static BackupProblem InvalidArchive(string path, BackupProblemMessage message) => new(
         BackupProblemSeverity.Error,
         BackupProblemCategory.InvalidArchive,
         RunPhase.Finalizing,
-        "Validate destination archive",
+        BackupOperation.ValidateDestinationArchive,
         message,
         path);
 
@@ -282,8 +282,8 @@ public sealed class DestinationArchiveService(
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             problems?.Add(new(BackupProblemSeverity.Warning, BackupProblemCategory.CleanupFailed,
-                RunPhase.Finalizing, "Clean destination partial",
-                "The incomplete destination archive could not be removed.", path, exception.HResult & 0xFFFF));
+                RunPhase.Finalizing, BackupOperation.CleanDestinationPartial,
+                BackupProblemMessage.DestinationPartialNotRemoved, path, exception.HResult & 0xFFFF));
         }
     }
 }

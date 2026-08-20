@@ -1,3 +1,4 @@
+using FolderBackuper.Infrastructure.Localization;
 using Microsoft.EntityFrameworkCore;
 
 namespace FolderBackuper.Infrastructure.Database;
@@ -8,10 +9,21 @@ public enum ConfigurationMutationStatus
     Busy
 }
 
+/// <summary>
+/// Why a configuration change was or was not run. Reaches the interface as the outcome of a job or
+/// destination operation, so it is carried as a message code like the rest of them.
+/// </summary>
+/// <remarks>Member names are resource keys by the <c>ConfigurationMutationMessage_Member</c> rule.</remarks>
+public enum ConfigurationMutationMessage
+{
+    BackupWorkPending,
+    Completed
+}
+
 public sealed record ConfigurationMutationOutcome<T>(
     ConfigurationMutationStatus Status,
     T? Value,
-    string Message)
+    UiMessage Message)
 {
     public bool Succeeded => Status == ConfigurationMutationStatus.Executed;
 }
@@ -32,11 +44,11 @@ public sealed class ConfigurationMutationGate(IDbContextFactory<FolderBackuperDb
             if (await context.Runs.AsNoTracking().AnyAsync(x => x.Outcome == null, cancellationToken))
             {
                 return new(ConfigurationMutationStatus.Busy, default,
-                    "Configuration cannot be changed while backup work is pending or running.");
+                    UiMessage.For(ConfigurationMutationMessage.BackupWorkPending));
             }
 
             return new(ConfigurationMutationStatus.Executed, await operation(cancellationToken),
-                "The configuration operation completed.");
+                UiMessage.For(ConfigurationMutationMessage.Completed));
         }
         finally
         {

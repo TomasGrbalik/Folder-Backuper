@@ -1,0 +1,628 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="BackupProblemMessage_ArchivedJobCannotRun" xml:space="preserve">
+    <value>Archivovanú úlohu nie je možné spustiť.</value>
+  </data>
+  <data name="BackupProblemMessage_Cancelled" xml:space="preserve">
+    <value>Zálohovanie bolo zrušené.</value>
+  </data>
+  <data name="BackupProblemMessage_DestinationAccessDenied" xml:space="preserve">
+    <value>Prístup k cieľovému archívu bol odmietnutý.</value>
+  </data>
+  <data name="BackupProblemMessage_DestinationAccessNotRecorded" xml:space="preserve">
+    <value>Výsledok prístupu k cieľovému umiestneniu sa nepodarilo zaznamenať.</value>
+  </data>
+  <data name="BackupProblemMessage_DestinationInsufficientSpace" xml:space="preserve">
+    <value>V cieľovom umiestnení nie je dostatok voľného miesta.</value>
+  </data>
+  <data name="BackupProblemMessage_DestinationNeedsVerification" xml:space="preserve">
+    <value>Cieľové umiestnenie musí mať aktuálne úspešné overenie.</value>
+  </data>
+  <data name="BackupProblemMessage_DestinationOperationFailed" xml:space="preserve">
+    <value>Operácia s cieľovým archívom zlyhala.</value>
+  </data>
+  <data name="BackupProblemMessage_DestinationPartialNotRemoved" xml:space="preserve">
+    <value>Neúplný cieľový archív sa nepodarilo odstrániť.</value>
+  </data>
+  <data name="BackupProblemMessage_DestinationPathInvalid" xml:space="preserve">
+    <value>Cesta k cieľovému archívu je neplatná alebo nebezpečná.</value>
+  </data>
+  <data name="BackupProblemMessage_DestinationUnavailable" xml:space="preserve">
+    <value>Cieľové umiestnenie sa stalo nedostupným.</value>
+  </data>
+  <data name="BackupProblemMessage_DuplicateActiveWorkReconciled" xml:space="preserve">
+    <value>Duplicitná aktívna práca bola zladená počas aktualizácie trvalého vykonávania.</value>
+  </data>
+  <data name="BackupProblemMessage_EffectiveDestinationMissing" xml:space="preserve">
+    <value>Cieľový priečinok neexistuje.</value>
+  </data>
+  <data name="BackupProblemMessage_EntriesMismatch" xml:space="preserve">
+    <value>Položky v archíve nesúhlasia so zoznamom zdroja.</value>
+  </data>
+  <data name="BackupProblemMessage_EntryCountMismatch" xml:space="preserve">
+    <value>Počet položiek v archíve nesúhlasí so zoznamom zdroja.</value>
+  </data>
+  <data name="BackupProblemMessage_ExecutionInterrupted" xml:space="preserve">
+    <value>Zálohovanie bolo prerušené a nepodarilo sa ho bezpečne dokončiť.</value>
+  </data>
+  <data name="BackupProblemMessage_FinalizationPendingUninspectable" xml:space="preserve">
+    <value>Dokončenie zostáva nevyriešené, pretože cieľové umiestnenie sa nepodarilo bezpečne skontrolovať.</value>
+  </data>
+  <data name="BackupProblemMessage_InterruptedPathLeftUntouched" xml:space="preserve">
+    <value>Zaznamenaná dočasná alebo konečná cesta zostala nedotknutá, pretože sa nepodarilo preukázať vlastníctvo.</value>
+  </data>
+  <data name="BackupProblemMessage_JobOrDestinationMissing" xml:space="preserve">
+    <value>Úloha alebo cieľové umiestnenie už neexistuje.</value>
+  </data>
+  <data name="BackupProblemMessage_ManifestPathInvalid" xml:space="preserve">
+    <value>Zdrojovú cestu nebolo možné zapísať do archívu.</value>
+  </data>
+  <data name="BackupProblemMessage_OwnershipCommentInvalid" xml:space="preserve">
+    <value>Komentár o vlastníctve archívu chýba alebo je neplatný.</value>
+  </data>
+  <data name="BackupProblemMessage_OwnershipMarkerUnverified" xml:space="preserve">
+    <value>Značku vlastníctva cieľového umiestnenia sa nepodarilo overiť.</value>
+  </data>
+  <data name="BackupProblemMessage_PartialLengthMismatch" xml:space="preserve">
+    <value>Veľkosť neúplného súboru v cieli nesúhlasí s prípravným archívom.</value>
+  </data>
+  <data name="BackupProblemMessage_ReparsePointSkipped" xml:space="preserve">
+    <value>Bod opätovného spracovania sa preskočil a nebol zaradený do zálohy.</value>
+  </data>
+  <data name="BackupProblemMessage_RetainedArchiveNotDeleted" xml:space="preserve">
+    <value>Uchovaný archív sa nepodarilo skontrolovať ani odstrániť.</value>
+  </data>
+  <data name="BackupProblemMessage_RetentionOwnershipUnproven" xml:space="preserve">
+    <value>Zaregistrovaný archív sa neodstránil, pretože sa nepodarilo preukázať vlastníctvo.</value>
+  </data>
+  <data name="BackupProblemMessage_SmbHostedLocallyUnsupported" xml:space="preserve">
+    <value>Cieľové umiestnenie SMB hosťované týmto počítačom nie je podporované.</value>
+  </data>
+  <data name="BackupProblemMessage_SourceEntryAdded" xml:space="preserve">
+    <value>Zdrojová položka bola počas zálohovania pridaná.</value>
+  </data>
+  <data name="BackupProblemMessage_SourceEntryChanged" xml:space="preserve">
+    <value>Zdrojová položka sa počas zálohovania zmenila.</value>
+  </data>
+  <data name="BackupProblemMessage_SourceEntryRemoved" xml:space="preserve">
+    <value>Zdrojová položka bola počas zálohovania odstránená.</value>
+  </data>
+  <data name="BackupProblemMessage_SourceFileAccessDenied" xml:space="preserve">
+    <value>Zdrojový súbor sa nepodarilo prečítať, pretože prístup bol odmietnutý.</value>
+  </data>
+  <data name="BackupProblemMessage_SourceFileChanged" xml:space="preserve">
+    <value>Zdrojový súbor sa počas komprimovania zmenil.</value>
+  </data>
+  <data name="BackupProblemMessage_SourceFileUnreadable" xml:space="preserve">
+    <value>Zdrojový súbor sa nepodarilo prečítať.</value>
+  </data>
+  <data name="BackupProblemMessage_StagingArchiveNotCreated" xml:space="preserve">
+    <value>Prípravný archív sa nepodarilo vytvoriť.</value>
+  </data>
+  <data name="BackupProblemMessage_StagingArchiveNotRemoved" xml:space="preserve">
+    <value>Neúplný prípravný archív sa nepodarilo odstrániť.</value>
+  </data>
+  <data name="BackupProblemMessage_StagingDirectoryMissing" xml:space="preserve">
+    <value>Prípravný priečinok neexistuje.</value>
+  </data>
+  <data name="BackupProblemMessage_StagingInsufficientSpace" xml:space="preserve">
+    <value>Na prípravnom disku nie je dostatok voľného miesta.</value>
+  </data>
+  <data name="BackupProblemMessage_StagingNotResolvable" xml:space="preserve">
+    <value>Prípravný priečinok sa nepodarilo bezpečne vyhodnotiť.</value>
+  </data>
+  <data name="BackupProblemMessage_StagingOverlapsSource" xml:space="preserve">
+    <value>Prípravný priečinok sa prekrýva s nastaveným zdrojom.</value>
+  </data>
+  <data name="BackupProblemMessage_UnexpectedFailure" xml:space="preserve">
+    <value>Zálohovanie neočakávane zlyhalo.</value>
+  </data>
+  <data name="BackupProblemMessage_ZipValidationFailed" xml:space="preserve">
+    <value>Archív ZIP sa nepodarilo overiť.</value>
+  </data>
+  <data name="ConfigurationMutationMessage_BackupWorkPending" xml:space="preserve">
+    <value>Nastavenie sa nedá zmeniť, kým je zálohovanie naplánované alebo prebieha.</value>
+  </data>
+  <data name="ConfigurationMutationMessage_Completed" xml:space="preserve">
+    <value>Operácia s nastavením bola dokončená.</value>
+  </data>
+  <data name="DestinationMessage_AccessDenied" xml:space="preserve">
+    <value>Prístup k cieľovému umiestneniu bol odmietnutý.</value>
+  </data>
+  <data name="DestinationMessage_AccessTestFailed" xml:space="preserve">
+    <value>Test prístupu k cieľovému umiestneniu zlyhal.</value>
+  </data>
+  <data name="DestinationMessage_ActiveNotFound" xml:space="preserve">
+    <value>Aktívne cieľové umiestnenie sa nenašlo.</value>
+  </data>
+  <data name="DestinationMessage_AlreadyArchived" xml:space="preserve">
+    <value>Cieľové umiestnenie je už archivované.</value>
+  </data>
+  <data name="DestinationMessage_Archived" xml:space="preserve">
+    <value>Cieľové umiestnenie bolo archivované.</value>
+  </data>
+  <data name="DestinationMessage_CredentialsRejected" xml:space="preserve">
+    <value>Prihlasovacie údaje SMB boli odmietnuté.</value>
+  </data>
+  <data name="DestinationMessage_FolderReservedByAnotherJob" xml:space="preserve">
+    <value>Priečinok v novom nastavení cieľového umiestnenia už má rezervovaný iná úloha.</value>
+  </data>
+  <data name="DestinationMessage_NameOrFolderReserved" xml:space="preserve">
+    <value>Úprava cieľového umiestnenia je v konflikte s existujúcim názvom alebo rezervovaným priečinkom.</value>
+  </data>
+  <data name="DestinationMessage_NameTooLong" xml:space="preserve">
+    <value>Názov cieľového umiestnenia môže mať najviac 200 znakov.</value>
+  </data>
+  <data name="DestinationMessage_NewFolderNotClaimed" xml:space="preserve">
+    <value>Nový cieľový priečinok pre úlohu „{0}“ sa nepodarilo zabrať: {1}</value>
+  </data>
+  <data name="DestinationMessage_NotFound" xml:space="preserve">
+    <value>Cieľové umiestnenie sa nenašlo.</value>
+  </data>
+  <data name="DestinationMessage_OldMarkerNotReleased" xml:space="preserve">
+    <value>Starú značku vlastníctva pre úlohu „{0}“ sa nepodarilo uvoľniť: {1}</value>
+  </data>
+  <data name="DestinationMessage_OnlyArchivedCanBeRestored" xml:space="preserve">
+    <value>Obnoviť je možné len archivované cieľové umiestnenie.</value>
+  </data>
+  <data name="DestinationMessage_OverlapsConfiguredSource" xml:space="preserve">
+    <value>Cieľové umiestnenie sa prekrýva s nastaveným zdrojom „{0}“.</value>
+  </data>
+  <data name="DestinationMessage_OwnershipCompensationIncomplete" xml:space="preserve">
+    <value>Úprava cieľového umiestnenia zlyhala a náprava vlastníctva nebola úplná: {0}</value>
+  </data>
+  <data name="DestinationMessage_PathInvalid" xml:space="preserve">
+    <value>Cesta k cieľovému umiestneniu je neplatná.</value>
+  </data>
+  <data name="DestinationMessage_ReferencedByJobs" xml:space="preserve">
+    <value>Cieľové umiestnenie používa {0} aktívnych alebo pozastavených úloh a nie je možné ho archivovať.</value>
+  </data>
+  <data name="DestinationMessage_RestoredNeedsVerification" xml:space="preserve">
+    <value>Cieľové umiestnenie bolo obnovené a treba ho overiť.</value>
+  </data>
+  <data name="DestinationMessage_RootChangeNeedsConfirmation" xml:space="preserve">
+    <value>Zmena koreňovej cesty alebo typu cieľového umiestnenia vyžaduje výslovné potvrdenie.</value>
+  </data>
+  <data name="DestinationMessage_SmbHostedLocallyMustBeLocalPath" xml:space="preserve">
+    <value>Cieľové umiestnenie SMB hosťované týmto počítačom treba nastaviť ako lokálnu cestu.</value>
+  </data>
+  <data name="DestinationMessage_SmbPasswordRequired" xml:space="preserve">
+    <value>Heslo SMB je povinné.</value>
+  </data>
+  <data name="DestinationMessage_SmbUsernameRequired" xml:space="preserve">
+    <value>Používateľské meno SMB je povinné.</value>
+  </data>
+  <data name="DestinationMessage_TestBytesNotPreserved" xml:space="preserve">
+    <value>Cieľové umiestnenie nezachovalo testovacie údaje.</value>
+  </data>
+  <data name="DestinationMessage_TestFileNotCleanedUp" xml:space="preserve">
+    <value>Testovací súbor sa nepodarilo presne odstrániť.</value>
+  </data>
+  <data name="DestinationMessage_TestSucceeded" xml:space="preserve">
+    <value>Zápis, vyprázdnenie, spätné načítanie a presné odstránenie prebehli úspešne.</value>
+  </data>
+  <data name="DestinationMessage_Unavailable" xml:space="preserve">
+    <value>Cieľové umiestnenie je nedostupné.</value>
+  </data>
+  <data name="DestinationMessage_Updated" xml:space="preserve">
+    <value>Cieľové umiestnenie bolo upravené.</value>
+  </data>
+  <data name="DestinationMessage_UpdatedAndVerificationInvalidated" xml:space="preserve">
+    <value>Cieľové umiestnenie bolo upravené a overenie zneplatnené. Pozastavených úloh: {0}; nespravovaných uchovaných archívov: {1}.</value>
+  </data>
+  <data name="EffectiveDestinationMessage_AccessFailed" xml:space="preserve">
+    <value>K cieľovému priečinku sa nepodarilo získať prístup.</value>
+  </data>
+  <data name="EffectiveDestinationMessage_EffectivePathInvalid" xml:space="preserve">
+    <value>Cesta k cieľovému priečinku je neplatná.</value>
+  </data>
+  <data name="EffectiveDestinationMessage_MustRemainInsideRoot" xml:space="preserve">
+    <value>Cieľový priečinok musí zostať v rámci koreňa svojho cieľového umiestnenia.</value>
+  </data>
+  <data name="EffectiveDestinationMessage_OverlapsSource" xml:space="preserve">
+    <value>Koreň cieľového umiestnenia alebo cieľový priečinok sa prekrýva so zdrojovým priečinkom.</value>
+  </data>
+  <data name="EffectiveDestinationMessage_ReadyExisting" xml:space="preserve">
+    <value>Cieľový priečinok je pripravený.</value>
+  </data>
+  <data name="EffectiveDestinationMessage_ReadyPathValid" xml:space="preserve">
+    <value>Cesta k cieľovému priečinku je platná.</value>
+  </data>
+  <data name="EffectiveDestinationMessage_ResolvesOutsideRoot" xml:space="preserve">
+    <value>Cieľový priečinok sa nachádza mimo koreňa svojho cieľového umiestnenia.</value>
+  </data>
+  <data name="EffectiveDestinationMessage_RootMustExistFirst" xml:space="preserve">
+    <value>Koreň cieľového umiestnenia musí existovať skôr, ako sa dá vytvoriť cieľový priečinok.</value>
+  </data>
+  <data name="JobDestinationTestMessage_CleanupFailedAndMarkerNotReleased" xml:space="preserve">
+    <value>Overovací súbor sa nepodarilo odstrániť a novo zabranú značku vlastníctva sa tiež nepodarilo uvoľniť: {0}</value>
+  </data>
+  <data name="JobDestinationTestMessage_DestinationNotAccessible" xml:space="preserve">
+    <value>K cieľovému umiestneniu sa nepodarilo získať prístup.</value>
+  </data>
+  <data name="JobDestinationTestMessage_ExactVerificationFileNotRemoved" xml:space="preserve">
+    <value>Presný overovací súbor v cieľovom umiestnení sa nepodarilo odstrániť.</value>
+  </data>
+  <data name="JobDestinationTestMessage_NewlyClaimedMarkerNotReleased" xml:space="preserve">
+    <value>Novo zabranú značku vlastníctva sa nepodarilo uvoľniť: {0}</value>
+  </data>
+  <data name="JobDestinationTestMessage_OwnedFolderNotAccessibleForCleanup" xml:space="preserve">
+    <value>K vlastnenému cieľovému priečinku sa nepodarilo získať prístup na odstránenie značky.</value>
+  </data>
+  <data name="JobDestinationTestMessage_OwnedFolderNotVerifiableForCleanup" xml:space="preserve">
+    <value>Vlastnený cieľový priečinok sa nepodarilo overiť na odstránenie značky.</value>
+  </data>
+  <data name="JobDestinationTestMessage_OwnershipAndWriteVerified" xml:space="preserve">
+    <value>Overenie vlastníctva a zápisu prebehlo úspešne.</value>
+  </data>
+  <data name="JobDestinationTestMessage_VerificationBytesNotPreserved" xml:space="preserve">
+    <value>Cieľové umiestnenie nezachovalo overovacie údaje.</value>
+  </data>
+  <data name="JobDestinationTestMessage_VerificationFileCleanupFailed" xml:space="preserve">
+    <value>Odstránenie overovacieho súboru v cieľovom umiestnení zlyhalo.</value>
+  </data>
+  <data name="JobDestinationTestMessage_WriteVerificationFailed" xml:space="preserve">
+    <value>Overenie zápisu do cieľového umiestnenia zlyhalo.</value>
+  </data>
+  <data name="JobMessage_AlreadyArchived" xml:space="preserve">
+    <value>Úloha je už archivovaná.</value>
+  </data>
+  <data name="JobMessage_ConfigurationInvalid" xml:space="preserve">
+    <value>Nastavenie úlohy je neplatné.</value>
+  </data>
+  <data name="JobMessage_Created" xml:space="preserve">
+    <value>Úloha bola vytvorená.</value>
+  </data>
+  <data name="JobMessage_DestinationNeedsManagementVerification" xml:space="preserve">
+    <value>Cieľové umiestnenie musí mať aktuálne úspešné overenie správy.</value>
+  </data>
+  <data name="JobMessage_EffectiveFolderReserved" xml:space="preserve">
+    <value>Cieľový priečinok už má rezervovaný iná úloha.</value>
+  </data>
+  <data name="JobMessage_EffectiveFolderTestFailed" xml:space="preserve">
+    <value>Test cieľového priečinka sa nepodarilo dokončiť. Skúste to znova alebo skontrolujte protokoly aplikácie.</value>
+  </data>
+  <data name="JobMessage_JobOrDestinationNotFound" xml:space="preserve">
+    <value>Úloha alebo cieľové umiestnenie sa nenašlo.</value>
+  </data>
+  <data name="JobMessage_MarkerNotReleasedNotArchived" xml:space="preserve">
+    <value>Značku vlastníctva cieľového umiestnenia sa nepodarilo overiť a uvoľniť; úloha nebola archivovaná.</value>
+  </data>
+  <data name="JobMessage_NameOrFolderReserved" xml:space="preserve">
+    <value>Názov úlohy alebo cieľový priečinok je už rezervovaný.</value>
+  </data>
+  <data name="JobMessage_NotFound" xml:space="preserve">
+    <value>Úloha sa nenašla.</value>
+  </data>
+  <data name="JobMessage_NowActive" xml:space="preserve">
+    <value>Úloha je teraz aktívna.</value>
+  </data>
+  <data name="JobMessage_NowArchived" xml:space="preserve">
+    <value>Úloha je teraz archivovaná.</value>
+  </data>
+  <data name="JobMessage_NowPaused" xml:space="preserve">
+    <value>Úloha je teraz pozastavená.</value>
+  </data>
+  <data name="JobMessage_OldMarkerNotReleased" xml:space="preserve">
+    <value>Starú značku vlastníctva cieľového umiestnenia sa nepodarilo overiť a uvoľniť.</value>
+  </data>
+  <data name="JobMessage_OnlyActiveCanBePaused" xml:space="preserve">
+    <value>Pozastaviť je možné len aktívnu úlohu.</value>
+  </data>
+  <data name="JobMessage_OnlyArchivedCanBeRestored" xml:space="preserve">
+    <value>Obnoviť je možné len archivovanú úlohu.</value>
+  </data>
+  <data name="JobMessage_OnlyPausedCanBeReactivated" xml:space="preserve">
+    <value>Reaktivovať je možné len pozastavenú úlohu.</value>
+  </data>
+  <data name="JobMessage_RestoredAndActivated" xml:space="preserve">
+    <value>Úloha bola obnovená a aktivovaná.</value>
+  </data>
+  <data name="JobMessage_RestoredNameOrFolderReserved" xml:space="preserve">
+    <value>Názov obnovenej úlohy alebo jej cieľový priečinok je už rezervovaný.</value>
+  </data>
+  <data name="JobMessage_RestoredPaused" xml:space="preserve">
+    <value>Úloha bola obnovená ako pozastavená, pretože neboli splnené podmienky aktivácie.</value>
+  </data>
+  <data name="JobMessage_Updated" xml:space="preserve">
+    <value>Úloha bola upravená.</value>
+  </data>
+  <data name="JobMessage_VerifyDestinationRootFirst" xml:space="preserve">
+    <value>Pred testovaním priečinka úlohy overte koreň cieľového umiestnenia.</value>
+  </data>
+  <data name="JobValidationMessage_ActiveDestinationRequired" xml:space="preserve">
+    <value>Vyžaduje sa aktívne cieľové umiestnenie.</value>
+  </data>
+  <data name="JobValidationMessage_ConfirmDestinationPathChange" xml:space="preserve">
+    <value>Zmena cieľovej cesty vyžaduje výslovné potvrdenie.</value>
+  </data>
+  <data name="JobValidationMessage_NameAlreadyExists" xml:space="preserve">
+    <value>Úloha s týmto názvom už existuje.</value>
+  </data>
+  <data name="JobValidationMessage_NameRequired" xml:space="preserve">
+    <value>Názov úlohy je povinný a môže mať najviac 200 znakov.</value>
+  </data>
+  <data name="JobValidationMessage_RetentionAtLeastOne" xml:space="preserve">
+    <value>Uchovávať treba aspoň jednu zálohu.</value>
+  </data>
+  <data name="JobValidationMessage_SourceCannotBeReparsePoint" xml:space="preserve">
+    <value>Zdrojový priečinok nemôže byť bod opätovného spracovania.</value>
+  </data>
+  <data name="JobValidationMessage_SourceMustBeReadableLocalFolder" xml:space="preserve">
+    <value>Zdroj musí byť existujúci čitateľný lokálny priečinok.</value>
+  </data>
+  <data name="JobValidationMessage_WeekdayRequired" xml:space="preserve">
+    <value>Vyžaduje sa aspoň jeden platný deň v týždni.</value>
+  </data>
+  <data name="NotificationResultMessage_Accepted" xml:space="preserve">
+    <value>Poskytovateľ e-mailu správu prijal.</value>
+  </data>
+  <data name="NotificationResultMessage_AcceptedWithId" xml:space="preserve">
+    <value>Prijaté poskytovateľom e-mailu (id {0}).</value>
+  </data>
+  <data name="NotificationResultMessage_ApiKeyRejected" xml:space="preserve">
+    <value>Poskytovateľ e-mailu odmietol kľúč API.</value>
+  </data>
+  <data name="NotificationResultMessage_ApiKeyRequired" xml:space="preserve">
+    <value>Vyžaduje sa kľúč API služby Resend.</value>
+  </data>
+  <data name="NotificationResultMessage_AttemptFailedUnexpectedly" xml:space="preserve">
+    <value>Pokus o doručenie neočakávane zlyhal. Doručenie nie je známe.</value>
+  </data>
+  <data name="NotificationResultMessage_ConnectionLost" xml:space="preserve">
+    <value>Pripojenie k poskytovateľovi e-mailu sa počas odosielania prerušilo. Doručenie nie je známe.</value>
+  </data>
+  <data name="NotificationResultMessage_InterruptedMidAttempt" xml:space="preserve">
+    <value>Služba sa zastavila po začatí pokusu o doručenie. Nie je známe, či bol e-mail odoslaný, a pokus sa zámerne neopakuje, aby sa nemohol odoslať duplikát.</value>
+  </data>
+  <data name="NotificationResultMessage_NotConfigured" xml:space="preserve">
+    <value>E-mailové upozornenia nie sú nastavené. Na stránke nastavení pridajte kľúč API služby Resend, overenú adresu odosielateľa a aspoň jedného adresáta.</value>
+  </data>
+  <data name="NotificationResultMessage_ProviderServerError" xml:space="preserve">
+    <value>Poskytovateľ e-mailu nahlásil chybu servera ({0}). Doručenie nie je známe.</value>
+  </data>
+  <data name="NotificationResultMessage_ProviderTimedOut" xml:space="preserve">
+    <value>Poskytovateľ e-mailu neodpovedal pred vypršaním časového limitu. Doručenie nie je známe.</value>
+  </data>
+  <data name="NotificationResultMessage_ProviderUnreachable" xml:space="preserve">
+    <value>Poskytovateľa e-mailu sa nepodarilo kontaktovať. Skontrolujte pripojenie zálohovacieho počítača k internetu.</value>
+  </data>
+  <data name="NotificationResultMessage_ReasonWithProviderDetail" xml:space="preserve">
+    <value>{0} {1}</value>
+  </data>
+  <data name="NotificationResultMessage_RecipientAddressInvalid" xml:space="preserve">
+    <value>Neplatná e-mailová adresa: {0}.</value>
+  </data>
+  <data name="NotificationResultMessage_RecipientRequired" xml:space="preserve">
+    <value>Zadajte aspoň jednu adresu adresáta.</value>
+  </data>
+  <data name="NotificationResultMessage_RequestFailedAfterStarting" xml:space="preserve">
+    <value>Požiadavka na poskytovateľa e-mailu zlyhala po jej začatí. Doručenie nie je známe.</value>
+  </data>
+  <data name="NotificationResultMessage_RequestRejected" xml:space="preserve">
+    <value>Poskytovateľ e-mailu požiadavku odmietol ({0}).</value>
+  </data>
+  <data name="NotificationResultMessage_SenderAddressInvalid" xml:space="preserve">
+    <value>Zadajte platnú e-mailovú adresu.</value>
+  </data>
+  <data name="NotificationResultMessage_SenderAddressRequired" xml:space="preserve">
+    <value>Vyžaduje sa overená adresa odosielateľa.</value>
+  </data>
+  <data name="NotificationResultMessage_SenderDomainUnverified" xml:space="preserve">
+    <value>Poskytovateľ e-mailu správu odmietol. Skontrolujte, či je doména odosielateľa overená.</value>
+  </data>
+  <data name="NotificationResultMessage_SenderNameTooLong" xml:space="preserve">
+    <value>Meno odosielateľa môže mať najviac 200 znakov.</value>
+  </data>
+  <data name="NotificationResultMessage_SettingsInvalid" xml:space="preserve">
+    <value>Nastavenia upozornení sa nepodarilo uložiť. Opravte vyznačené polia.</value>
+  </data>
+  <data name="NotificationResultMessage_SettingsSaved" xml:space="preserve">
+    <value>Nastavenia upozornení boli uložené.</value>
+  </data>
+  <data name="NotificationResultMessage_SettingsSavedNotificationsOff" xml:space="preserve">
+    <value>Nastavenia upozornení boli uložené. E-mailové upozornenia sú vypnuté.</value>
+  </data>
+  <data name="NotificationResultMessage_StoredContentUnreadable" xml:space="preserve">
+    <value>Uložený obsah upozornenia sa nepodarilo prečítať a neodoslal sa.</value>
+  </data>
+  <data name="NotificationResultMessage_TestCouldNotBeCompleted" xml:space="preserve">
+    <value>Testovací e-mail sa nepodarilo dokončiť. Skúste to znova alebo skontrolujte protokoly aplikácie.</value>
+  </data>
+  <data name="NotificationResultMessage_Throttled" xml:space="preserve">
+    <value>Poskytovateľ e-mailu požiadavku obmedzil a správu neprijal.</value>
+  </data>
+  <data name="NotificationResultMessage_TooManyRecipients" xml:space="preserve">
+    <value>Zadajte najviac {0} adries adresátov.</value>
+  </data>
+  <data name="OwnershipMessage_Claimed" xml:space="preserve">
+    <value>Cieľový priečinok bol zabraný.</value>
+  </data>
+  <data name="OwnershipMessage_IncompleteMarkerNotRemoved" xml:space="preserve">
+    <value>Neúplnú značku vlastníctva sa nepodarilo odstrániť.</value>
+  </data>
+  <data name="OwnershipMessage_IncompleteMarkerReplaced" xml:space="preserve">
+    <value>Neúplná značka vlastníctva bola nahradená a neodstránila sa.</value>
+  </data>
+  <data name="OwnershipMessage_MarkerInvalid" xml:space="preserve">
+    <value>Značka vlastníctva je neplatná.</value>
+  </data>
+  <data name="OwnershipMessage_MarkerMissing" xml:space="preserve">
+    <value>Značka vlastníctva chýba.</value>
+  </data>
+  <data name="OwnershipMessage_OwnedByAnotherInstallation" xml:space="preserve">
+    <value>Priečinok patrí inej inštalácii Folder Backuper.</value>
+  </data>
+  <data name="OwnershipMessage_OwnedByAnotherJob" xml:space="preserve">
+    <value>Priečinok patrí inej úlohe.</value>
+  </data>
+  <data name="OwnershipMessage_OwnedByThisJob" xml:space="preserve">
+    <value>Priečinok patrí tejto úlohe.</value>
+  </data>
+  <data name="OwnershipMessage_Released" xml:space="preserve">
+    <value>Značka vlastníctva bola uvoľnená.</value>
+  </data>
+  <data name="OwnershipMessage_VerifiedMarkerNotRemoved" xml:space="preserve">
+    <value>Overenú značku vlastníctva sa nepodarilo odstrániť.</value>
+  </data>
+  <data name="PathMessage_DevicePathUnsupported" xml:space="preserve">
+    <value>Cesty k zariadeniam nie sú podporované.</value>
+  </data>
+  <data name="PathMessage_LocalAbsoluteRequired" xml:space="preserve">
+    <value>Vyžaduje sa absolútna cesta na lokálnom disku.</value>
+  </data>
+  <data name="PathMessage_LocalPathUnavailable" xml:space="preserve">
+    <value>Lokálna cesta je neplatná alebo nedostupná.</value>
+  </data>
+  <data name="PathMessage_MappedNetworkDriveUnsupported" xml:space="preserve">
+    <value>Pripojené sieťové disky nie sú podporované; použite cieľové umiestnenie SMB.</value>
+  </data>
+  <data name="PathMessage_ParentTraversalUnsupported" xml:space="preserve">
+    <value>Prechod do nadradeného priečinka nie je podporovaný.</value>
+  </data>
+  <data name="PathMessage_Required" xml:space="preserve">
+    <value>Cesta je povinná.</value>
+  </data>
+  <data name="PathMessage_SubfolderMustBeRelative" xml:space="preserve">
+    <value>Podpriečinok musí byť relatívny a nesmie obsahovať prechod do nadradeného priečinka.</value>
+  </data>
+  <data name="PathMessage_UncInvalid" xml:space="preserve">
+    <value>Cesta UNC je neplatná.</value>
+  </data>
+  <data name="PathMessage_UncNeedsServerAndShare" xml:space="preserve">
+    <value>Cesta UNC musí obsahovať server aj zdieľanie.</value>
+  </data>
+  <data name="PathMessage_UncRequired" xml:space="preserve">
+    <value>Vyžaduje sa štandardná cesta UNC.</value>
+  </data>
+  <data name="RunOperationMessage_CancellationRequested" xml:space="preserve">
+    <value>Bolo vyžiadané zrušenie.</value>
+  </data>
+  <data name="RunOperationMessage_FinalizationStarted" xml:space="preserve">
+    <value>Zálohovanie sa už nedá zrušiť, pretože sa začalo dokončovanie.</value>
+  </data>
+  <data name="RunOperationMessage_JobOrDestinationUnavailable" xml:space="preserve">
+    <value>Úloha alebo cieľové umiestnenie nie je dostupné na manuálne zálohovanie.</value>
+  </data>
+  <data name="RunOperationMessage_Queued" xml:space="preserve">
+    <value>Zálohovanie bolo zaradené do poradia.</value>
+  </data>
+  <data name="RunOperationMessage_QueuedRunCancelled" xml:space="preserve">
+    <value>Zálohovanie v poradí bolo zrušené.</value>
+  </data>
+  <data name="RunOperationMessage_RunAlreadyFinished" xml:space="preserve">
+    <value>Spustenie zálohovania už bolo dokončené.</value>
+  </data>
+  <data name="RunOperationMessage_RunNotFound" xml:space="preserve">
+    <value>Spustenie zálohovania sa nenašlo.</value>
+  </data>
+  <data name="RunOperationMessage_WorkAlreadyPending" xml:space="preserve">
+    <value>Úloha už má naplánované alebo prebiehajúce zálohovanie.</value>
+  </data>
+  <data name="SourceMessage_AccessDenied" xml:space="preserve">
+    <value>Prístup bol odmietnutý.</value>
+  </data>
+  <data name="SourceMessage_DirectoryInvalid" xml:space="preserve">
+    <value>Zdrojový priečinok je neplatný alebo nedostupný.</value>
+  </data>
+  <data name="SourceMessage_DirectoryMissing" xml:space="preserve">
+    <value>Zdrojový priečinok neexistuje alebo je nedostupný.</value>
+  </data>
+  <data name="SourceMessage_DriveNotFixedOrRemovable" xml:space="preserve">
+    <value>Zdroj musí byť na pripojenom pevnom alebo vymeniteľnom disku.</value>
+  </data>
+  <data name="SourceMessage_EntryUnavailable" xml:space="preserve">
+    <value>Položka už nie je dostupná.</value>
+  </data>
+  <data name="SourceMessage_MetadataUnreadable" xml:space="preserve">
+    <value>Metadáta súborového systému sa nepodarilo prečítať.</value>
+  </data>
+  <data name="SourceMessage_PathTooLong" xml:space="preserve">
+    <value>Cesta je príliš dlhá.</value>
+  </data>
+  <data name="SourceMessage_ReparsePointNotTraversable" xml:space="preserve">
+    <value>Body opätovného spracovania sa môžu zobraziť, ale nedá sa nimi prechádzať.</value>
+  </data>
+  <data name="UpdateProblemMessage_ConnectionLost" xml:space="preserve">
+    <value>Pripojenie ku kanálu vydaní sa prerušilo.</value>
+  </data>
+  <data name="UpdateProblemMessage_EmptyResponse" xml:space="preserve">
+    <value>Kanál vydaní vrátil prázdnu odpoveď.</value>
+  </data>
+  <data name="UpdateProblemMessage_RateLimited" xml:space="preserve">
+    <value>Kanál vydaní je dočasne obmedzený.</value>
+  </data>
+  <data name="UpdateProblemMessage_TagIsNotAVersion" xml:space="preserve">
+    <value>Najnovšie vydanie má značku „{0}“, ktorá nie je verziou.</value>
+  </data>
+  <data name="UpdateProblemMessage_Timeout" xml:space="preserve">
+    <value>Kanál vydaní neodpovedal v stanovenom čase.</value>
+  </data>
+  <data name="UpdateProblemMessage_UnexpectedStatus" xml:space="preserve">
+    <value>Kanál vydaní odpovedal {0}.</value>
+  </data>
+  <data name="UpdateProblemMessage_Unreachable" xml:space="preserve">
+    <value>Kanál vydaní sa nepodarilo kontaktovať.</value>
+  </data>
+  <data name="UpdateProblemMessage_UnreadableResponse" xml:space="preserve">
+    <value>Kanál vydaní vrátil odpoveď, ktorú nebolo možné prečítať.</value>
+  </data>
+</root>

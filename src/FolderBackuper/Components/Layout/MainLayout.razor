@@ -9,25 +9,29 @@
 
 <MudLayout>
     <MudAppBar Elevation="0" Class="app-bar">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="ToggleDrawer" aria-label="Toggle navigation" />
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="ToggleDrawer" aria-label="@UiStrings.AppBarToggleNavigation" />
         <div class="brand-lockup">
             <span class="brand-mark" aria-hidden="true"><MudIcon Icon="@Icons.Material.Filled.Shield" /></span>
             <div>
-                <MudText Typo="Typo.h6">Folder Backuper</MudText>
-                <MudText Typo="Typo.caption" Class="brand-caption">LOCAL BACKUP CONTROL</MudText>
+                <MudText Typo="Typo.h6">@UiStrings.AppName</MudText>
+                <MudText Typo="Typo.caption" Class="brand-caption">@UiStrings.AppTagline</MudText>
             </div>
         </div>
         <MudSpacer />
-        <div class="service-status"><span></span> Service online</div>
+        <div class="service-status"><span></span> @UiStrings.AppBarServiceOnline</div>
         <UpdateNoticeChip />
-        <div class="theme-toggle" role="group" aria-label="Theme">
+        @* The labels are wrapped so that a narrow window can hide the words and keep the icons,
+           which matters more now that Slovak runs longer than English and the application bar has
+           gained a second control. *@
+        <div class="theme-toggle" role="group" aria-label="@UiStrings.ThemeGroupLabel">
             <button type="button" class="@(isDarkMode ? "" : "active")" @onclick="() => SetThemeAsync(false)">
-                <MudIcon Icon="@Icons.Material.Filled.LightMode" /> Light
+                <MudIcon Icon="@Icons.Material.Filled.LightMode" /> <span class="toggle-label">@UiStrings.ThemeLight</span>
             </button>
             <button type="button" class="@(isDarkMode ? "active" : "")" @onclick="() => SetThemeAsync(true)">
-                <MudIcon Icon="@Icons.Material.Filled.DarkMode" /> Dark
+                <MudIcon Icon="@Icons.Material.Filled.DarkMode" /> <span class="toggle-label">@UiStrings.ThemeDark</span>
             </button>
         </div>
+        <LanguageToggle />
     </MudAppBar>
 
     <MudDrawer @bind-Open="drawerOpen" Elevation="0" ClipMode="DrawerClipMode.Always" Breakpoint="Breakpoint.Md" Class="app-drawer">
@@ -42,9 +46,9 @@
             <ErrorContent Context="exception">
                 <MudPaper Class="error-panel" Elevation="0">
                     <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Size="Size.Large" />
-                    <MudText Typo="Typo.h5">This view could not be displayed</MudText>
-                    <MudText>Try the operation again. The backup service continues running independently of this page.</MudText>
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Recover">Try again</MudButton>
+                    <MudText Typo="Typo.h5">@UiStrings.ErrorBoundaryHeading</MudText>
+                    <MudText>@UiStrings.ErrorBoundaryBody</MudText>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Recover">@UiStrings.ErrorBoundaryRetry</MudButton>
                 </MudPaper>
             </ErrorContent>
         </ErrorBoundary>

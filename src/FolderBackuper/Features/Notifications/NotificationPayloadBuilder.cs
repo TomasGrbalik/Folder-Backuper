@@ -1,5 +1,6 @@
 using FolderBackuper.Features.Backups;
 
+using FolderBackuper.Infrastructure.Localization;
 namespace FolderBackuper.Features.Notifications;
 
 /// <summary>
@@ -31,7 +32,8 @@ public static class NotificationPayloadBuilder
             .Take(NotificationPayload.MaxProblems)
             .Select(problem => new NotificationProblem(
                 problem.Severity, problem.Phase, problem.Operation,
-                problem.ErrorCategory, problem.Path, problem.UserMessage))
+                problem.ErrorCategory, problem.Path,
+                StoredMessage.Decode(problem.MessageKey, problem.MessageArguments)!))
             .ToList();
 
         var retentionWarnings = problems.Count(problem =>
@@ -57,7 +59,7 @@ public static class NotificationPayloadBuilder
             problems.Count,
             retentionWarnings,
             ordered,
-            run.ErrorSummary);
+            StoredMessage.Decode(run.ErrorMessageKey, run.ErrorMessageArguments));
     }
 
     private static TimeSpan? Duration(BackupRun run) =>
