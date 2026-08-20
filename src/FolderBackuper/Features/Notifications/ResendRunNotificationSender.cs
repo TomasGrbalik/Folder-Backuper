@@ -64,6 +64,5 @@ public sealed class ResendRunNotificationSender(
 
     private static NotificationSendResult NotConfigured => new(
         NotificationSendStatus.NotConfigured,
-        "Email notifications are not configured. Add a Resend API key, a verified sender address, "
-        + "and at least one recipient on the settings page.");
+        NotificationResultMessage.NotConfigured);
 }

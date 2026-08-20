@@ -66,9 +66,15 @@ public sealed class BackupRun
     public long ArchiveBytes { get; set; }
     public TimeSpan? CompressionDuration { get; set; }
     public TimeSpan? TransferDuration { get; set; }
-    public string? ErrorSummary { get; set; }
+    /// <summary>The message code of the first error, or null when the run recorded none.</summary>
+    public string? ErrorMessageKey { get; set; }
+
+    public string? ErrorMessageArguments { get; set; }
     public NotificationDeliveryState? NotificationState { get; set; }
-    public string? NotificationErrorSummary { get; set; }
+    /// <summary>The message code of the last notification delivery problem, or null when there is none.</summary>
+    public string? NotificationMessageKey { get; set; }
+
+    public string? NotificationMessageArguments { get; set; }
     public ScheduledOccurrence? Occurrence { get; set; }
     public BackupArtifact? Artifact { get; set; }
     public NotificationOutboxItem? Notification { get; set; }
@@ -195,9 +201,24 @@ public sealed class RunProblem
     public string? Path { get; init; }
     public RunPhase Phase { get; init; }
     public BackupProblemSeverity Severity { get; init; } = BackupProblemSeverity.Error;
-    public required string Operation { get; init; }
+
+    /// <summary>The pipeline operation, stored as a code so that it renders in the reading language.</summary>
+    public BackupOperation Operation { get; init; }
+
     public required string ErrorCategory { get; init; }
     public string? NativeErrorCode { get; init; }
-    public required string UserMessage { get; init; }
+
+    /// <summary>
+    /// The message code and its arguments, rather than a finished sentence.
+    /// </summary>
+    /// <remarks>
+    /// History is permanent and is read long after the run that produced it, possibly in a different
+    /// language from the one the run was executed under. Storing the code is what lets the problems table
+    /// render in whatever language it is being read in.
+    /// </remarks>
+    public required string MessageKey { get; init; }
+
+    public string? MessageArguments { get; init; }
+
     public string? DiagnosticDetail { get; init; }
 }

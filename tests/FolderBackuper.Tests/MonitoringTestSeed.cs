@@ -51,7 +51,7 @@ internal static class MonitoringTestSeed
         if (outcome == RunOutcome.Failed)
         {
             run.Complete(RunOutcome.Failed, completed);
-            run.ErrorSummary = "Simulated failure.";
+            run.ErrorMessageKey = UiMessage.KeyFor(BackupProblemMessage.UnexpectedFailure);
             return run;
         }
 
@@ -120,14 +120,29 @@ internal static class MonitoringTestSeed
         return artifact;
     }
 
-    public static RunProblem Problem(Guid runId, BackupProblemSeverity severity, string message, string? path = null) => new()
+    public static RunProblem Problem(
+        Guid runId,
+        BackupProblemSeverity severity,
+        BackupProblemMessage message,
+        string? path = null) =>
+        Problem(runId, severity, UiMessage.For(message), path);
+
+    /// <summary>
+    /// Seeds a problem from an already-built message, for tests that need a specific argument in it.
+    /// </summary>
+    public static RunProblem Problem(
+        Guid runId,
+        BackupProblemSeverity severity,
+        UiMessage message,
+        string? path = null) => new()
     {
         RunId = runId,
         Path = path,
         Phase = RunPhase.Compressing,
         Severity = severity,
-        Operation = "Read source file",
+        Operation = BackupOperation.ReadSourceFile,
         ErrorCategory = BackupProblemCategory.SourceInaccessible.ToString(),
-        UserMessage = message
+        MessageKey = message.Key,
+        MessageArguments = StoredMessage.EncodeArguments(message)
     };
 }

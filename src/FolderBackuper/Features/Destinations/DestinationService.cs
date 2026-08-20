@@ -8,6 +8,7 @@ using FolderBackuper.Infrastructure.Filesystem;
 using FolderBackuper.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 
+using FolderBackuper.Infrastructure.Localization;
 namespace FolderBackuper.Features.Destinations;
 
 public sealed class DestinationService
@@ -124,18 +125,18 @@ public sealed class DestinationService
             await using var context = await contextFactory.CreateDbContextAsync(ct);
             var destination = await context.Destinations.SingleOrDefaultAsync(x => x.Id == id, ct);
             if (destination is null)
-                return DestinationOperationResult.Failure(DestinationOperationStatus.NotFound, "The destination was not found.");
+                return DestinationOperationResult.Failure(DestinationOperationStatus.NotFound, DestinationMessage.NotFound);
             if (destination.Lifecycle == DestinationLifecycle.Archived)
-                return DestinationOperationResult.Failure(DestinationOperationStatus.InvalidTransition, "The destination is already archived.");
+                return DestinationOperationResult.Failure(DestinationOperationStatus.InvalidTransition, DestinationMessage.AlreadyArchived);
             var references = await context.Jobs.AsNoTracking().CountAsync(x => x.DestinationId == id &&
                 (x.Lifecycle == JobLifecycle.Active || x.Lifecycle == JobLifecycle.Paused), ct);
             if (references != 0)
                 return DestinationOperationResult.Failure(DestinationOperationStatus.Referenced,
-                    $"The destination is referenced by {references} active or paused job(s) and cannot be archived.");
+                    UiMessage.For(DestinationMessage.ReferencedByJobs, UiMessageArgument.FromNumber(references)));
             destination.Archive();
             destination.UpdatedAtUtc = timeProvider.GetUtcNow();
             await context.SaveChangesAsync(ct);
-            return DestinationOperationResult.Completed("The destination was archived.", ToSummary(destination, null));
+            return DestinationOperationResult.Completed(DestinationMessage.Archived, ToSummary(destination, null));
         }, cancellationToken);
         return gated.Succeeded ? gated.Value! : DestinationOperationResult.Failure(
             DestinationOperationStatus.Busy, gated.Message);
@@ -148,15 +149,15 @@ public sealed class DestinationService
             await using var context = await contextFactory.CreateDbContextAsync(ct);
             var destination = await context.Destinations.SingleOrDefaultAsync(x => x.Id == id, ct);
             if (destination is null)
-                return DestinationOperationResult.Failure(DestinationOperationStatus.NotFound, "The destination was not found.");
+                return DestinationOperationResult.Failure(DestinationOperationStatus.NotFound, DestinationMessage.NotFound);
             if (destination.Lifecycle != DestinationLifecycle.Archived)
-                return DestinationOperationResult.Failure(DestinationOperationStatus.InvalidTransition, "Only an archived destination can be restored.");
+                return DestinationOperationResult.Failure(DestinationOperationStatus.InvalidTransition, DestinationMessage.OnlyArchivedCanBeRestored);
             destination.Restore();
             destination.VerificationResult = DestinationVerificationResult.Unverified;
             destination.VerifiedAtUtc = null;
             destination.UpdatedAtUtc = timeProvider.GetUtcNow();
             await context.SaveChangesAsync(ct);
-            return DestinationOperationResult.Completed("The destination was restored and must be verified.", ToSummary(destination, null));
+            return DestinationOperationResult.Completed(DestinationMessage.RestoredNeedsVerification, ToSummary(destination, null));
         }, cancellationToken);
         return gated.Succeeded ? gated.Value! : DestinationOperationResult.Failure(
             DestinationOperationStatus.Busy, gated.Message);
@@ -171,7 +172,7 @@ public sealed class DestinationService
         var destination = await context.Destinations.SingleOrDefaultAsync(
             x => x.Id == id && x.Lifecycle == DestinationLifecycle.Active, cancellationToken);
         if (destination is null)
-            return DestinationOperationResult.Failure(DestinationOperationStatus.NotFound, "The active destination was not found.");
+            return DestinationOperationResult.Failure(DestinationOperationStatus.NotFound, DestinationMessage.ActiveNotFound);
         var replacingPassword = !string.IsNullOrEmpty(command.Password);
         var normalized = Validate(command, passwordRequired: command.Type == DestinationType.Smb && destination.ProtectedPassword is null && !replacingPassword);
         await ValidateSourceOverlapAsync(context, normalized, cancellationToken);
@@ -179,7 +180,7 @@ public sealed class DestinationService
             !string.Equals(destination.RootPath, normalized.RootPath, StringComparison.OrdinalIgnoreCase);
         if (rootChanged && !command.ConfirmRootPathChange)
             return DestinationOperationResult.Failure(DestinationOperationStatus.ValidationFailed,
-                "Changing the destination root path or type requires explicit confirmation.");
+                DestinationMessage.RootChangeNeedsConfirmation);
         var accessChanged = rootChanged ||
             !string.Equals(destination.SmbUsername, normalized.SmbUsername, StringComparison.Ordinal) ||
             replacingPassword;
@@ -218,7 +219,10 @@ public sealed class DestinationService
                             claimed.Result == JobDestinationTestResult.OwnershipConflict
                                 ? DestinationOperationStatus.Conflict
                                 : DestinationOperationStatus.OwnershipFailed,
-                            $"The new destination folder for job '{job.Name}' could not be claimed: {claimed.Message}"));
+                            UiMessage.For(
+                                DestinationMessage.NewFolderNotClaimed,
+                                UiMessageArgument.FromText(job.Name),
+                                UiMessageArgument.FromMessage(claimed.Message))));
                     }
                     newClaims.Add((job, claimed));
                     replacementKeys[job.Id] = claimed.OwnershipKey!;
@@ -231,7 +235,7 @@ public sealed class DestinationService
                 {
                     throw new DestinationOperationFailureException(DestinationOperationResult.Failure(
                         DestinationOperationStatus.Conflict,
-                        "A folder under the new destination configuration is already reserved by another job."));
+                        DestinationMessage.FolderReservedByAnotherJob));
                 }
 
                 foreach (var job in jobs)
@@ -247,7 +251,10 @@ public sealed class DestinationService
                     {
                         throw new DestinationOperationFailureException(DestinationOperationResult.Failure(
                             DestinationOperationStatus.OwnershipFailed,
-                            $"The old ownership marker for job '{job.Name}' could not be released: {released.Message}"));
+                            UiMessage.For(
+                                DestinationMessage.OldMarkerNotReleased,
+                                UiMessageArgument.FromText(job.Name),
+                                UiMessageArgument.FromMessage(released.Message))));
                     }
                     if (released.Result == OwnershipMarkerResult.Released) releasedJobs.Add(job);
                 }
@@ -309,14 +316,17 @@ public sealed class DestinationService
             if (exception is DestinationOperationFailureException failure) return failure.Result;
             if (exception is DbUpdateException)
                 return DestinationOperationResult.Failure(DestinationOperationStatus.Conflict,
-                    "The destination update conflicts with an existing name or folder reservation.");
+                    DestinationMessage.NameOrFolderReserved);
             throw;
         }
         // The mutation is committed; caller cancellation must not make a successful change look failed.
         var capacity = await Adapter(destination.Type).GetAvailableBytesAsync(Configuration(destination), CancellationToken.None);
         var message = accessChanged
-            ? $"The destination was updated and verification invalidated. Paused {pausedCount} job(s); marked {artifacts.Count} retained artifact(s) unmanaged."
-            : "The destination was updated.";
+            ? UiMessage.For(
+                DestinationMessage.UpdatedAndVerificationInvalidated,
+                UiMessageArgument.FromNumber(pausedCount),
+                UiMessageArgument.FromNumber(artifacts.Count))
+            : UiMessage.For(DestinationMessage.Updated);
         return DestinationOperationResult.Completed(message, ToSummary(destination, capacity), pausedCount, artifacts.Count);
     }
 
@@ -333,7 +343,7 @@ public sealed class DestinationService
         var destination = await context.Destinations.SingleOrDefaultAsync(
             x => x.Id == id && x.Lifecycle == DestinationLifecycle.Active, cancellationToken);
         if (destination is null)
-            return DestinationOperationResult.Failure(DestinationOperationStatus.NotFound, "The active destination was not found.");
+            return DestinationOperationResult.Failure(DestinationOperationStatus.NotFound, DestinationMessage.ActiveNotFound);
         var result = await Adapter(destination.Type).TestAsync(Configuration(destination), cancellationToken);
         var now = timeProvider.GetUtcNow();
         destination.VerificationResult = result.Succeeded ? DestinationVerificationResult.Succeeded : DestinationVerificationResult.Failed;
@@ -341,7 +351,9 @@ public sealed class DestinationService
         destination.LastAccessResult = result.Result;
         destination.LastAccessSource = DestinationAccessSource.Management;
         destination.LastAccessedAtUtc = now;
-        destination.LastAccessErrorSummary = result.Succeeded ? null : result.Message;
+        var failure = result.Succeeded ? null : result.Message;
+        destination.LastAccessMessageKey = failure?.Key;
+        destination.LastAccessMessageArguments = StoredMessage.EncodeArguments(failure);
         destination.UpdatedAtUtc = now;
         await context.SaveChangesAsync(cancellationToken);
         return result;
@@ -351,7 +363,7 @@ public sealed class DestinationService
         Guid id,
         DestinationAccessResult result,
         DestinationAccessSource source,
-        string? safeErrorSummary = null,
+        UiMessage? safeError = null,
         CancellationToken cancellationToken = default)
     {
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
@@ -359,7 +371,9 @@ public sealed class DestinationService
         destination.LastAccessResult = result;
         destination.LastAccessSource = source;
         destination.LastAccessedAtUtc = timeProvider.GetUtcNow();
-        destination.LastAccessErrorSummary = result == DestinationAccessResult.Succeeded ? null : safeErrorSummary;
+        var recorded = result == DestinationAccessResult.Succeeded ? null : safeError;
+        destination.LastAccessMessageKey = recorded?.Key;
+        destination.LastAccessMessageArguments = StoredMessage.EncodeArguments(recorded);
         destination.UpdatedAtUtc = destination.LastAccessedAtUtc.Value;
         await context.SaveChangesAsync(cancellationToken);
     }
@@ -367,14 +381,14 @@ public sealed class DestinationService
     private SaveDestinationCommand Validate(SaveDestinationCommand command, bool passwordRequired)
     {
         var name = command.Name.Trim();
-        if (name.Length is 0 or > 200) throw new ArgumentException("A destination name of at most 200 characters is required.");
+        if (name.Length is 0 or > 200) throw new DestinationValidationException(UiMessage.For(DestinationMessage.NameTooLong));
         var path = command.Type == DestinationType.Local ? WindowsPath.Local(command.RootPath) : WindowsPath.Unc(command.RootPath);
-        if (!path.IsValid) throw new ArgumentException(path.Error);
+        if (!path.IsValid) throw new DestinationValidationException(path.Error!);
         if (command.Type == DestinationType.Smb)
         {
-            if (localHostDetector.IsHostedLocally(path.Path!)) throw new ArgumentException("An SMB destination hosted by this computer must be configured as a local path.");
-            if (string.IsNullOrWhiteSpace(command.SmbUsername)) throw new ArgumentException("An SMB username is required.");
-            if (passwordRequired && string.IsNullOrEmpty(command.Password)) throw new ArgumentException("An SMB password is required.");
+            if (localHostDetector.IsHostedLocally(path.Path!)) throw new DestinationValidationException(UiMessage.For(DestinationMessage.SmbHostedLocallyMustBeLocalPath));
+            if (string.IsNullOrWhiteSpace(command.SmbUsername)) throw new DestinationValidationException(UiMessage.For(DestinationMessage.SmbUsernameRequired));
+            if (passwordRequired && string.IsNullOrEmpty(command.Password)) throw new DestinationValidationException(UiMessage.For(DestinationMessage.SmbPasswordRequired));
         }
         return command with { Name = name, RootPath = path.Path!, SmbUsername = command.SmbUsername?.Trim() };
     }
@@ -433,8 +447,10 @@ public sealed class DestinationService
             }
         }
         if (failures.Count != 0)
+            // A diagnostic for the log rather than interface text: the caller turns this into a
+            // localized result. Operator-facing detail stays English by design.
             throw new InvalidOperationException(
-                $"The destination update failed and ownership compensation was incomplete: {string.Join("; ", failures)}",
+                $"Ownership compensation was incomplete: {string.Join("; ", failures)}",
                 cause);
     }
 
@@ -458,7 +474,9 @@ public sealed class DestinationService
             .ToListAsync(cancellationToken);
         if (PathOverlap.FindDestinationOverlap(command.RootPath, sources) is { } source)
         {
-            throw new ArgumentException($"The destination overlaps configured source '{source}'.");
+            throw new DestinationValidationException(UiMessage.For(
+                DestinationMessage.OverlapsConfiguredSource,
+                UiMessageArgument.FromText(source)));
         }
     }
 

@@ -40,9 +40,9 @@ public sealed class SourceBrowserTests : IDisposable
         var result = await browser.BrowseAsync(new(root, SourceBrowser.MaxPageSize + 1));
         Assert.Equal(SourceBrowser.MaxPageSize, result.PageSize);
 
-        await Assert.ThrowsAsync<ArgumentException>(() => browser.BrowseAsync(new(@"relative\folder")));
-        await Assert.ThrowsAsync<ArgumentException>(() => browser.BrowseAsync(new(@"\\server\share")));
-        await Assert.ThrowsAsync<ArgumentException>(() => browser.BrowseAsync(new(@"\\?\C:\Windows")));
+        await Assert.ThrowsAsync<SourcePathException>(() => browser.BrowseAsync(new(@"relative\folder")));
+        await Assert.ThrowsAsync<SourcePathException>(() => browser.BrowseAsync(new(@"\\server\share")));
+        await Assert.ThrowsAsync<SourcePathException>(() => browser.BrowseAsync(new(@"\\?\C:\Windows")));
         await Assert.ThrowsAsync<ArgumentException>(() => browser.BrowseAsync(new(root, Offset: 1, Continuation: "1")));
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => browser.BrowseAsync(new(root, Offset: SourceBrowser.MaxOffset + 1)));
         await Assert.ThrowsAsync<ArgumentException>(() => browser.BrowseAsync(new(root, Continuation: "not-a-token")));

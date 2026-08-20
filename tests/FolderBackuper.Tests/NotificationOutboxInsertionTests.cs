@@ -161,7 +161,8 @@ public sealed class NotificationOutboxInsertionTests
         var persistence = Persistence(database, settings, clock);
         await persistence.AppendProblemsAsync(run.Id, [
             new(BackupProblemSeverity.Warning, BackupProblemCategory.SourceInaccessible,
-                RunPhase.Scanning, "Read source file", "A source file was locked.", @"C:\Source\open.docx")
+                RunPhase.Scanning, BackupOperation.ReadSourceFile,
+                BackupProblemMessage.SourceFileAccessDenied, @"C:\Source\open.docx")
         ]);
         await persistence.CompleteAsync(run.Id, RunOutcome.SuccessfulWithWarnings, null);
 
@@ -171,7 +172,7 @@ public sealed class NotificationOutboxInsertionTests
             item.PayloadSnapshot, NotificationPayloadSerializer.Options)!;
 
         Assert.Equal(1, payload.TotalProblemCount);
-        Assert.Equal("A source file was locked.", payload.Problems[0].Message);
+        MessageAssert.Is(BackupProblemMessage.SourceFileAccessDenied, payload.Problems[0].Message);
         Assert.Equal(@"C:\Source\open.docx", payload.Problems[0].Path);
     }
 
@@ -233,13 +234,13 @@ public sealed class NotificationOutboxInsertionTests
         var run = await SeedRunningAsync(database);
 
         await Persistence(database, settings, clock)
-            .CompleteAsync(run.Id, RunOutcome.Failed, "The destination became unavailable.");
+            .CompleteAsync(run.Id, RunOutcome.Failed, UiMessage.For(BackupProblemMessage.DestinationUnavailable));
 
         await using var context = await database.ContextFactory.CreateDbContextAsync();
         var item = await context.NotificationOutbox.AsNoTracking().SingleAsync();
         var payload = System.Text.Json.JsonSerializer.Deserialize<NotificationPayload>(
             item.PayloadSnapshot, NotificationPayloadSerializer.Options)!;
 
-        Assert.Equal("The destination became unavailable.", payload.ErrorSummary);
+        MessageAssert.Is(BackupProblemMessage.DestinationUnavailable, payload.ErrorSummary);
     }
 }

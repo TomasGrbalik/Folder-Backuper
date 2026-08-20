@@ -1,3 +1,5 @@
+using FolderBackuper.Infrastructure.Localization;
+
 namespace FolderBackuper.Features.Notifications;
 
 /// <summary>
@@ -22,9 +24,14 @@ public enum NotificationSendStatus
 /// The result of one delivery attempt. <see cref="Message"/> is always safe to persist, log, and
 /// display: it never contains the API key or any other secret.
 /// </summary>
-public sealed record NotificationSendResult(NotificationSendStatus Status, string Message)
+public sealed record NotificationSendResult(NotificationSendStatus Status, UiMessage Message)
 {
     public bool Succeeded => Status == NotificationSendStatus.Delivered;
+
+    public NotificationSendResult(NotificationSendStatus status, NotificationResultMessage message)
+        : this(status, UiMessage.For(message))
+    {
+    }
 }
 
 /// <summary>

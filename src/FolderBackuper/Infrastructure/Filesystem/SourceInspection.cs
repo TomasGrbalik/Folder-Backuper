@@ -1,4 +1,5 @@
 using System.Security;
+using FolderBackuper.Infrastructure.Localization;
 
 namespace FolderBackuper.Infrastructure.Filesystem;
 
@@ -36,13 +37,13 @@ public static class SourceInspection
             normalizedPrefix?.StartsWith(@"\\.\", StringComparison.Ordinal) == true ||
             normalizedPrefix?.StartsWith(@"\??\", StringComparison.Ordinal) == true)
         {
-            throw new ArgumentException("Device paths are not supported.", nameof(requestedPath));
+            throw new SourcePathException(UiMessage.For(PathMessage.DevicePathUnsupported), nameof(requestedPath));
         }
 
         var validation = WindowsPath.Local(requestedPath);
         if (!validation.IsValid)
         {
-            throw new ArgumentException(validation.Error, nameof(requestedPath));
+            throw new SourcePathException(validation.Error!, nameof(requestedPath));
         }
 
         var path = validation.Path!;
@@ -52,12 +53,12 @@ public static class SourceInspection
             var drive = new DriveInfo(rootPath);
             if (!drive.IsReady || drive.DriveType is not (DriveType.Fixed or DriveType.Removable))
             {
-                throw new ArgumentException("The source must be on an attached fixed or removable drive.", nameof(requestedPath));
+                throw new SourcePathException(UiMessage.For(SourceMessage.DriveNotFixedOrRemovable), nameof(requestedPath));
             }
 
             if (!Directory.Exists(path))
             {
-                throw new ArgumentException("The source directory does not exist or is unavailable.", nameof(requestedPath));
+                throw new SourcePathException(UiMessage.For(SourceMessage.DirectoryMissing), nameof(requestedPath));
             }
 
             EnsurePathDoesNotTraverseReparsePoint(path, rootPath);
@@ -69,20 +70,20 @@ public static class SourceInspection
         }
         catch (Exception exception) when (IsFilesystemException(exception))
         {
-            throw new ArgumentException("The source directory is invalid or unavailable.", nameof(requestedPath), exception);
+            throw new SourcePathException(UiMessage.For(SourceMessage.DirectoryInvalid), nameof(requestedPath), exception);
         }
     }
 
     internal static bool IsFilesystemException(Exception exception) =>
         exception is IOException or UnauthorizedAccessException or SecurityException or NotSupportedException;
 
-    internal static string Problem(Exception exception) => exception switch
+    internal static UiMessage Problem(Exception exception) => UiMessage.For(exception switch
     {
-        UnauthorizedAccessException or SecurityException => "Access was denied.",
-        FileNotFoundException or DirectoryNotFoundException => "The entry is no longer available.",
-        PathTooLongException => "The path is too long.",
-        _ => "Filesystem metadata could not be read."
-    };
+        UnauthorizedAccessException or SecurityException => SourceMessage.AccessDenied,
+        FileNotFoundException or DirectoryNotFoundException => SourceMessage.EntryUnavailable,
+        PathTooLongException => SourceMessage.PathTooLong,
+        _ => SourceMessage.MetadataUnreadable
+    });
 
     private static void EnsurePathDoesNotTraverseReparsePoint(string path, string rootPath)
     {
@@ -103,7 +104,7 @@ public static class SourceInspection
     {
         if (File.GetAttributes(path).HasFlag(FileAttributes.ReparsePoint))
         {
-            throw new ArgumentException("Reparse points may be reported but cannot be traversed.", nameof(path));
+            throw new SourcePathException(UiMessage.For(SourceMessage.ReparsePointNotTraversable), nameof(path));
         }
     }
 }

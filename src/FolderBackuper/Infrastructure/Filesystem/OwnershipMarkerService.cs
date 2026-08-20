@@ -1,12 +1,18 @@
 using System.Text;
+using FolderBackuper.Infrastructure.Localization;
 
 namespace FolderBackuper.Infrastructure.Filesystem;
 
 public enum OwnershipMarkerResult { Claimed, Owned, OwnedByAnotherJob, Invalid, Missing, Released, CleanupFailed }
 
-public sealed record OwnershipMarkerOutcome(OwnershipMarkerResult Result, string Message)
+public sealed record OwnershipMarkerOutcome(OwnershipMarkerResult Result, UiMessage Message)
 {
     public bool Succeeded => Result is OwnershipMarkerResult.Claimed or OwnershipMarkerResult.Owned or OwnershipMarkerResult.Released;
+
+    public OwnershipMarkerOutcome(OwnershipMarkerResult result, OwnershipMessage message)
+        : this(result, UiMessage.For(message))
+    {
+    }
 }
 
 public sealed class OwnershipMarkerService
@@ -29,7 +35,7 @@ public sealed class OwnershipMarkerService
             // allowing cancellation to leave a truncated ownership marker.
             await stream.WriteAsync(Encoding.UTF8.GetBytes(expected), CancellationToken.None);
             await stream.FlushAsync(CancellationToken.None);
-            return new(OwnershipMarkerResult.Claimed, "The destination folder was claimed.");
+            return new(OwnershipMarkerResult.Claimed, OwnershipMessage.Claimed);
         }
         catch (IOException) when (!created && File.Exists(path))
         {
@@ -45,7 +51,7 @@ public sealed class OwnershipMarkerService
                     if (WindowsFilesystemInterop.GetIdentity(path) != createdIdentity)
                     {
                         return new(OwnershipMarkerResult.CleanupFailed,
-                            "The incomplete ownership marker was replaced and was not removed.");
+                            OwnershipMessage.IncompleteMarkerReplaced);
                     }
                     WindowsFilesystemInterop.MarkForDeletion(handle);
                 }
@@ -53,7 +59,7 @@ public sealed class OwnershipMarkerService
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
             {
                 return new(OwnershipMarkerResult.CleanupFailed,
-                    "An incomplete ownership marker could not be removed.");
+                    OwnershipMessage.IncompleteMarkerNotRemoved);
             }
             throw;
         }
@@ -62,23 +68,23 @@ public sealed class OwnershipMarkerService
     public async Task<OwnershipMarkerOutcome> VerifyAsync(string directory, Guid installationId, Guid jobId, CancellationToken cancellationToken)
     {
         var path = Path.Combine(directory, MarkerName);
-        if (!File.Exists(path)) return new(OwnershipMarkerResult.Missing, "The ownership marker is missing.");
+        if (!File.Exists(path)) return new(OwnershipMarkerResult.Missing, OwnershipMessage.MarkerMissing);
         var content = await File.ReadAllTextAsync(path, cancellationToken);
-        if (content == Content(installationId, jobId)) return new(OwnershipMarkerResult.Owned, "The folder is owned by this job.");
+        if (content == Content(installationId, jobId)) return new(OwnershipMarkerResult.Owned, OwnershipMessage.OwnedByThisJob);
         if (TryParse(content, out var foundInstallation, out var foundJob))
         {
             return new(OwnershipMarkerResult.OwnedByAnotherJob,
                 foundInstallation == installationId && foundJob != jobId
-                    ? "The folder is owned by another job."
-                    : "The folder is owned by another Folder Backuper installation.");
+                    ? OwnershipMessage.OwnedByAnotherJob
+                    : OwnershipMessage.OwnedByAnotherInstallation);
         }
-        return new(OwnershipMarkerResult.Invalid, "The ownership marker is invalid.");
+        return new(OwnershipMarkerResult.Invalid, OwnershipMessage.MarkerInvalid);
     }
 
     public async Task<OwnershipMarkerOutcome> ReleaseAsync(string directory, Guid installationId, Guid jobId, CancellationToken cancellationToken)
     {
         var path = Path.Combine(directory, MarkerName);
-        if (!File.Exists(path)) return new(OwnershipMarkerResult.Missing, "The ownership marker is missing.");
+        if (!File.Exists(path)) return new(OwnershipMarkerResult.Missing, OwnershipMessage.MarkerMissing);
         try
         {
             using var handle = WindowsFilesystemInterop.OpenReadDeleteHandle(path);
@@ -91,18 +97,18 @@ public sealed class OwnershipMarkerService
                     ? new(
                         OwnershipMarkerResult.OwnedByAnotherJob,
                         foundInstallation == installationId && foundJob != jobId
-                            ? "The folder is owned by another job."
-                            : "The folder is owned by another Folder Backuper installation.")
-                    : new(OwnershipMarkerResult.Invalid, "The ownership marker is invalid.");
+                            ? OwnershipMessage.OwnedByAnotherJob
+                            : OwnershipMessage.OwnedByAnotherInstallation)
+                    : new(OwnershipMarkerResult.Invalid, OwnershipMessage.MarkerInvalid);
             }
 
             WindowsFilesystemInterop.MarkForDeletion(handle);
-            return new(OwnershipMarkerResult.Released, "The ownership marker was released.");
+            return new(OwnershipMarkerResult.Released, OwnershipMessage.Released);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        { return new(OwnershipMarkerResult.CleanupFailed, "The verified ownership marker could not be removed."); }
+        { return new(OwnershipMarkerResult.CleanupFailed, OwnershipMessage.VerifiedMarkerNotRemoved); }
         catch (System.ComponentModel.Win32Exception)
-        { return new(OwnershipMarkerResult.CleanupFailed, "The verified ownership marker could not be removed."); }
+        { return new(OwnershipMarkerResult.CleanupFailed, OwnershipMessage.VerifiedMarkerNotRemoved); }
     }
 
     private static string Content(Guid installationId, Guid jobId) =>

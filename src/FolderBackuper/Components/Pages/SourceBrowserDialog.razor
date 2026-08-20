@@ -1,9 +1,10 @@
+@using System.Globalization
 @inject SourceBrowser SourceBrowser
 @implements IDisposable
 
 <MudDialog>
     <DialogContent>
-        <MudText Typo="Typo.body2" Class="source-note">Choose a local directory. Reparse points are shown but cannot be opened or selected.</MudText>
+        <MudText Typo="Typo.body2" Class="source-note">@UiStrings.SourceBrowserNote</MudText>
         @if (currentPath is null)
         {
             <div class="source-list">
@@ -11,7 +12,7 @@
                 {
                     <button class="source-entry" @onclick="() => OpenAsync(root.FullPath)">
                         <MudIcon Icon="@Icons.Material.Outlined.Storage" />
-                        <span><strong>@root.Name</strong><small>@root.FullPath · @root.DriveType</small></span>
+                        <span><strong>@root.Name</strong><small>@root.FullPath · @EnumText.For(root.DriveType)</small></span>
                     </button>
                 }
             </div>
@@ -23,7 +24,7 @@
                 <code>@currentPath</code>
             </div>
             @if (loading) { <MudProgressLinear Indeterminate="true" /> }
-            @if (problem is not null) { <MudAlert Severity="Severity.Warning" Dense="true">@problem</MudAlert> }
+            @if (problem is not null) { <MudAlert Severity="Severity.Warning" Dense="true">@MessageText.Resolve(problem)</MudAlert> }
             <div class="source-list">
                 @foreach (var entry in entries)
                 {
@@ -35,15 +36,15 @@
                 }
             </div>
             <div class="source-pager">
-                <MudButton Disabled="@(offset == 0 || loading)" OnClick="PreviousAsync">Back</MudButton>
-                <MudText Typo="Typo.caption">Entries @(offset + 1)-@(offset + entries.Count)</MudText>
-                <MudButton Disabled="@(nextContinuation is null || loading)" OnClick="NextAsync">Next</MudButton>
+                <MudButton Disabled="@(offset == 0 || loading)" OnClick="PreviousAsync">@UiStrings.SourceBrowserBack</MudButton>
+                <MudText Typo="Typo.caption">@string.Format(CultureInfo.CurrentCulture, UiStrings.SourceBrowserEntriesRange, offset + 1, offset + entries.Count)</MudText>
+                <MudButton Disabled="@(nextContinuation is null || loading)" OnClick="NextAsync">@UiStrings.SourceBrowserNext</MudButton>
             </div>
         }
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="@(currentPath is null || loading)" OnClick="Select">Select this directory</MudButton>
+        <MudButton OnClick="Cancel">@UiStrings.ActionCancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="@(currentPath is null || loading)" OnClick="Select">@UiStrings.SourceBrowserSelectThis</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -53,7 +54,7 @@
     private IReadOnlyList<SourceRoot> roots = [];
     private IReadOnlyList<SourceEntry> entries = [];
     private string? currentPath;
-    private string? problem;
+    private UiMessage? problem;
     private int offset;
     private string? continuation;
     private string? nextContinuation;
@@ -83,8 +84,14 @@
             currentPath = result.Path; entries = result.Entries; nextContinuation = result.Continuation; problem = result.AccessProblem;
         }
         catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { }
+        catch (SourcePathException rejected)
+        { problem = rejected.Reason; }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
-        { problem = exception.Message; }
+        {
+            // A rejected path carries its reason; anything else reports a generic unreadable-directory
+            // message rather than surfacing the exception's own untranslatable text.
+            problem = UiMessage.For(SourceMessage.DirectoryInvalid);
+        }
         finally { loading = false; }
     }
     private async Task UpAsync()
@@ -116,10 +123,12 @@
     }
     private static string EntryDetail(SourceEntry entry)
     {
-        if (entry.AccessProblem is not null) return entry.AccessProblem;
-        var flags = entry.IsReparsePoint ? "Reparse point · unavailable" : entry.EntryType.ToString();
-        var size = entry.FileSize is long bytes ? $" · {bytes:N0} bytes" : "";
-        var modified = entry.ModifiedTime is { } time ? $" · {time.ToLocalTime():g}" : "";
+        if (entry.AccessProblem is not null) return MessageText.Resolve(entry.AccessProblem);
+        var flags = entry.IsReparsePoint ? UiStrings.SourceBrowserReparsePoint : EnumText.For(entry.EntryType);
+        var size = entry.FileSize is long bytes
+            ? " · " + string.Format(CultureInfo.CurrentCulture, UiStrings.SourceBrowserBytes, bytes.ToString("N0", CultureInfo.CurrentCulture))
+            : "";
+        var modified = entry.ModifiedTime is { } time ? " · " + DisplayFormat.LocalDateTime(time) : "";
         return flags + size + modified;
     }
 }

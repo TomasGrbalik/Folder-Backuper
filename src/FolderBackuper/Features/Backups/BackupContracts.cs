@@ -1,5 +1,7 @@
 using System.Text.RegularExpressions;
 
+using FolderBackuper.Infrastructure.Localization;
+
 namespace FolderBackuper.Features.Backups;
 
 public sealed record ArchiveOwnership(Guid InstallationId, Guid RunId)
@@ -47,10 +49,24 @@ public sealed record BackupProblem(
     BackupProblemSeverity Severity,
     BackupProblemCategory Category,
     RunPhase Phase,
-    string Operation,
-    string Message,
+    BackupOperation Operation,
+    UiMessage Message,
     string? Path = null,
-    int? NativeErrorCode = null);
+    int? NativeErrorCode = null)
+{
+    /// <summary>Convenience overload for the common case of a message that takes no arguments.</summary>
+    public BackupProblem(
+        BackupProblemSeverity severity,
+        BackupProblemCategory category,
+        RunPhase phase,
+        BackupOperation operation,
+        BackupProblemMessage message,
+        string? path = null,
+        int? nativeErrorCode = null)
+        : this(severity, category, phase, operation, UiMessage.For(message), path, nativeErrorCode)
+    {
+    }
+}
 
 public sealed record BackupCopyProgress(
     long FilesProcessed,

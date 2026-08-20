@@ -85,7 +85,7 @@ public sealed class RunQueryServiceTests
         await using (var context = await database.ContextFactory.CreateDbContextAsync())
         {
             context.AddRange(destination, job, run, artifact);
-            context.RunProblems.Add(MonitoringTestSeed.Problem(run.Id, BackupProblemSeverity.Warning, "Skipped a file", @"C:\Source\a.txt"));
+            context.RunProblems.Add(MonitoringTestSeed.Problem(run.Id, BackupProblemSeverity.Warning, BackupProblemMessage.ReparsePointSkipped, @"C:\Source\a.txt"));
             await context.SaveChangesAsync();
         }
 
@@ -114,7 +114,7 @@ public sealed class RunQueryServiceTests
             context.AddRange(destination, job, run);
             for (var i = 0; i < 120; i++)
             {
-                context.RunProblems.Add(MonitoringTestSeed.Problem(run.Id, BackupProblemSeverity.Warning, $"Problem {i}", $@"C:\Source\{i}.txt"));
+                context.RunProblems.Add(MonitoringTestSeed.Problem(run.Id, BackupProblemSeverity.Warning, BackupProblemMessage.SourceEntryChanged, $@"C:\Source\{i}.txt"));
             }
 
             await context.SaveChangesAsync();

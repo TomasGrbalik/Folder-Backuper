@@ -198,6 +198,38 @@ a:hover { color: var(--fb-accent-hover); text-decoration: underline; }
     box-shadow: var(--fb-shadow-1);
 }
 
+/* The language control shares the theme toggle's segmented look. Its labels are two-letter codes
+   rather than words, so the buttons get a minimum width instead of icon spacing, which keeps the two
+   segments the same size in both languages. */
+.language-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px;
+    margin-left: 8px;
+    border-radius: 10px;
+    background: var(--fb-surface-2);
+    border: 1px solid var(--fb-border);
+}
+.language-toggle button {
+    min-width: 34px;
+    border: 0;
+    cursor: pointer;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 5px 8px;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--fb-text-2);
+}
+.language-toggle button.active {
+    background: var(--fb-surface);
+    color: var(--fb-text);
+    box-shadow: var(--fb-shadow-1);
+}
+
 /* Drawer + nav */
 .app-drawer.mud-drawer {
     background: var(--fb-surface) !important;
@@ -1069,6 +1101,11 @@ a:hover { color: var(--fb-accent-hover); text-decoration: underline; }
    ============================================================ */
 @media (max-width: 600px) {
     .brand-caption, .service-status { display: none; }
+    /* The application bar carries a theme control and a language control. Dropping the theme
+       words keeps both on one line; the icons still say which is which. */
+    .theme-toggle .toggle-label { display: none; }
+    .theme-toggle button { padding: 5px 8px; }
+    .language-toggle { margin-left: 4px; }
     .main-content { padding: 76px 16px 24px; }
     .page-heading { align-items: start; flex-direction: column; }
     .page-heading .mud-button-root { width: 100%; }

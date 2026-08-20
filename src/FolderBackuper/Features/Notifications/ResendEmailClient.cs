@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using FolderBackuper.Infrastructure.Localization;
 namespace FolderBackuper.Features.Notifications;
 
 /// <summary>One message as the Resend API accepts it.</summary>
@@ -89,7 +90,7 @@ public sealed partial class ResendEmailClient(IHttpClientFactory httpClientFacto
             // The client timed out. Resend may already have accepted the message.
             logger.LogWarning("The Resend request timed out before a result was known");
             return new NotificationSendResult(NotificationSendStatus.Uncertain,
-                "The email provider did not respond before the request timed out. Delivery is unknown.");
+                NotificationResultMessage.ProviderTimedOut);
         }
         catch (HttpRequestException exception)
         {
@@ -99,7 +100,7 @@ public sealed partial class ResendEmailClient(IHttpClientFactory httpClientFacto
         {
             logger.LogWarning(exception, "The Resend request failed while in flight");
             return new NotificationSendResult(NotificationSendStatus.Uncertain,
-                "The connection to the email provider was lost while sending. Delivery is unknown.");
+                NotificationResultMessage.ConnectionLost);
         }
     }
 
@@ -112,8 +113,11 @@ public sealed partial class ResendEmailClient(IHttpClientFactory httpClientFacto
         {
             var accepted = await ReadIdAsync(response, cancellationToken);
             logger.LogInformation("Resend accepted the notification {ProviderMessageId}", accepted ?? "(no id)");
-            return new NotificationSendResult(NotificationSendStatus.Delivered,
-                accepted is null ? "The email provider accepted the message." : $"Accepted by the email provider (id {accepted}).");
+            return new NotificationSendResult(
+                NotificationSendStatus.Delivered,
+                accepted is null
+                    ? UiMessage.For(NotificationResultMessage.Accepted)
+                    : UiMessage.For(NotificationResultMessage.AcceptedWithId, UiMessageArgument.FromText(accepted)));
         }
 
         var detail = await ReadErrorAsync(response, apiKey, cancellationToken);
@@ -124,24 +128,45 @@ public sealed partial class ResendEmailClient(IHttpClientFactory httpClientFacto
         if (code >= 500)
         {
             logger.LogWarning("Resend reported a server error {StatusCode}: {Detail}", code, detail);
-            return new NotificationSendResult(NotificationSendStatus.Uncertain,
-                $"The email provider reported a server error ({code}). Delivery is unknown. {detail}".TrimEnd());
+            return new NotificationSendResult(
+                NotificationSendStatus.Uncertain,
+                WithDetail(
+                    UiMessage.For(NotificationResultMessage.ProviderServerError, UiMessageArgument.FromNumber(code)),
+                    detail));
         }
 
         logger.LogWarning("Resend rejected the notification {StatusCode}: {Detail}", code, detail);
         var reason = response.StatusCode switch
         {
             HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden =>
-                "The email provider rejected the API key.",
+                NotificationResultMessage.ApiKeyRejected,
             HttpStatusCode.TooManyRequests =>
-                "The email provider throttled the request and did not accept the message.",
+                NotificationResultMessage.Throttled,
             HttpStatusCode.UnprocessableEntity or HttpStatusCode.BadRequest =>
-                "The email provider rejected the message. Check that the sender domain is verified.",
-            _ => $"The email provider rejected the request ({code})."
+                NotificationResultMessage.SenderDomainUnverified,
+            _ => NotificationResultMessage.RequestRejected
         };
 
-        return new NotificationSendResult(NotificationSendStatus.Rejected, $"{reason} {detail}".TrimEnd());
+        return new NotificationSendResult(
+            NotificationSendStatus.Rejected,
+            WithDetail(UiMessage.For(reason, UiMessageArgument.FromNumber(code)), detail));
     }
+
+    /// <summary>
+    /// Appends the provider's own detail to a reason, when there is any.
+    /// </summary>
+    /// <remarks>
+    /// Composed as a wrapping message rather than by putting the detail's placeholder in every reason,
+    /// so that a reason with no detail does not render a dangling separator, and so that translators see
+    /// one sentence about how a detail is attached instead of repeating it in each reason.
+    /// </remarks>
+    private static UiMessage WithDetail(UiMessage reason, string? detail) =>
+        string.IsNullOrWhiteSpace(detail)
+            ? reason
+            : UiMessage.For(
+                NotificationResultMessage.ReasonWithProviderDetail,
+                UiMessageArgument.FromMessage(reason),
+                UiMessageArgument.FromText(detail));
 
     private NotificationSendResult Classify(HttpRequestException exception)
     {
@@ -155,12 +180,12 @@ public sealed partial class ResendEmailClient(IHttpClientFactory httpClientFacto
         {
             logger.LogWarning(exception, "The Resend endpoint could not be reached ({SocketError})", socketError);
             return new NotificationSendResult(NotificationSendStatus.Rejected,
-                "The email provider could not be reached. Check the internet connection on the backup PC.");
+                NotificationResultMessage.ProviderUnreachable);
         }
 
         logger.LogWarning(exception, "The Resend request failed with an uncertain result");
         return new NotificationSendResult(NotificationSendStatus.Uncertain,
-            "The request to the email provider failed after it started. Delivery is unknown.");
+            NotificationResultMessage.RequestFailedAfterStarting);
     }
 
     private static async Task<string?> ReadIdAsync(

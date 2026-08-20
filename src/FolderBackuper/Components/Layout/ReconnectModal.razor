@@ -1,19 +1,23 @@
+@* Rendered outside the interactive circuit, from App.razor, and driven by Blazor's own JavaScript
+   through the components-reconnect-* classes. It is still translated correctly because the interface
+   language is a process-wide culture default rather than a per-circuit value, so the static render that
+   produces this markup is already in the selected language. *@
 <div id="components-reconnect-modal" class="components-reconnect-hide" role="status" aria-live="polite">
     <div class="reconnect-card">
         <div class="reconnect-spinner" aria-hidden="true"></div>
         <div class="components-reconnect-show">
-            <strong>Reconnecting to the backup service</strong>
-            <span>The page will resume when the local service is available.</span>
+            <strong>@UiStrings.ReconnectHeading</strong>
+            <span>@UiStrings.ReconnectBody</span>
         </div>
         <div class="components-reconnect-failed">
-            <strong>Connection could not be restored</strong>
-            <span>Start the Folder Backuper service, then retry.</span>
-            <button type="button" onclick="Blazor.reconnect()">Retry</button>
+            <strong>@UiStrings.ReconnectFailedHeading</strong>
+            <span>@UiStrings.ReconnectFailedBody</span>
+            <button type="button" onclick="Blazor.reconnect()">@UiStrings.ReconnectRetry</button>
         </div>
         <div class="components-reconnect-rejected">
-            <strong>The service restarted</strong>
-            <span>Reload to establish a new session.</span>
-            <button type="button" onclick="location.reload()">Reload</button>
+            <strong>@UiStrings.ReconnectRejectedHeading</strong>
+            <span>@UiStrings.ReconnectRejectedBody</span>
+            <button type="button" onclick="location.reload()">@UiStrings.ReconnectReload</button>
         </div>
     </div>
 </div>

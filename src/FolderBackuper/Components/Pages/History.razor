@@ -1,3 +1,4 @@
+@using System.Globalization
 @page "/history"
 @implements IDisposable
 @inject RunQueryService Runs
@@ -5,27 +6,27 @@
 @inject JobService JobService
 @inject IDialogService DialogService
 
-<PageTitle>History | Folder Backuper</PageTitle>
+<PageTitle>@string.Format(CultureInfo.CurrentCulture, UiStrings.PageTitleFormat, UiStrings.NavHistory)</PageTitle>
 
 <div class="page-heading">
     <div>
-        <MudText Typo="Typo.h1">History</MudText>
-        <MudText Class="page-lead">Permanent record of every run attempt. This history cannot be cleared.</MudText>
+        <MudText Typo="Typo.h1">@UiStrings.HistoryTitle</MudText>
+        <MudText Class="page-lead">@UiStrings.HistoryLead</MudText>
     </div>
 </div>
 
 <div class="history-filters">
-    <MudSelect T="Guid?" Value="jobFilter" ValueChanged="OnJobFilterChanged" Label="Job" Dense="true" Clearable="true" Class="filter-control">
-        <MudSelectItem T="Guid?" Value="@((Guid?)null)">All jobs</MudSelectItem>
+    <MudSelect T="Guid?" Value="jobFilter" ValueChanged="OnJobFilterChanged" Label="@UiStrings.FilterJob" Dense="true" Clearable="true" Class="filter-control">
+        <MudSelectItem T="Guid?" Value="@((Guid?)null)">@UiStrings.FilterAllJobs</MudSelectItem>
         @foreach (var job in jobs)
         {
             <MudSelectItem T="Guid?" Value="@job.Id">@job.Name</MudSelectItem>
         }
     </MudSelect>
-    <MudSelect T="RunStatusFilter" Value="statusFilter" ValueChanged="OnStatusFilterChanged" Label="Status" Dense="true" Class="filter-control">
+    <MudSelect T="RunStatusFilter" Value="statusFilter" ValueChanged="OnStatusFilterChanged" Label="@UiStrings.FilterStatus" Dense="true" Class="filter-control">
         @foreach (var status in Enum.GetValues<RunStatusFilter>())
         {
-            <MudSelectItem T="RunStatusFilter" Value="@status">@StatusText(status)</MudSelectItem>
+            <MudSelectItem T="RunStatusFilter" Value="@status">@EnumText.For(status)</MudSelectItem>
         }
     </MudSelect>
 </div>
@@ -33,43 +34,43 @@
 <MudTable T="RunHistoryRow" ServerData="LoadAsync" @ref="table" Hover="true" Dense="true" Class="history-table"
           OnRowClick="OpenDetailsAsync" RowsPerPage="RunQueryService.DefaultPageSize">
     <HeaderContent>
-        <MudTh>Job</MudTh>
-        <MudTh>Trigger</MudTh>
-        <MudTh>Status</MudTh>
-        <MudTh>Started</MudTh>
-        <MudTh>Duration</MudTh>
-        <MudTh>Archive</MudTh>
-        <MudTh>Notification</MudTh>
-        <MudTh>Problems</MudTh>
+        <MudTh>@UiStrings.HistoryColumnJob</MudTh>
+        <MudTh>@UiStrings.HistoryColumnTrigger</MudTh>
+        <MudTh>@UiStrings.HistoryColumnStatus</MudTh>
+        <MudTh>@UiStrings.HistoryColumnStarted</MudTh>
+        <MudTh>@UiStrings.HistoryColumnDuration</MudTh>
+        <MudTh>@UiStrings.HistoryColumnArchive</MudTh>
+        <MudTh>@UiStrings.HistoryColumnNotification</MudTh>
+        <MudTh>@UiStrings.HistoryColumnProblems</MudTh>
     </HeaderContent>
     <RowTemplate>
-        <MudTd DataLabel="Job">@context.JobName</MudTd>
-        <MudTd DataLabel="Trigger">@MonitoringDisplay.TriggerLabel(context.Trigger)</MudTd>
-        <MudTd DataLabel="Status">
+        <MudTd DataLabel="@UiStrings.HistoryColumnJob">@context.JobName</MudTd>
+        <MudTd DataLabel="@UiStrings.HistoryColumnTrigger">@MonitoringDisplay.TriggerLabel(context.Trigger)</MudTd>
+        <MudTd DataLabel="@UiStrings.HistoryColumnStatus">
             <MudChip T="string" Size="Size.Small" Color="@MonitoringDisplay.StatusColor(context.Outcome, context.Phase)">@MonitoringDisplay.StatusLabel(context.Outcome, context.Phase)</MudChip>
         </MudTd>
-        <MudTd DataLabel="Started">@DisplayFormat.LocalDateTime(context.StartedAtUtc)</MudTd>
-        <MudTd DataLabel="Duration">@DisplayFormat.Duration(context.Duration)</MudTd>
-        <MudTd DataLabel="Archive">
+        <MudTd DataLabel="@UiStrings.HistoryColumnStarted">@DisplayFormat.LocalDateTime(context.StartedAtUtc)</MudTd>
+        <MudTd DataLabel="@UiStrings.HistoryColumnDuration">@DisplayFormat.Duration(context.Duration)</MudTd>
+        <MudTd DataLabel="@UiStrings.HistoryColumnArchive">
             @if (context.ArtifactState is { } artifactState)
             {
                 <MudChip T="string" Size="Size.Small" Color="@MonitoringDisplay.ArtifactColor(artifactState)">@MonitoringDisplay.ArtifactLabel(artifactState)</MudChip>
             }
             else
             {
-                <span>—</span>
+                <span>@UiStrings.ValueUnknownDash</span>
             }
         </MudTd>
-        <MudTd DataLabel="Notification">
+        <MudTd DataLabel="@UiStrings.HistoryColumnNotification">
             <MudChip T="string" Size="Size.Small" Color="@MonitoringDisplay.NotificationColor(context.NotificationState)">@MonitoringDisplay.NotificationLabel(context.NotificationState)</MudChip>
         </MudTd>
-        <MudTd DataLabel="Problems">@context.ProblemCount.ToString("N0")</MudTd>
+        <MudTd DataLabel="@UiStrings.HistoryColumnProblems">@context.ProblemCount.ToString("N0", CultureInfo.CurrentCulture)</MudTd>
     </RowTemplate>
     <NoRecordsContent>
-        <MudText>No runs match the selected filters.</MudText>
+        <MudText>@UiStrings.HistoryNoRecords</MudText>
     </NoRecordsContent>
     <PagerContent>
-        <MudTablePager PageSizeOptions="new[] { 50, 100, 200 }" />
+        <MudTablePager PageSizeOptions="new[] { 50, 100, 200 }" RowsPerPageString="@UiStrings.PagerRowsPerPage" InfoFormat="@UiStrings.PagerInfoFormat" />
     </PagerContent>
 </MudTable>
 
@@ -157,18 +158,10 @@
 
         var parameters = new DialogParameters { [nameof(RunDetailsDialog.RunId)] = args.Item.RunId };
         var options = new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true, CloseButton = true };
-        await DialogService.ShowAsync<RunDetailsDialog>("Run details", parameters, options);
+        await DialogService.ShowAsync<RunDetailsDialog>(UiStrings.RunDetailsTitle, parameters, options);
     }
 
+    // The status filter's labels used to be spelled out here and again in Calendar.razor. Both now go
+    // through EnumText, which derives the resource key from the member, so the two pages cannot drift.
     public void Dispose() => activitySubscription?.Dispose();
-
-    private static string StatusText(RunStatusFilter status) => status switch
-    {
-        RunStatusFilter.All => "All statuses",
-        RunStatusFilter.Successful => "Successful",
-        RunStatusFilter.Warnings => "With warnings",
-        RunStatusFilter.Failed => "Failed",
-        RunStatusFilter.Cancelled => "Cancelled",
-        _ => status.ToString()
-    };
 }

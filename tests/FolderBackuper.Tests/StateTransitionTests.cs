@@ -104,7 +104,8 @@ public sealed class StateTransitionTests
         };
 
         notification.Claim(DateTimeOffset.UtcNow);
-        notification.MarkDeliveryUnknown("Interrupted while sending.", DateTimeOffset.UtcNow);
+        notification.MarkDeliveryUnknown(
+            UiMessage.For(NotificationResultMessage.InterruptedMidAttempt), DateTimeOffset.UtcNow);
 
         Assert.Equal(NotificationDeliveryState.DeliveryUnknown, notification.State);
         Assert.Equal(1, notification.AttemptCount);

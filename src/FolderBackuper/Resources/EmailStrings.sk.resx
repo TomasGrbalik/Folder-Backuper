@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="BrandLabel" xml:space="preserve">
+    <value>Folder Backuper</value>
+  </data>
+  <data name="ColumnDetail" xml:space="preserve">
+    <value>Podrobnosti</value>
+  </data>
+  <data name="ColumnOperation" xml:space="preserve">
+    <value>Operácia</value>
+  </data>
+  <data name="ColumnPhase" xml:space="preserve">
+    <value>Fáza</value>
+  </data>
+  <data name="ColumnSeverity" xml:space="preserve">
+    <value>Závažnosť</value>
+  </data>
+  <data name="ErrorLine" xml:space="preserve">
+    <value>Chyba: {0}</value>
+  </data>
+  <data name="FactArchive" xml:space="preserve">
+    <value>Archív</value>
+  </data>
+  <data name="FactArchiveSize" xml:space="preserve">
+    <value>Veľkosť archívu</value>
+  </data>
+  <data name="FactCompleted" xml:space="preserve">
+    <value>Dokončené</value>
+  </data>
+  <data name="FactDestination" xml:space="preserve">
+    <value>Cieľové umiestnenie</value>
+  </data>
+  <data name="FactDuration" xml:space="preserve">
+    <value>Trvanie</value>
+  </data>
+  <data name="FactJob" xml:space="preserve">
+    <value>Úloha</value>
+  </data>
+  <data name="FactOutcome" xml:space="preserve">
+    <value>Výsledok</value>
+  </data>
+  <data name="FactProblems" xml:space="preserve">
+    <value>Problémy</value>
+  </data>
+  <data name="FactScheduled" xml:space="preserve">
+    <value>Naplánované</value>
+  </data>
+  <data name="FactSource" xml:space="preserve">
+    <value>Zdroj</value>
+  </data>
+  <data name="FactStarted" xml:space="preserve">
+    <value>Začaté</value>
+  </data>
+  <data name="HeadingRunResult" xml:space="preserve">
+    <value>{0} – {1}</value>
+  </data>
+  <data name="OpenForDetails" xml:space="preserve">
+    <value>Úplné podrobnosti spustenia nájdete v aplikácii Folder Backuper na zálohovacom počítači.</value>
+  </data>
+  <data name="OutcomeFailed" xml:space="preserve">
+    <value>zálohovanie zlyhalo</value>
+  </data>
+  <data name="OutcomeSuccessful" xml:space="preserve">
+    <value>zálohovanie úspešné</value>
+  </data>
+  <data name="OutcomeWithWarnings" xml:space="preserve">
+    <value>dokončené s upozorneniami</value>
+  </data>
+  <data name="ProblemLine" xml:space="preserve">
+    <value>- [{0}] {1}: {2}</value>
+  </data>
+  <data name="ProblemsHeading" xml:space="preserve">
+    <value>Problémy ({0})</value>
+  </data>
+  <data name="ProblemsHeadingTruncated" xml:space="preserve">
+    <value>Zobrazuje sa prvých {0} z {1} problémov; celý zoznam je v lokálnych podrobnostiach spustenia</value>
+  </data>
+  <data name="RetentionWarnings_Few" xml:space="preserve">
+    <value>Zaznamenali sa {0} upozornenia o uchovávaní. Staršie archívy sa možno neodstránili.</value>
+  </data>
+  <data name="RetentionWarnings_Many" xml:space="preserve">
+    <value>Zaznamenalo sa {0} upozornení o uchovávaní. Staršie archívy sa možno neodstránili.</value>
+  </data>
+  <data name="RetentionWarnings_One" xml:space="preserve">
+    <value>Zaznamenalo sa jedno upozornenie o uchovávaní. Starší archív sa možno neodstránil.</value>
+  </data>
+  <data name="SubjectRunResult" xml:space="preserve">
+    <value>Folder Backuper: {0} – {1}</value>
+  </data>
+  <data name="SubjectTest" xml:space="preserve">
+    <value>Folder Backuper: testovací e-mail</value>
+  </data>
+  <data name="TestBody" xml:space="preserve">
+    <value>Uložené nastavenie upozornení na zálohovacom počítači dokáže kontaktovať službu Resend a doručiť správu nastaveným adresátom.</value>
+  </data>
+  <data name="TestHeading" xml:space="preserve">
+    <value>Testovací e-mail</value>
+  </data>
+  <data name="TestIntro" xml:space="preserve">
+    <value>Toto je testovací e-mail z aplikácie Folder Backuper.</value>
+  </data>
+  <data name="TestRecipients" xml:space="preserve">
+    <value>Adresáti: {0}</value>
+  </data>
+</root>

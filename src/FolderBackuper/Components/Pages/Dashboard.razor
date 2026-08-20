@@ -1,3 +1,4 @@
+@using System.Globalization
 @page "/"
 @implements IDisposable
 @inject DashboardQueryService DashboardQueries
@@ -7,14 +8,14 @@
 @inject BackupRetentionService Retention
 @inject NavigationManager Navigation
 
-<PageTitle>Dashboard | Folder Backuper</PageTitle>
+<PageTitle>@string.Format(CultureInfo.CurrentCulture, UiStrings.PageTitleFormat, UiStrings.NavDashboard)</PageTitle>
 
 <div class="page-heading">
     <div>
-        <MudText Typo="Typo.h1">Dashboard</MudText>
-        <MudText Class="page-lead">Backup health, active work, and per-job status at a glance.</MudText>
+        <MudText Typo="Typo.h1">@UiStrings.DashboardTitle</MudText>
+        <MudText Class="page-lead">@UiStrings.DashboardLead</MudText>
     </div>
-    <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Refresh" OnClick="ReloadAsync">Refresh</MudButton>
+    <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Refresh" OnClick="ReloadAsync">@UiStrings.ActionRefresh</MudButton>
 </div>
 
 @if (operationMessage is not null)
@@ -31,19 +32,19 @@ else
 {
     @if (view.FailureCount > 0)
     {
-        <MudAlert Severity="Severity.Error" Class="mb-2">@view.FailureCount job(s) reported a failed last run.</MudAlert>
+        <MudAlert Severity="Severity.Error" Class="mb-2">@Plural.Format(view.FailureCount, UiStrings.DashboardAlertFailed_One, UiStrings.DashboardAlertFailed_Few, UiStrings.DashboardAlertFailed_Many)</MudAlert>
     }
     @if (view.WarningCount > 0)
     {
-        <MudAlert Severity="Severity.Warning" Class="mb-2">@view.WarningCount job(s) completed their last run with warnings.</MudAlert>
+        <MudAlert Severity="Severity.Warning" Class="mb-2">@Plural.Format(view.WarningCount, UiStrings.DashboardAlertWarnings_One, UiStrings.DashboardAlertWarnings_Few, UiStrings.DashboardAlertWarnings_Many)</MudAlert>
     }
     @if (view.NotificationFailureCount > 0)
     {
-        <MudAlert Severity="Severity.Warning" Class="mb-2">@view.NotificationFailureCount job(s) have an unresolved notification delivery result.</MudAlert>
+        <MudAlert Severity="Severity.Warning" Class="mb-2">@Plural.Format(view.NotificationFailureCount, UiStrings.DashboardAlertNotification_One, UiStrings.DashboardAlertNotification_Few, UiStrings.DashboardAlertNotification_Many)</MudAlert>
     }
 
     <section class="dashboard-section">
-        <MudText Typo="Typo.h5">Active backup</MudText>
+        <MudText Typo="Typo.h5">@UiStrings.DashboardSectionActive</MudText>
         @if (view.ActiveRun is { } active)
         {
             <ActiveRunPanel Run="active" OnChanged="ReloadAsync" />
@@ -52,7 +53,7 @@ else
         {
             <MudPaper Class="dashboard-idle" Elevation="0">
                 <MudIcon Icon="@Icons.Material.Outlined.CheckCircle" Color="Color.Success" />
-                <MudText>No backup is running right now.</MudText>
+                <MudText>@UiStrings.DashboardIdle</MudText>
             </MudPaper>
         }
     </section>
@@ -60,13 +61,12 @@ else
     @if (view.Queue.Count > 0)
     {
         <section class="dashboard-section">
-            <MudText Typo="Typo.h5">Queued (@view.Queue.Count)</MudText>
+            <MudText Typo="Typo.h5">@string.Format(CultureInfo.CurrentCulture, UiStrings.DashboardSectionQueued, view.Queue.Count)</MudText>
             <MudList T="string" Dense="true" Class="queue-list">
                 @foreach (var queued in view.Queue)
                 {
                     <MudListItem T="string" Icon="@Icons.Material.Outlined.Schedule">
-                        <strong>@queued.JobName</strong> — @MonitoringDisplay.TriggerLabel(queued.Trigger),
-                        due @DisplayFormat.LocalDateTime(queued.DueAtUtc)
+                        <strong>@queued.JobName</strong> — @string.Format(CultureInfo.CurrentCulture, UiStrings.DashboardQueueEntry, MonitoringDisplay.TriggerLabel(queued.Trigger), DisplayFormat.LocalDateTime(queued.DueAtUtc))
                     </MudListItem>
                 }
             </MudList>
@@ -74,13 +74,13 @@ else
     }
 
     <section class="dashboard-section">
-        <MudText Typo="Typo.h5">Jobs</MudText>
+        <MudText Typo="Typo.h5">@UiStrings.DashboardSectionJobs</MudText>
         @if (view.Jobs.Count == 0)
         {
             <MudPaper Class="destination-empty" Elevation="0">
                 <MudIcon Icon="@Icons.Material.Outlined.FolderCopy" Size="Size.Large" />
-                <MudText Typo="Typo.h5">No jobs configured</MudText>
-                <MudText>Create a job to schedule backups.</MudText>
+                <MudText Typo="Typo.h5">@UiStrings.DashboardNoJobsHeading</MudText>
+                <MudText>@UiStrings.DashboardNoJobsBody</MudText>
             </MudPaper>
         }
         else
@@ -92,36 +92,36 @@ else
                         <div class="dashboard-card-head">
                             <MudText Typo="Typo.h6">@job.JobName</MudText>
                             <MudChip T="string" Size="Size.Small" Color="@MonitoringDisplay.OutcomeColor(job.LastOutcome)">
-                                @(job.LastOutcome is null ? "No runs yet" : MonitoringDisplay.OutcomeLabel(job.LastOutcome))
+                                @(job.LastOutcome is null ? UiStrings.DashboardNoRunsYet : MonitoringDisplay.OutcomeLabel(job.LastOutcome))
                             </MudChip>
                         </div>
                         <dl class="dashboard-facts">
-                            <div><dt>Last run</dt><dd>@DisplayFormat.LocalDateTime(job.LastRunAtUtc)</dd></div>
-                            <div><dt>Last success</dt><dd>@DisplayFormat.LocalDateTime(job.LastSuccessAtUtc)</dd></div>
-                            <div><dt>Next run</dt><dd>@(job.Lifecycle == JobLifecycle.Active ? DisplayFormat.LocalDateTime(job.NextRunAtUtc, "Not scheduled") : "Paused")</dd></div>
+                            <div><dt>@UiStrings.DashboardLastRun</dt><dd>@DisplayFormat.LocalDateTime(job.LastRunAtUtc)</dd></div>
+                            <div><dt>@UiStrings.DashboardLastSuccess</dt><dd>@DisplayFormat.LocalDateTime(job.LastSuccessAtUtc)</dd></div>
+                            <div><dt>@UiStrings.DashboardNextRun</dt><dd>@(job.Lifecycle == JobLifecycle.Active ? DisplayFormat.LocalDateTime(job.NextRunAtUtc, UiStrings.ValueNotScheduled) : UiStrings.DashboardPaused)</dd></div>
                         </dl>
                         <div class="dashboard-storage">
                             <MudText Typo="Typo.body2">
                                 <strong>@DisplayFormat.Bytes(job.ManagedArtifactBytes)</strong>
-                                across @job.ManagedArtifactCount of @job.RetentionCount retained backup(s)
+                                @string.Format(CultureInfo.CurrentCulture, Plural.Choose(job.RetentionCount, UiStrings.DashboardStorageAcross_One, UiStrings.DashboardStorageAcross_Few, UiStrings.DashboardStorageAcross_Many), job.ManagedArtifactCount, job.RetentionCount)
                             </MudText>
                             <MudText Typo="Typo.caption">
-                                Latest: @DisplayFormat.Bytes(job.LatestArtifactBytes, "—") ·
-                                Confirmed: @DisplayFormat.LocalDateTime(job.StorageConfirmedAtUtc, "never")
-                                @if (job.StorageStale) { <MudChip T="string" Size="Size.Small" Color="Color.Warning">stale</MudChip> }
+                                @string.Format(CultureInfo.CurrentCulture, UiStrings.DashboardStorageLatest, DisplayFormat.Bytes(job.LatestArtifactBytes, UiStrings.ValueUnknownDash)) ·
+                                @string.Format(CultureInfo.CurrentCulture, UiStrings.DashboardStorageConfirmed, DisplayFormat.LocalDateTime(job.StorageConfirmedAtUtc, UiStrings.ValueNever))
+                                @if (job.StorageStale) { <MudChip T="string" Size="Size.Small" Color="Color.Warning">@UiStrings.DashboardStorageStale</MudChip> }
                             </MudText>
                             @if (job.MissingArtifactCount > 0)
                             {
-                                <MudText Typo="Typo.caption" Color="Color.Error">@job.MissingArtifactCount archive(s) found missing</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Error">@Plural.Format(job.MissingArtifactCount, UiStrings.DashboardMissingArchives_One, UiStrings.DashboardMissingArchives_Few, UiStrings.DashboardMissingArchives_Many)</MudText>
                             }
                             @if (job.UnmanagedArtifactCount > 0)
                             {
-                                <MudText Typo="Typo.caption" Color="Color.Warning">@job.UnmanagedArtifactCount unmanaged historical archive(s)</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Warning">@Plural.Format(job.UnmanagedArtifactCount, UiStrings.DashboardUnmanagedArchives_One, UiStrings.DashboardUnmanagedArchives_Few, UiStrings.DashboardUnmanagedArchives_Many)</MudText>
                             }
                             @if (job.LastNotificationState is not null)
                             {
                                 <MudText Typo="Typo.caption">
-                                    Notification: <MudChip T="string" Size="Size.Small" Color="@MonitoringDisplay.NotificationColor(job.LastNotificationState)">@MonitoringDisplay.NotificationLabel(job.LastNotificationState)</MudChip>
+                                    @UiStrings.DashboardNotificationLabel <MudChip T="string" Size="Size.Small" Color="@MonitoringDisplay.NotificationColor(job.LastNotificationState)">@MonitoringDisplay.NotificationLabel(job.LastNotificationState)</MudChip>
                                 </MudText>
                             }
                         </div>
@@ -129,11 +129,11 @@ else
                             @if (job.Lifecycle != JobLifecycle.Archived)
                             {
                                 <MudButton Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary"
-                                           Disabled="@(busyJobId == job.JobId)" OnClick="() => RunNowAsync(job.JobId)">Run now</MudButton>
+                                           Disabled="@(busyJobId == job.JobId)" OnClick="() => RunNowAsync(job.JobId)">@UiStrings.DashboardRunNow</MudButton>
                             }
                             <MudButton Size="Size.Small" Variant="Variant.Text"
-                                       Disabled="@(busyJobId == job.JobId)" OnClick="() => RefreshStorageAsync(job.JobId)">Refresh storage</MudButton>
-                            <MudButton Size="Size.Small" Variant="Variant.Text" OnClick="() => ViewHistory(job.JobId)">History</MudButton>
+                                       Disabled="@(busyJobId == job.JobId)" OnClick="() => RefreshStorageAsync(job.JobId)">@UiStrings.DashboardRefreshStorage</MudButton>
+                            <MudButton Size="Size.Small" Variant="Variant.Text" OnClick="() => ViewHistory(job.JobId)">@UiStrings.DashboardHistory</MudButton>
                         </div>
                     </MudPaper>
                 }
@@ -142,20 +142,20 @@ else
     </section>
 
     <section class="dashboard-section">
-        <MudText Typo="Typo.h5">Destinations</MudText>
+        <MudText Typo="Typo.h5">@UiStrings.DashboardSectionDestinations</MudText>
         <MudList T="string" Dense="true" Class="queue-list">
             @foreach (var destination in destinations)
             {
                 <MudListItem T="string" Icon="@(destination.Type == DestinationType.Local ? Icons.Material.Outlined.Storage : Icons.Material.Outlined.Dns)">
                     <strong>@destination.Name</strong> —
-                    <MudChip T="string" Size="Size.Small" Color="@VerificationColor(destination.VerificationResult)">@destination.VerificationResult</MudChip>
+                    <MudChip T="string" Size="Size.Small" Color="@MonitoringDisplay.VerificationColor(destination.VerificationResult)">@MonitoringDisplay.VerificationLabel(destination.VerificationResult)</MudChip>
                     @if (destination.LastAccessedAtUtc is { } accessed)
                     {
-                        <span>Last access: @destination.LastAccessResult on @DisplayFormat.LocalDateTime(accessed)</span>
+                        <span>@string.Format(CultureInfo.CurrentCulture, UiStrings.DashboardLastAccess, MonitoringDisplay.AccessLabel(destination.LastAccessResult), DisplayFormat.LocalDateTime(accessed))</span>
                     }
                     else
                     {
-                        <span>Last access: Not attempted</span>
+                        <span>@UiStrings.DashboardLastAccessNotAttempted</span>
                     }
                 </MudListItem>
             }
@@ -221,7 +221,7 @@ else
         busyJobId = jobId;
         var outcome = await BackupExecution.RunNowAsync(jobId);
         operationError = outcome.Status != ManualRunEnqueueStatus.Queued;
-        operationMessage = outcome.Message;
+        operationMessage = MessageText.Resolve(outcome.Message);
         busyJobId = null;
         await ReloadAsync();
     }
@@ -232,20 +232,23 @@ else
         var result = await Retention.ReconcileInventoryAsync(jobId);
         operationError = !result.DestinationReachable;
         operationMessage = result.DestinationReachable
-            ? $"Storage confirmed: {result.Checked} archive(s) checked, {result.MarkedMissing} found missing."
-            : "The destination was unavailable; the last confirmed storage figures are unchanged.";
+            ? string.Format(
+                CultureInfo.CurrentCulture,
+                Plural.Choose(
+                    result.Checked,
+                    UiStrings.DashboardStorageConfirmedResult_One,
+                    UiStrings.DashboardStorageConfirmedResult_Few,
+                    UiStrings.DashboardStorageConfirmedResult_Many),
+                result.Checked,
+                result.MarkedMissing)
+            : UiStrings.DashboardStorageUnreachable;
         busyJobId = null;
         await ReloadAsync();
     }
 
     private void ViewHistory(Guid jobId) => Navigation.NavigateTo($"history?job={jobId}");
 
+    // The verification chip's colour and label come from MonitoringDisplay so that a destination reads
+    // the same here as it does on the destinations page and in the job form.
     public void Dispose() => activitySubscription?.Dispose();
-
-    private static Color VerificationColor(DestinationVerificationResult result) => result switch
-    {
-        DestinationVerificationResult.Succeeded => Color.Success,
-        DestinationVerificationResult.Failed => Color.Error,
-        _ => Color.Default
-    };
 }

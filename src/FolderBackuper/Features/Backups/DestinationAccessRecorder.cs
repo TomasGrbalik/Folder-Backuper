@@ -1,5 +1,6 @@
 using FolderBackuper.Features.Destinations;
 using FolderBackuper.Infrastructure.Database;
+using FolderBackuper.Infrastructure.Localization;
 using Microsoft.EntityFrameworkCore;
 
 namespace FolderBackuper.Features.Backups;
@@ -11,7 +12,7 @@ public sealed class DestinationAccessRecorder(
     public async Task RecordAsync(
         Guid destinationId,
         DestinationAccessResult result,
-        string? safeErrorSummary,
+        UiMessage? safeError,
         CancellationToken cancellationToken = default)
     {
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
@@ -20,7 +21,9 @@ public sealed class DestinationAccessRecorder(
         destination.LastAccessResult = result;
         destination.LastAccessSource = DestinationAccessSource.Backup;
         destination.LastAccessedAtUtc = now;
-        destination.LastAccessErrorSummary = result == DestinationAccessResult.Succeeded ? null : safeErrorSummary;
+        var recorded = result == DestinationAccessResult.Succeeded ? null : safeError;
+        destination.LastAccessMessageKey = recorded?.Key;
+        destination.LastAccessMessageArguments = StoredMessage.EncodeArguments(recorded);
         destination.UpdatedAtUtc = now;
         await context.SaveChangesAsync(cancellationToken);
     }

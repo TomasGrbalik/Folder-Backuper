@@ -6,38 +6,38 @@
 @inject JobService JobService
 @inject IDialogService DialogService
 
-<PageTitle>Calendar | Folder Backuper</PageTitle>
+<PageTitle>@string.Format(CultureInfo.CurrentCulture, UiStrings.PageTitleFormat, UiStrings.NavCalendar)</PageTitle>
 
 <div class="page-heading">
     <div>
-        <MudText Typo="Typo.h1">Calendar</MudText>
-        <MudText Class="page-lead">Past run attempts and future planned runs together.</MudText>
+        <MudText Typo="Typo.h1">@UiStrings.CalendarTitle</MudText>
+        <MudText Class="page-lead">@UiStrings.CalendarLead</MudText>
     </div>
     <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small">
-        <MudButton Color="@(agenda ? Color.Default : Color.Primary)" OnClick="() => agenda = false">Month</MudButton>
-        <MudButton Color="@(agenda ? Color.Primary : Color.Default)" OnClick="() => agenda = true">Agenda</MudButton>
+        <MudButton Color="@(agenda ? Color.Default : Color.Primary)" OnClick="() => agenda = false">@UiStrings.CalendarViewMonth</MudButton>
+        <MudButton Color="@(agenda ? Color.Primary : Color.Default)" OnClick="() => agenda = true">@UiStrings.CalendarViewAgenda</MudButton>
     </MudButtonGroup>
 </div>
 
 <div class="calendar-toolbar">
     <div class="calendar-nav">
-        <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft" OnClick="() => ShiftMonthAsync(-1)" aria-label="Previous month" />
+        <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft" OnClick="() => ShiftMonthAsync(-1)" aria-label="@UiStrings.CalendarPreviousMonth" />
         <MudText Typo="Typo.h5">@MonthLabel</MudText>
-        <MudIconButton Icon="@Icons.Material.Filled.ChevronRight" OnClick="() => ShiftMonthAsync(1)" aria-label="Next month" />
-        <MudButton Size="Size.Small" OnClick="GoTodayAsync">Today</MudButton>
+        <MudIconButton Icon="@Icons.Material.Filled.ChevronRight" OnClick="() => ShiftMonthAsync(1)" aria-label="@UiStrings.CalendarNextMonth" />
+        <MudButton Size="Size.Small" OnClick="GoTodayAsync">@UiStrings.CalendarToday</MudButton>
     </div>
     <div class="history-filters">
-        <MudSelect T="Guid?" Value="jobFilter" ValueChanged="OnJobFilterChanged" Label="Job" Dense="true" Clearable="true" Class="filter-control">
-            <MudSelectItem T="Guid?" Value="@((Guid?)null)">All jobs</MudSelectItem>
+        <MudSelect T="Guid?" Value="jobFilter" ValueChanged="OnJobFilterChanged" Label="@UiStrings.FilterJob" Dense="true" Clearable="true" Class="filter-control">
+            <MudSelectItem T="Guid?" Value="@((Guid?)null)">@UiStrings.FilterAllJobs</MudSelectItem>
             @foreach (var job in jobs)
             {
                 <MudSelectItem T="Guid?" Value="@job.Id">@job.Name</MudSelectItem>
             }
         </MudSelect>
-        <MudSelect T="RunStatusFilter" Value="statusFilter" ValueChanged="OnStatusFilterChanged" Label="Status" Dense="true" Class="filter-control">
+        <MudSelect T="RunStatusFilter" Value="statusFilter" ValueChanged="OnStatusFilterChanged" Label="@UiStrings.FilterStatus" Dense="true" Class="filter-control">
             @foreach (var status in Enum.GetValues<RunStatusFilter>())
             {
-                <MudSelectItem T="RunStatusFilter" Value="@status">@StatusText(status)</MudSelectItem>
+                <MudSelectItem T="RunStatusFilter" Value="@status">@EnumText.For(status)</MudSelectItem>
             }
         </MudSelect>
     </div>
@@ -51,7 +51,7 @@ else if (agenda)
 {
     @if (entries.Count == 0)
     {
-        <MudPaper Class="placeholder-card" Elevation="0"><MudText>No entries this month for the selected filters.</MudText></MudPaper>
+        <MudPaper Class="placeholder-card" Elevation="0"><MudText>@UiStrings.CalendarAgendaEmpty</MudText></MudPaper>
     }
     else
     {
@@ -98,11 +98,11 @@ else
         }
     </div>
     <div class="calendar-legend">
-        <span><span class="entry-dot entry-success"></span> Successful</span>
-        <span><span class="entry-dot entry-warning"></span> Warnings</span>
-        <span><span class="entry-dot entry-error"></span> Failed / missing</span>
-        <span><span class="entry-dot entry-default"></span> Cancelled</span>
-        <span><span class="entry-dot entry-info"></span> Planned / running</span>
+        <span><span class="entry-dot entry-success"></span> @UiStrings.CalendarLegendSuccessful</span>
+        <span><span class="entry-dot entry-warning"></span> @UiStrings.CalendarLegendWarnings</span>
+        <span><span class="entry-dot entry-error"></span> @UiStrings.CalendarLegendFailed</span>
+        <span><span class="entry-dot entry-default"></span> @UiStrings.CalendarLegendCancelled</span>
+        <span><span class="entry-dot entry-info"></span> @UiStrings.CalendarLegendPlanned</span>
     </div>
 }
 
@@ -237,7 +237,7 @@ else
 
         var parameters = new DialogParameters { [nameof(RunDetailsDialog.RunId)] = runId };
         var options = new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true, CloseButton = true };
-        await DialogService.ShowAsync<RunDetailsDialog>("Run details", parameters, options);
+        await DialogService.ShowAsync<RunDetailsDialog>(UiStrings.RunDetailsTitle, parameters, options);
     }
 
     public void Dispose() => activitySubscription?.Dispose();
@@ -246,10 +246,15 @@ else
         entry.IsPlanned ? Color.Info : MonitoringDisplay.StatusColor(entry.Outcome, entry.Phase);
 
     private static string EntryLabel(CalendarEntry entry) =>
-        entry.IsPlanned ? "Planned" : MonitoringDisplay.StatusLabel(entry.Outcome, entry.Phase);
+        entry.IsPlanned ? EnumText.For(RunPhase.Planned) : MonitoringDisplay.StatusLabel(entry.Outcome, entry.Phase);
 
     private static string EntryTitle(CalendarEntry entry) =>
-        $"{entry.JobName} — {EntryLabel(entry)} at {entry.LocalTime.ToString("t", CultureInfo.CurrentCulture)}";
+        string.Format(
+            CultureInfo.CurrentCulture,
+            UiStrings.CalendarEntryTitle,
+            entry.JobName,
+            EntryLabel(entry),
+            entry.LocalTime.ToString("t", CultureInfo.CurrentCulture));
 
     private static string EntryColorName(CalendarEntry entry) => EntryColor(entry) switch
     {
@@ -260,13 +265,4 @@ else
         _ => "default"
     };
 
-    private static string StatusText(RunStatusFilter status) => status switch
-    {
-        RunStatusFilter.All => "All statuses",
-        RunStatusFilter.Successful => "Successful",
-        RunStatusFilter.Warnings => "With warnings",
-        RunStatusFilter.Failed => "Failed",
-        RunStatusFilter.Cancelled => "Cancelled",
-        _ => status.ToString()
-    };
 }

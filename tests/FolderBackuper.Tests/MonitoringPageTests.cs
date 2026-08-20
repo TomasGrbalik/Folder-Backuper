@@ -134,7 +134,7 @@ public sealed class MonitoringPageTests
         component.WaitForAssertion(() => Assert.Contains("Compressing", component.Markup, StringComparison.Ordinal));
 
         // A terminal outcome has to remove the active panel and update the job card behind it.
-        await database.RunPersistence.CompleteAsync(claimed.Id, RunOutcome.Failed, "Simulated failure.");
+        await database.RunPersistence.CompleteAsync(claimed.Id, RunOutcome.Failed, UiMessage.For(BackupProblemMessage.UnexpectedFailure));
         component.WaitForAssertion(() =>
             Assert.Contains("No backup is running right now", component.Markup, StringComparison.Ordinal));
         Assert.Contains("reported a failed last run", component.Markup, StringComparison.Ordinal);
@@ -213,7 +213,7 @@ public sealed class MonitoringPageTests
         var component = context.Render<History>();
         component.WaitForAssertion(() => Assert.Contains("Compressing", component.Markup, StringComparison.Ordinal));
 
-        await database.RunPersistence.CompleteAsync(running.Id, RunOutcome.Failed, "Simulated failure.");
+        await database.RunPersistence.CompleteAsync(running.Id, RunOutcome.Failed, UiMessage.For(BackupProblemMessage.UnexpectedFailure));
 
         // The row has to leave its in-progress phase on its own; no status filter offers the word.
         component.WaitForAssertion(() =>
@@ -239,7 +239,7 @@ public sealed class MonitoringPageTests
         var component = context.Render<Calendar>();
         component.WaitForAssertion(() => Assert.Contains("Compressing", component.Markup, StringComparison.Ordinal));
 
-        await database.RunPersistence.CompleteAsync(running.Id, RunOutcome.Failed, "Simulated failure.");
+        await database.RunPersistence.CompleteAsync(running.Id, RunOutcome.Failed, UiMessage.For(BackupProblemMessage.UnexpectedFailure));
 
         component.WaitForAssertion(() =>
             Assert.DoesNotContain("Compressing", component.Markup, StringComparison.Ordinal));
@@ -300,6 +300,34 @@ public sealed class MonitoringPageTests
         db.Add(destination);
         await db.SaveChangesAsync();
         return destination;
+    }
+
+    [Fact]
+    public async Task Calendar_UnderSlovakStartsTheWeekOnMondayAndNamesTheMonthInSlovak()
+    {
+        // The month grid derives its first column and its heading from the culture, so selecting Slovak
+        // moves the whole grid. Nothing else in the suite exercises that, because every other test runs
+        // pinned to English, where the week starts on Sunday.
+        using var slovak = CultureScope.Slovak();
+        await using var database = await CreateDatabaseAsync();
+        await using var context = CreateContext(database);
+
+        context.Render<MudPopoverProvider>();
+        var component = context.Render<Calendar>();
+
+        var weekdays = component.FindAll(".calendar-weekday");
+        Assert.Equal(7, weekdays.Count);
+
+        var slovakFormat = System.Globalization.CultureInfo.GetCultureInfo("sk-SK").DateTimeFormat;
+        Assert.Equal(DayOfWeek.Monday, slovakFormat.FirstDayOfWeek);
+        Assert.Equal(
+            slovakFormat.AbbreviatedDayNames[(int)DayOfWeek.Monday],
+            weekdays[0].TextContent.Trim());
+
+        // The toolbar's own words follow too.
+        Assert.Contains("Mesiac", component.Markup, StringComparison.Ordinal);
+        Assert.Contains("Dnes", component.Markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("Agenda</", component.Markup, StringComparison.Ordinal);
     }
 
     private static BunitContext CreateContext(TemporaryDatabase database)

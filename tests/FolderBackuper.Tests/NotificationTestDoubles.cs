@@ -9,7 +9,7 @@ namespace FolderBackuper.Tests;
 internal sealed class FakeRunNotificationSender(NotificationSendResult result) : IRunNotificationSender
 {
     public FakeRunNotificationSender()
-        : this(new NotificationSendResult(NotificationSendStatus.Delivered, "Accepted."))
+        : this(new NotificationSendResult(NotificationSendStatus.Delivered, NotificationResultMessage.Accepted))
     {
     }
 
@@ -77,7 +77,7 @@ internal static class NotificationTestFactory
         var result = await settings.SaveAsync(new SaveNotificationSettingsCommand(
             true, "backups@example.test", "Folder Backuper",
             string.Join('\n', recipients.Length == 0 ? ["operator@example.test"] : recipients), ApiKey));
-        Assert.True(result.Succeeded, result.Message);
+        Assert.True(result.Succeeded, MessageAssert.Text(result.Message));
         return settings;
     }
 

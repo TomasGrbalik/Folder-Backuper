@@ -80,7 +80,7 @@ public sealed class NotificationOutboxServiceTests
         Assert.Equal(Now, item.SendingAtUtc);
         Assert.Equal(Now, item.DeliveredAtUtc);
         Assert.Equal(NotificationDeliveryState.Delivered, stored.NotificationState);
-        Assert.Null(stored.NotificationErrorSummary);
+        Assert.Null(stored.NotificationMessageKey);
     }
 
     [Fact]
@@ -91,15 +91,15 @@ public sealed class NotificationOutboxServiceTests
         await database.Initializer.InitializeAsync();
         var (run, _) = await SeedAsync(database);
         var sender = new FakeRunNotificationSender(
-            new NotificationSendResult(NotificationSendStatus.Rejected, "The provider rejected the API key."));
+            new NotificationSendResult(NotificationSendStatus.Rejected, NotificationResultMessage.ApiKeyRejected));
 
         await NotificationTestFactory.Outbox(database, sender, clock).ProcessPendingAsync();
 
         var (item, stored) = await ReadAsync(database, run.Id);
         Assert.Equal(NotificationDeliveryState.Failed, item.State);
-        Assert.Equal("The provider rejected the API key.", item.LastSafeError);
+        Assert.Equal(UiMessage.KeyFor(NotificationResultMessage.ApiKeyRejected), item.LastSafeErrorKey);
         Assert.Equal(NotificationDeliveryState.Failed, stored.NotificationState);
-        Assert.Equal("The provider rejected the API key.", stored.NotificationErrorSummary);
+        Assert.Equal(UiMessage.KeyFor(NotificationResultMessage.ApiKeyRejected), stored.NotificationMessageKey);
 
         // The backup itself remains successful. A delivery problem is recorded separately.
         Assert.Equal(RunOutcome.Successful, stored.Outcome);
@@ -113,7 +113,7 @@ public sealed class NotificationOutboxServiceTests
         await database.Initializer.InitializeAsync();
         var (run, _) = await SeedAsync(database);
         var sender = new FakeRunNotificationSender(
-            new NotificationSendResult(NotificationSendStatus.Uncertain, "The provider did not respond."));
+            new NotificationSendResult(NotificationSendStatus.Uncertain, NotificationResultMessage.ProviderTimedOut));
 
         await NotificationTestFactory.Outbox(database, sender, clock).ProcessPendingAsync();
 
@@ -179,7 +179,9 @@ public sealed class NotificationOutboxServiceTests
         Assert.Equal(NotificationDeliveryState.DeliveryUnknown, item.State);
         Assert.Equal(1, item.AttemptCount);
         Assert.Equal(NotificationDeliveryState.DeliveryUnknown, stored.NotificationState);
-        Assert.Contains("not retried", stored.NotificationErrorSummary!, StringComparison.Ordinal);
+        Assert.Equal(
+            UiMessage.KeyFor(NotificationResultMessage.InterruptedMidAttempt),
+            stored.NotificationMessageKey);
 
         // The recovered record is terminal, so a later sweep finds nothing to send.
         Assert.Equal(0, await service.ProcessPendingAsync());

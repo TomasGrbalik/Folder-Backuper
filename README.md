@@ -2,7 +2,7 @@
 
 Folder Backuper is a Windows service and localhost web application for creating scheduled ZIP backups of local folders to local or SMB storage.
 
-The production foundation is a .NET 10 Blazor Interactive Server application with MudBlazor and durable EF Core SQLite persistence. Destination and job management support canonical local and SMB roots, machine-scoped DPAPI credentials, ownership-safe effective folders, read-only source browsing and preview, lifecycle controls, and deterministic local-time scheduling. The backup pipeline performs execution preflight, immutable source scanning, validated ZIP creation, local or impersonated SMB transfer, collision-safe finalization, cleanup, retention, cancellation, and crash recovery. A hosted scheduler adds durable due-time ordering, missed-run catch-up, duplicate prevention, and manual-run coalescing. A monitoring interface adds a health dashboard with live active-run progress, per-job status and managed storage, a permanent run history with structured run and problem details, and a month calendar and agenda covering past and planned runs. An Inno Setup package installs the service, selects and persists the loopback port, verifies readiness, and handles upgrade, port reconfiguration, and uninstall while preserving application data by default. The retained [Milestone 0 diagnostic harness](research/milestone-0/README.md) records the Windows and NAS compatibility evidence and is not part of the shipping application.
+The production foundation is a .NET 10 Blazor Interactive Server application with MudBlazor and durable EF Core SQLite persistence. Destination and job management support canonical local and SMB roots, machine-scoped DPAPI credentials, ownership-safe effective folders, read-only source browsing and preview, lifecycle controls, and deterministic local-time scheduling. The backup pipeline performs execution preflight, immutable source scanning, validated ZIP creation, local or impersonated SMB transfer, collision-safe finalization, cleanup, retention, cancellation, and crash recovery. A hosted scheduler adds durable due-time ordering, missed-run catch-up, duplicate prevention, and manual-run coalescing. A monitoring interface adds a health dashboard with live active-run progress, per-job status and managed storage, a permanent run history with structured run and problem details, and a month calendar and agenda covering past and planned runs. The interface is available in English and Slovak, selected from the application bar or the settings page and applied to text, dates, numbers, and file sizes alike. An Inno Setup package installs the service, selects and persists the loopback port, verifies readiness, and handles upgrade, port reconfiguration, and uninstall while preserving application data by default. The retained [Milestone 0 diagnostic harness](research/milestone-0/README.md) records the Windows and NAS compatibility evidence and is not part of the shipping application.
 
 ## Requirements
 
@@ -48,6 +48,20 @@ pwsh installer/Build-Installer.ps1
 ```
 
 `Build-Installer.ps1` publishes to `artifacts/publish` and then compiles `artifacts/installer/FolderBackuper-<version>-setup.exe` with [Inno Setup](https://jrsoftware.org/isinfo.php) 6.3 or newer. The installer version is read from the built executable, so `setup.exe` cannot drift from the binary it carries.
+
+## Interface Language
+
+The interface is English or Slovak. Choose it from the control beside the theme toggle in the application bar, or
+from **Settings**. The choice is stored with the rest of the application data, so it survives a service restart and
+an upgrade, and it applies to every open browser tab because it is a property of the installation rather than of a
+session. An installation that has never been given a language follows the Windows installed interface language.
+
+The language also selects how dates, times, numbers, and file sizes are formatted, and it is the language that
+notification email is written in. Archive file names stay in their fixed, locale-independent timestamp format.
+Windows event-log entries, installer console output, and the application log stay English.
+
+Changing the language reloads the page, because the document language attribute and the reconnect banner are
+produced outside the interactive circuit.
 
 ## Versioning And Releases
 

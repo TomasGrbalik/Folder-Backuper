@@ -36,7 +36,7 @@ public sealed class UpdateNoticeChipTests
     {
         // An unreachable release feed says nothing about whether an update exists, so it must not
         // produce a notice, and it must not produce an error either.
-        var component = Render(UpdateStatus.ForInstalledBuild() with { LastProblem = "The release feed could not be reached." });
+        var component = Render(UpdateStatus.ForInstalledBuild() with { LastProblem = UiMessage.For(UpdateProblemMessage.Unreachable) });
 
         Assert.Empty(component.Markup.Trim());
     }

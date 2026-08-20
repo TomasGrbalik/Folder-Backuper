@@ -124,7 +124,7 @@ public sealed class BackupScanningTests : IDisposable
         var stagingOverlap = await Service(stagingInSource).ValidateAsync(
             job, Destination(Path.Combine(root, "unrelated")), [source.FullName], Guid.NewGuid());
         Assert.Contains(stagingOverlap.Problems,
-            problem => problem.Operation == "Validate staging overlap" && problem.Category == BackupProblemCategory.InvalidPath);
+            problem => problem.Operation == BackupOperation.ValidateStagingOverlap && problem.Category == BackupProblemCategory.InvalidPath);
     }
 
     private BackupPreflightService Service(ApplicationPaths paths)

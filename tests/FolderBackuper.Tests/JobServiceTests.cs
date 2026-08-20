@@ -30,7 +30,7 @@ public sealed class JobServiceTests
 
         var created = await service.CreateAsync(Command(source, destination.Id, activate: true));
 
-        Assert.True(created.Succeeded, created.Message);
+        Assert.True(created.Succeeded, MessageAssert.Text(created.Message));
         Assert.Equal(JobLifecycle.Active, created.Job!.Lifecycle);
         Assert.Equal(1, created.Job.ScheduleRevision);
         Assert.Equal(clock.GetUtcNow(), created.Job.ScheduleEffectiveFromUtc);
@@ -46,25 +46,25 @@ public sealed class JobServiceTests
 
         clock.Advance(TimeSpan.FromMinutes(5));
         var active = await service.ReactivateAsync(created.Job.Id);
-        Assert.True(active.Succeeded, active.Message);
+        Assert.True(active.Succeeded, MessageAssert.Text(active.Message));
         Assert.Equal(1, active.Job!.ScheduleRevision);
         Assert.Equal(clock.GetUtcNow(), active.Job.ScheduleEffectiveFromUtc);
 
         clock.Advance(TimeSpan.FromMinutes(5));
         var edited = await service.EditAsync(created.Job.Id,
             Command(source, destination.Id, activate: true) with { ScheduledTime = new TimeOnly(4, 15) });
-        Assert.True(edited.Succeeded, edited.Message);
+        Assert.True(edited.Succeeded, MessageAssert.Text(edited.Message));
         Assert.Equal(2, edited.Job!.ScheduleRevision);
         Assert.Equal(clock.GetUtcNow(), edited.Job.ScheduleEffectiveFromUtc);
 
         var archived = await service.ArchiveAsync(created.Job.Id);
-        Assert.True(archived.Succeeded, archived.Message);
+        Assert.True(archived.Succeeded, MessageAssert.Text(archived.Message));
         Assert.False(File.Exists(Path.Combine(folder, OwnershipMarkerService.MarkerName)));
         Assert.Equal(2, archived.Job!.ScheduleRevision);
 
         clock.Advance(TimeSpan.FromMinutes(5));
         var restored = await service.RestoreAsync(created.Job.Id, restoreActive: true);
-        Assert.True(restored.Succeeded, restored.Message);
+        Assert.True(restored.Succeeded, MessageAssert.Text(restored.Message));
         Assert.Equal(JobLifecycle.Active, restored.Job!.Lifecycle);
         Assert.Equal(2, restored.Job.ScheduleRevision);
         Assert.Equal(clock.GetUtcNow(), restored.Job.ScheduleEffectiveFromUtc);
@@ -118,7 +118,7 @@ public sealed class JobServiceTests
         var result = await Service(database, TimeProvider.System)
             .CreateAsync(Command(source, destination.Id));
 
-        Assert.True(result.Succeeded, result.Message);
+        Assert.True(result.Succeeded, MessageAssert.Text(result.Message));
         Assert.Equal(JobLifecycle.Paused, result.Job!.Lifecycle);
         Assert.True(File.Exists(Path.Combine(destinationRoot, "Documents", OwnershipMarkerService.MarkerName)));
     }
@@ -168,7 +168,7 @@ public sealed class JobServiceTests
 
         var archived = await service.ArchiveAsync(created.Job!.Id);
 
-        Assert.True(archived.Succeeded, archived.Message);
+        Assert.True(archived.Succeeded, MessageAssert.Text(archived.Message));
         Assert.Equal(JobLifecycle.Archived, archived.Job!.Lifecycle);
     }
 

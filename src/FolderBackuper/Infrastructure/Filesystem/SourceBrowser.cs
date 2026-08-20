@@ -1,5 +1,7 @@
 using System.Text.Json;
 
+using FolderBackuper.Infrastructure.Localization;
+
 namespace FolderBackuper.Infrastructure.Filesystem;
 
 public sealed class SourceBrowser
@@ -27,7 +29,7 @@ public sealed class SourceBrowser
         var offset = continuation is null ? request.Offset : 0;
         var retainedLimit = checked(offset + pageSize + 1);
         var entries = new SortedSet<SourceEntry>(SourceEntryComparer.Instance);
-        string? accessProblem = null;
+        UiMessage? accessProblem = null;
 
         try
         {

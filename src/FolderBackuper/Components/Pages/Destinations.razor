@@ -1,22 +1,23 @@
+@using System.Globalization
 @page "/destinations"
 @inject DestinationService DestinationService
 @inject IDialogService DialogService
 
-<PageTitle>Destinations | Folder Backuper</PageTitle>
+<PageTitle>@string.Format(CultureInfo.CurrentCulture, UiStrings.PageTitleFormat, UiStrings.NavDestinations)</PageTitle>
 
 @if (operationMessage is not null)
 {
-    <MudAlert Severity="@(operationError ? Severity.Error : Severity.Success)" CloseIcon="@Icons.Material.Filled.Close" ShowCloseIcon="true" CloseIconClicked="() => operationMessage = null">@operationMessage</MudAlert>
+    <MudAlert Severity="@(operationError ? Severity.Error : Severity.Success)" CloseIcon="@Icons.Material.Filled.Close" ShowCloseIcon="true" CloseIconClicked="() => operationMessage = null">@MessageText.Resolve(operationMessage)</MudAlert>
 }
 
 <div class="page-heading">
     <div>
-        <MudText Typo="Typo.h1">Destinations</MudText>
-        <MudText Class="page-lead">Verified local and network storage roots for future backup jobs.</MudText>
+        <MudText Typo="Typo.h1">@UiStrings.DestinationsTitle</MudText>
+        <MudText Class="page-lead">@UiStrings.DestinationsLead</MudText>
     </div>
     <MudStack Row="true">
-        <MudButton Variant="@(showArchived ? Variant.Outlined : Variant.Text)" OnClick="ToggleArchivedAsync">@(showArchived ? "Show active" : "Show archived")</MudButton>
-        @if (!showArchived) { <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="CreateAsync">Add destination</MudButton> }
+        <MudButton Variant="@(showArchived ? Variant.Outlined : Variant.Text)" OnClick="ToggleArchivedAsync">@(showArchived ? UiStrings.DestinationsShowActive : UiStrings.DestinationsShowArchived)</MudButton>
+        @if (!showArchived) { <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="CreateAsync">@UiStrings.DestinationsAdd</MudButton> }
     </MudStack>
 </div>
 
@@ -28,8 +29,8 @@ else if (destinations.Count == 0)
 {
     <MudPaper Class="destination-empty" Elevation="0">
         <MudIcon Icon="@Icons.Material.Outlined.Storage" Size="Size.Large" />
-        <MudText Typo="Typo.h5">No storage roots configured</MudText>
-        <MudText>Add a local folder or an SMB share, then verify service access.</MudText>
+        <MudText Typo="Typo.h5">@UiStrings.DestinationsEmptyHeading</MudText>
+        <MudText>@UiStrings.DestinationsEmptyBody</MudText>
     </MudPaper>
 }
 else
@@ -42,27 +43,27 @@ else
                     <MudIcon Icon="@(destination.Type == DestinationType.Local ? Icons.Material.Outlined.Storage : Icons.Material.Outlined.Dns)" />
                     <div>
                         <MudText Typo="Typo.h5">@destination.Name</MudText>
-                        <MudText Typo="Typo.caption">@(destination.Type == DestinationType.Local ? "LOCAL STORAGE" : "SMB STORAGE")</MudText>
+                        <MudText Typo="Typo.caption">@(destination.Type == DestinationType.Local ? UiStrings.DestinationsLocalStorage : UiStrings.DestinationsSmbStorage)</MudText>
                     </div>
-                    <MudChip T="string" Size="Size.Small" Color="@VerificationColor(destination.VerificationResult)">@destination.VerificationResult</MudChip>
+                    <MudChip T="string" Size="Size.Small" Color="@MonitoringDisplay.VerificationColor(destination.VerificationResult)">@MonitoringDisplay.VerificationLabel(destination.VerificationResult)</MudChip>
                 </div>
                 <MudText Class="destination-path">@destination.RootPath</MudText>
                 @if (destination.SmbUsername is not null)
                 {
-                    <MudText Typo="Typo.body2">Account: @destination.SmbUsername</MudText>
+                    <MudText Typo="Typo.body2">@string.Format(CultureInfo.CurrentCulture, UiStrings.DestinationsAccount, destination.SmbUsername)</MudText>
                 }
-                <MudText Typo="Typo.body2">Available: @DisplayFormat.Bytes(destination.AvailableBytes)</MudText>
+                <MudText Typo="Typo.body2">@string.Format(CultureInfo.CurrentCulture, UiStrings.DestinationsAvailable, DisplayFormat.Bytes(destination.AvailableBytes))</MudText>
                 <MudText Typo="Typo.body2">@LastTestText(destination)</MudText>
                 <div class="destination-actions">
                     @if (destination.Lifecycle == DestinationLifecycle.Archived)
                     {
-                        <MudButton Variant="Variant.Outlined" OnClick="@(() => RestoreAsync(destination))">Restore</MudButton>
+                        <MudButton Variant="Variant.Outlined" OnClick="@(() => RestoreAsync(destination))">@UiStrings.ActionRestore</MudButton>
                     }
                     else
                     {
-                        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Outlined.Edit" OnClick="@(() => EditAsync(destination))">Edit</MudButton>
-                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Outlined.FactCheck" OnClick="@(() => TestAsync(destination))">Test access</MudButton>
-                        <MudButton Color="Color.Error" Variant="Variant.Text" OnClick="@(() => ArchiveAsync(destination))">Archive</MudButton>
+                        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Outlined.Edit" OnClick="@(() => EditAsync(destination))">@UiStrings.ActionEdit</MudButton>
+                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Outlined.FactCheck" OnClick="@(() => TestAsync(destination))">@UiStrings.DestinationsTestAccess</MudButton>
+                        <MudButton Color="Color.Error" Variant="Variant.Text" OnClick="@(() => ArchiveAsync(destination))">@UiStrings.ActionArchive</MudButton>
                     }
                 </div>
             </MudPaper>
@@ -74,7 +75,7 @@ else
     private IReadOnlyList<DestinationSummary> destinations = [];
     private bool loading = true;
     private bool showArchived;
-    private string? operationMessage;
+    private UiMessage? operationMessage;
     private bool operationError;
 
     protected override async Task OnInitializedAsync() => await ReloadAsync();
@@ -88,12 +89,20 @@ else
     private async Task ToggleArchivedAsync() { showArchived = !showArchived; await ReloadAsync(); }
     private async Task ArchiveAsync(DestinationSummary destination)
     {
-        if (await DialogService.ShowMessageBoxAsync("Archive destination?", $"Archive {destination.Name}? It can be restored later.", yesText: "Archive", cancelText: "Cancel") != true) return;
+        if (await DialogService.ShowMessageBoxAsync(
+                UiStrings.DestinationsArchiveTitle,
+                string.Format(CultureInfo.CurrentCulture, UiStrings.DestinationsArchiveBody, destination.Name),
+                yesText: UiStrings.ActionArchive,
+                cancelText: UiStrings.ActionCancel) != true) return;
         await ApplyAsync(await DestinationService.ArchiveAsync(destination.Id));
     }
     private async Task RestoreAsync(DestinationSummary destination)
     {
-        if (await DialogService.ShowMessageBoxAsync("Restore destination?", $"Restore {destination.Name}? It will need access verification.", yesText: "Restore", cancelText: "Cancel") != true) return;
+        if (await DialogService.ShowMessageBoxAsync(
+                UiStrings.DestinationsRestoreTitle,
+                string.Format(CultureInfo.CurrentCulture, UiStrings.DestinationsRestoreBody, destination.Name),
+                yesText: UiStrings.ActionRestore,
+                cancelText: UiStrings.ActionCancel) != true) return;
         await ApplyAsync(await DestinationService.RestoreAsync(destination.Id));
     }
     private async Task ApplyAsync(DestinationOperationResult result)
@@ -104,30 +113,31 @@ else
     }
     private async Task CreateAsync()
     {
-        var dialog = await DialogService.ShowAsync<DestinationFormDialog>("Add destination", options: DialogOptions());
+        var dialog = await DialogService.ShowAsync<DestinationFormDialog>(UiStrings.DestinationFormAddTitle, options: DialogOptions());
         if ((await dialog.Result)?.Canceled == false) await ReloadAsync();
     }
     private async Task EditAsync(DestinationSummary destination)
     {
         var parameters = new DialogParameters { [nameof(DestinationFormDialog.Destination)] = destination };
-        var dialog = await DialogService.ShowAsync<DestinationFormDialog>("Edit destination", parameters, DialogOptions());
+        var dialog = await DialogService.ShowAsync<DestinationFormDialog>(UiStrings.DestinationsEditTitle, parameters, DialogOptions());
         if ((await dialog.Result)?.Canceled == false) await ReloadAsync();
     }
     private async Task TestAsync(DestinationSummary destination)
     {
         var parameters = new DialogParameters { [nameof(DestinationTestDialog.Destination)] = destination };
-        var dialog = await DialogService.ShowAsync<DestinationTestDialog>("Test destination access", parameters, DialogOptions());
+        var dialog = await DialogService.ShowAsync<DestinationTestDialog>(UiStrings.DestinationsTestDialogTitle, parameters, DialogOptions());
         await dialog.Result;
         await ReloadAsync();
     }
     private static DialogOptions DialogOptions() => new() { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
-    private static Color VerificationColor(DestinationVerificationResult result) => result switch
-    {
-        DestinationVerificationResult.Succeeded => Color.Success,
-        DestinationVerificationResult.Failed => Color.Error,
-        _ => Color.Default
-    };
+
+    // The verification chip's colour and label now come from MonitoringDisplay so that a destination
+    // reads the same here, on the dashboard, and in the job form.
     private static string LastTestText(DestinationSummary destination) => destination.LastAccessedAtUtc is { } testedAt
-        ? $"Last test: {destination.LastAccessResult} on {DisplayFormat.LocalDateTime(testedAt)}"
-        : "Last test: Not attempted";
+        ? string.Format(
+            CultureInfo.CurrentCulture,
+            UiStrings.DestinationsLastTest,
+            MonitoringDisplay.AccessLabel(destination.LastAccessResult),
+            DisplayFormat.LocalDateTime(testedAt))
+        : UiStrings.DestinationsLastTestNotAttempted;
 }

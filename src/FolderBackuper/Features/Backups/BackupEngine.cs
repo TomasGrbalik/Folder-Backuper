@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using FolderBackuper.Features.Destinations;
+using FolderBackuper.Infrastructure.Localization;
 using FolderBackuper.Features.Jobs;
 using FolderBackuper.Features.Settings;
 using FolderBackuper.Infrastructure.Database;
@@ -61,7 +62,7 @@ public sealed class BackupEngine(
         var destinationAccessed = false;
         var crashInjected = false;
         var destinationAccessResult = DestinationAccessResult.Failed;
-        string? destinationAccessError = null;
+        UiMessage? destinationAccessError = null;
 
         try
         {
@@ -123,7 +124,7 @@ public sealed class BackupEngine(
             if (job is null || destination is null)
             {
                 problems.Add(Error(BackupProblemCategory.SourceUnavailable, RunPhase.Scanning,
-                    "Load backup configuration", "The job or destination no longer exists."));
+                    BackupOperation.LoadConfiguration, BackupProblemMessage.JobOrDestinationMissing));
                 return Result();
             }
 
@@ -135,7 +136,8 @@ public sealed class BackupEngine(
             if (!preflightResult.Succeeded)
             {
                 destinationAccessed = preflightResult.Problems.Any(problem =>
-                    problem.Operation is "Validate effective destination" or "Verify destination ownership");
+                    problem.Operation is BackupOperation.ValidateEffectiveDestination
+                        or BackupOperation.VerifyDestinationOwnership);
                 if (destinationAccessed)
                 {
                     destinationAccessResult = MapAccessResult(preflightResult.Problems);
@@ -237,19 +239,19 @@ public sealed class BackupEngine(
         {
             problems.AddRange(exception.CleanupProblems);
             problems.Add(new(BackupProblemSeverity.Error, BackupProblemCategory.Cancelled,
-                CurrentPhase(request.RunId), "Cancel backup", "The backup was cancelled."));
+                CurrentPhase(request.RunId), BackupOperation.CancelBackup, BackupProblemMessage.Cancelled));
             outcome = RunOutcome.Cancelled;
         }
         catch (OperationCanceledException) when (userCancellationToken.IsCancellationRequested)
         {
             problems.Add(new(BackupProblemSeverity.Error, BackupProblemCategory.Cancelled,
-                CurrentPhase(request.RunId), "Cancel backup", "The backup was cancelled."));
+                CurrentPhase(request.RunId), BackupOperation.CancelBackup, BackupProblemMessage.Cancelled));
             outcome = RunOutcome.Cancelled;
         }
         catch (DurableCancellationRequestedException)
         {
             problems.Add(new(BackupProblemSeverity.Error, BackupProblemCategory.Cancelled,
-                CurrentPhase(request.RunId), "Cancel backup", "The backup was cancelled."));
+                CurrentPhase(request.RunId), BackupOperation.CancelBackup, BackupProblemMessage.Cancelled));
             outcome = RunOutcome.Cancelled;
         }
         catch (OperationCanceledException) when (interruptionToken.IsCancellationRequested)
@@ -268,7 +270,7 @@ public sealed class BackupEngine(
         catch (Exception exception)
         {
             problems.Add(Error(BackupProblemCategory.GeneralIo, CurrentPhase(request.RunId),
-                "Execute backup", "The backup failed unexpectedly.", exception.HResult & 0xFFFF));
+                BackupOperation.ExecuteBackup, BackupProblemMessage.UnexpectedFailure, exception.HResult & 0xFFFF));
         }
         finally
         {
@@ -281,8 +283,8 @@ public sealed class BackupEngine(
                 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
                 {
                     problems.Add(new(BackupProblemSeverity.Warning, BackupProblemCategory.CleanupFailed,
-                        RunPhase.Finalizing, "Clean staging archive",
-                        "The completed staging archive could not be removed.", stagingPath,
+                        RunPhase.Finalizing, BackupOperation.CleanStagingArchive,
+                        BackupProblemMessage.StagingArchiveNotRemoved, stagingPath,
                         exception.HResult & 0xFFFF));
                 }
             }
@@ -297,8 +299,9 @@ public sealed class BackupEngine(
                 catch (Exception exception)
                 {
                     problems.Add(new(BackupProblemSeverity.Warning, BackupProblemCategory.GeneralIo,
-                        RunPhase.Finalizing, "Record destination access",
-                        "The destination access result could not be recorded.", NativeErrorCode: exception.HResult & 0xFFFF));
+                        RunPhase.Finalizing, BackupOperation.RecordDestinationAccess,
+                        UiMessage.For(BackupProblemMessage.DestinationAccessNotRecorded),
+                        NativeErrorCode: exception.HResult & 0xFFFF));
                 }
             }
         }
@@ -419,8 +422,9 @@ public sealed class BackupEngine(
     private static BackupProblem Error(
         BackupProblemCategory category,
         RunPhase phase,
-        string operation,
-        string message,
+        BackupOperation operation,
+        BackupProblemMessage message,
         int? nativeErrorCode = null) =>
-        new(BackupProblemSeverity.Error, category, phase, operation, message, NativeErrorCode: nativeErrorCode);
+        new(BackupProblemSeverity.Error, category, phase, operation, UiMessage.For(message),
+            NativeErrorCode: nativeErrorCode);
 }

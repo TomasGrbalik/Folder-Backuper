@@ -271,6 +271,37 @@ Durable run and job changes are broadcast in-process by a run activity signal so
 
 The UI must not treat an open browser connection as necessary for backup execution.
 
+### 7.5 Interface language
+
+The interface is available in English and Slovak. The choice is a single machine-wide preference stored on the
+application settings row, not a per-browser or per-request one, because the product has one user on one always-on
+PC and because the same text has to be produced by work that no browser is attached to.
+
+The selected language is applied by assigning `CultureInfo.DefaultThreadCurrentCulture` and
+`DefaultThreadCurrentUICulture` once, at startup immediately after migrations and again whenever the preference
+changes. Nothing in the application sets a per-thread culture, so every thread resolves to those defaults: the
+static render of the root document, every interactive circuit, the scheduler, and the notification outbox worker.
+
+Request localization middleware is deliberately not used. It would derive a culture from each request's
+`Accept-Language` header and override the stored preference, and it would leave work that has no request — a
+scheduled backup rendering an email — on a different language from the interface that configured it.
+
+Changing the language forces a full browser reload rather than a re-render, because the root document's `lang`
+attribute, the statically rendered reconnect markup, and the component library's own strings are all produced
+outside the interactive circuit.
+
+The component library's visible text is set on the components that render it rather than through a
+library localizer: the components this application uses do not consult one.
+
+Translated text lives in resource files compiled into satellite assemblies. Presentation code never names a
+resource key as a literal: UI text is reached through a generated strongly typed accessor, and text that
+originates below the presentation layer is carried as a message code with arguments and resolved for display.
+Codes rather than sentences are what the database stores for run problems and error summaries, so history renders
+in whatever language it is later read in.
+
+Operator-facing text is excluded and stays English: Windows event-log entries, installer console output, and the
+application log.
+
 ## 8. Persistence Design
 
 ### 8.1 SQLite operation
@@ -344,10 +375,10 @@ A unique constraint on scheduled occurrence identity prevents duplicate schedule
 
 - Run identifier.
 - Source or destination path, as appropriate.
-- Pipeline phase and operation.
+- Pipeline phase and operation, both stored as stable codes rather than display text.
 - Stable application error category.
 - Native or provider error code where available.
-- User-facing message.
+- User-facing message, stored as a message code and its arguments so that it renders in the language the history is read in.
 - Diagnostic detail safe for local storage.
 
 Problems are stored as structured rows, not parsed from log text.
@@ -380,6 +411,7 @@ Terminal run persistence and outbox insertion occur in one transaction. Claiming
 - Notification provider configuration.
 - Global recipient list.
 - Protected notification secret.
+- Selected interface language.
 - Other mutable product settings that do not affect early host startup.
 
 The Kestrel port and application-data root remain host configuration outside SQLite because they are needed before the application database and UI are available.
@@ -388,8 +420,11 @@ The Kestrel port and application-data root remain host configuration outside SQL
 
 - Actual event timestamps are stored as UTC instants.
 - Scheduled wall-clock values are stored as local date/time plus time-zone context.
-- UI dates, times, numbers, and file sizes use the Windows PC's current regional culture.
+- UI dates, times, numbers, and file sizes use the culture of the selected interface language (section 7.5),
+  which on an installation that has never chosen one is derived from the Windows installed interface language.
 - Archive timestamps use a fixed, locale-independent format.
+- Notification email timestamps use the run's own time-zone context and an invariant format, because the mail is
+  read away from the machine that produced it.
 
 ### 8.4 Migration safety
 

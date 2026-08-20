@@ -4,6 +4,8 @@ using System.Text.Encodings.Web;
 using FolderBackuper.Features.Backups;
 using FolderBackuper.Infrastructure.Formatting;
 
+using FolderBackuper.Infrastructure.Localization;
+using FolderBackuper.Resources;
 namespace FolderBackuper.Features.Notifications;
 
 /// <summary>A rendered message, still independent of any provider.</summary>
@@ -46,14 +48,23 @@ public static class NotificationTemplates
         "font-family:Consolas,'Courier New',monospace;font-size:12px;color:#6b7280;"
         + "margin-top:3px;word-break:break-all;";
 
-    private static readonly string[] ProblemColumns = ["Severity", "Phase", "Operation", "Detail"];
+    // Resolved per call rather than cached in a static, because the reading language can change
+    // while the process runs.
+    private static string[] ProblemColumns =>
+    [
+        EmailStrings.ColumnSeverity,
+        EmailStrings.ColumnPhase,
+        EmailStrings.ColumnOperation,
+        EmailStrings.ColumnDetail
+    ];
 
     public static NotificationMessage RunResult(NotificationPayload payload)
     {
         ArgumentNullException.ThrowIfNull(payload);
 
         var outcome = OutcomeHeadline(payload.Outcome);
-        var subject = $"Folder Backuper: {payload.JobName} - {outcome}";
+        var subject = string.Format(
+            CultureInfo.CurrentCulture, EmailStrings.SubjectRunResult, payload.JobName, outcome);
         return new NotificationMessage(subject, RunResultHtml(payload, outcome), RunResultText(payload, outcome));
     }
 
@@ -61,24 +72,23 @@ public static class NotificationTemplates
     {
         ArgumentNullException.ThrowIfNull(recipients);
 
-        const string subject = "Folder Backuper: test email";
+        var subject = EmailStrings.SubjectTest;
+        var joined = string.Join(", ", recipients);
         var text = new StringBuilder()
-            .AppendLine("This is a test email from Folder Backuper.")
+            .AppendLine(EmailStrings.TestIntro)
             .AppendLine()
-            .AppendLine("The saved notification configuration on the backup PC can reach Resend and")
-            .AppendLine("deliver to the configured recipients.")
+            .AppendLine(EmailStrings.TestBody)
             .AppendLine()
-            .AppendLine($"Recipients: {string.Join(", ", recipients)}")
+            .AppendLine(string.Format(CultureInfo.CurrentCulture, EmailStrings.TestRecipients, joined))
             .ToString();
 
         var html = Document(
-            "Test email",
+            EmailStrings.TestHeading,
             "info",
             $"""
-             <p style="margin:0 0 12px;">This is a test email from Folder Backuper.</p>
-             <p style="margin:0 0 12px;">The saved notification configuration on the backup PC can reach
-             Resend and deliver to the configured recipients.</p>
-             <p style="{MutedStyle}">Recipients: {Encode(string.Join(", ", recipients))}</p>
+             <p style="margin:0 0 12px;">{Encode(EmailStrings.TestIntro)}</p>
+             <p style="margin:0 0 12px;">{Encode(EmailStrings.TestBody)}</p>
+             <p style="{MutedStyle}">{Encode(string.Format(CultureInfo.CurrentCulture, EmailStrings.TestRecipients, joined))}</p>
              """);
 
         return new NotificationMessage(subject, html, text);
@@ -86,9 +96,9 @@ public static class NotificationTemplates
 
     public static string OutcomeHeadline(RunOutcome outcome) => outcome switch
     {
-        RunOutcome.Successful => "backup successful",
-        RunOutcome.SuccessfulWithWarnings => "completed with warnings",
-        RunOutcome.Failed => "backup failed",
+        RunOutcome.Successful => EmailStrings.OutcomeSuccessful,
+        RunOutcome.SuccessfulWithWarnings => EmailStrings.OutcomeWithWarnings,
+        RunOutcome.Failed => EmailStrings.OutcomeFailed,
         _ => throw new ArgumentOutOfRangeException(
             nameof(outcome), outcome, "Only terminal notifiable outcomes have a template.")
     };
@@ -103,17 +113,18 @@ public static class NotificationTemplates
     private static string RunResultText(NotificationPayload payload, string outcome)
     {
         var builder = new StringBuilder();
-        builder.AppendLine($"{payload.JobName} - {outcome}");
+        builder.AppendLine(string.Format(CultureInfo.CurrentCulture, EmailStrings.HeadingRunResult, payload.JobName, outcome));
         builder.AppendLine();
         foreach (var (label, value) in Facts(payload))
         {
             builder.AppendLine($"{label}: {value}");
         }
 
-        if (payload.ErrorSummary is { Length: > 0 } summary)
+        if (payload.ErrorSummary is { } summary)
         {
             builder.AppendLine();
-            builder.AppendLine($"Error: {summary}");
+            builder.AppendLine(string.Format(
+                CultureInfo.CurrentCulture, EmailStrings.ErrorLine, MessageText.Resolve(summary)));
         }
 
         if (payload.RetentionWarningCount > 0)
@@ -128,7 +139,12 @@ public static class NotificationTemplates
             builder.AppendLine(ProblemHeading(payload));
             foreach (var problem in payload.Problems)
             {
-                builder.AppendLine($"- [{problem.Severity}] {problem.Operation}: {problem.Message}");
+                builder.AppendLine(string.Format(
+                    CultureInfo.CurrentCulture,
+                    EmailStrings.ProblemLine,
+                    EnumText.For(problem.Severity),
+                    EnumText.For(problem.Operation),
+                    MessageText.Resolve(problem.Message)));
                 if (problem.Path is { Length: > 0 } path)
                 {
                     builder.AppendLine($"    {path}");
@@ -137,7 +153,7 @@ public static class NotificationTemplates
         }
 
         builder.AppendLine();
-        builder.AppendLine("Open Folder Backuper on the backup PC for complete run details.");
+        builder.AppendLine(EmailStrings.OpenForDetails);
         return builder.ToString();
     }
 
@@ -153,9 +169,9 @@ public static class NotificationTemplates
 
         body.Append("</table>");
 
-        if (payload.ErrorSummary is { Length: > 0 } summary)
+        if (payload.ErrorSummary is { } summary)
         {
-            body.Append($"<p style=\"{SummaryStyle}\">{Encode(summary)}</p>");
+            body.Append($"<p style=\"{SummaryStyle}\">{Encode(MessageText.Resolve(summary))}</p>");
         }
 
         if (payload.RetentionWarningCount > 0)
@@ -178,8 +194,8 @@ public static class NotificationTemplates
                 body.Append("<tr>");
                 body.Append($"<td style=\"{ProblemCellStyle}\">{Encode(problem.Severity.ToString())}</td>");
                 body.Append($"<td style=\"{ProblemCellStyle}\">{Encode(problem.Phase.ToString())}</td>");
-                body.Append($"<td style=\"{ProblemCellStyle}\">{Encode(problem.Operation)}</td>");
-                body.Append($"<td style=\"{ProblemCellStyle}\">{Encode(problem.Message)}");
+                body.Append($"<td style=\"{ProblemCellStyle}\">{Encode(EnumText.For(problem.Operation))}</td>");
+                body.Append($"<td style=\"{ProblemCellStyle}\">{Encode(MessageText.Resolve(problem.Message))}");
                 if (problem.Path is { Length: > 0 } path)
                 {
                     body.Append($"<div style=\"{PathStyle}\">{Encode(path)}</div>");
@@ -191,43 +207,46 @@ public static class NotificationTemplates
             body.Append("</tbody></table>");
         }
 
-        body.Append($"<p style=\"{MutedStyle}\">Open Folder Backuper on the backup PC for complete run details.</p>");
-        return Document($"{payload.JobName} - {outcome}", Accent(payload.Outcome), body.ToString());
+        body.Append($"<p style=\"{MutedStyle}\">{Encode(EmailStrings.OpenForDetails)}</p>");
+        return Document(
+            string.Format(CultureInfo.CurrentCulture, EmailStrings.HeadingRunResult, payload.JobName, outcome),
+            Accent(payload.Outcome),
+            body.ToString());
     }
 
     private static IEnumerable<(string Label, string Value)> Facts(NotificationPayload payload)
     {
-        yield return ("Job", payload.JobName);
-        yield return ("Outcome", OutcomeHeadline(payload.Outcome));
-        yield return ("Source", payload.SourcePath);
-        yield return ("Destination", $"{payload.DestinationName} ({payload.DestinationEffectivePath})");
+        yield return (EmailStrings.FactJob, payload.JobName);
+        yield return (EmailStrings.FactOutcome, OutcomeHeadline(payload.Outcome));
+        yield return (EmailStrings.FactSource, payload.SourcePath);
+        yield return (EmailStrings.FactDestination, $"{payload.DestinationName} ({payload.DestinationEffectivePath})");
         if (payload.ArchiveFileName is { Length: > 0 } archive)
         {
-            yield return ("Archive", archive);
+            yield return (EmailStrings.FactArchive, archive);
         }
 
         if (payload.ArchiveBytes is { } bytes)
         {
-            yield return ("Archive size", DisplayFormat.Bytes(bytes));
+            yield return (EmailStrings.FactArchiveSize, DisplayFormat.Bytes(bytes));
         }
 
-        yield return ("Scheduled", Instant(payload.ScheduledDueAtUtc, payload.TimeZoneId));
+        yield return (EmailStrings.FactScheduled, Instant(payload.ScheduledDueAtUtc, payload.TimeZoneId));
         if (payload.StartedAtUtc is { } started)
         {
-            yield return ("Started", Instant(started, payload.TimeZoneId));
+            yield return (EmailStrings.FactStarted, Instant(started, payload.TimeZoneId));
         }
 
         if (payload.CompletedAtUtc is { } completed)
         {
-            yield return ("Completed", Instant(completed, payload.TimeZoneId));
+            yield return (EmailStrings.FactCompleted, Instant(completed, payload.TimeZoneId));
         }
 
         if (payload.Duration is { } duration)
         {
-            yield return ("Duration", DisplayFormat.Duration(duration));
+            yield return (EmailStrings.FactDuration, DisplayFormat.Duration(duration));
         }
 
-        yield return ("Problems", payload.TotalProblemCount.ToString("N0", CultureInfo.InvariantCulture));
+        yield return (EmailStrings.FactProblems, payload.TotalProblemCount.ToString("N0", CultureInfo.CurrentCulture));
     }
 
     // Email is read away from the backup PC, so the run's own time zone is used and named rather
@@ -255,13 +274,18 @@ public static class NotificationTemplates
     }
 
     private static string ProblemHeading(NotificationPayload payload) => payload.ProblemsTruncated
-        ? $"Showing the first {payload.Problems.Count:N0} of {payload.TotalProblemCount:N0} problems; "
-          + "the complete list is in local run details"
-        : $"Problems ({payload.TotalProblemCount:N0})";
+        ? string.Format(
+            CultureInfo.CurrentCulture,
+            EmailStrings.ProblemsHeadingTruncated,
+            payload.Problems.Count,
+            payload.TotalProblemCount)
+        : string.Format(CultureInfo.CurrentCulture, EmailStrings.ProblemsHeading, payload.TotalProblemCount);
 
-    private static string RetentionSentence(int count) => count == 1
-        ? "One retention warning was recorded. An older backup may not have been removed."
-        : $"{count:N0} retention warnings were recorded. Older backups may not have been removed.";
+    private static string RetentionSentence(int count) => Plural.Format(
+        count,
+        EmailStrings.RetentionWarnings_One,
+        EmailStrings.RetentionWarnings_Few,
+        EmailStrings.RetentionWarnings_Many);
 
     private static string Encode(string value) => HtmlEncoder.Default.Encode(value);
 
@@ -281,7 +305,7 @@ public static class NotificationTemplates
                 <div style="margin:0;padding:24px;background:#f4f5f7;font-family:'Segoe UI',system-ui,sans-serif;color:#22262b;">
                   <div style="max-width:680px;margin:0 auto;background:#ffffff;border:1px solid #e3e5e9;border-radius:9px;overflow:hidden;">
                     <div style="padding:16px 24px;border-bottom:1px solid #e3e5e9;">
-                      <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#6b7280;">Folder Backuper</div>
+                      <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#6b7280;">{Encode(EmailStrings.BrandLabel)}</div>
                       <div style="font-size:19px;font-weight:650;color:{color};margin-top:4px;">{Encode(heading)}</div>
                     </div>
                     <div style="padding:20px 24px;font-size:14px;line-height:1.55;text-align:left;">

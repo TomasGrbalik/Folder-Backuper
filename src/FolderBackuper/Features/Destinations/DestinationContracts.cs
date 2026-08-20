@@ -1,3 +1,4 @@
+using FolderBackuper.Infrastructure.Localization;
 namespace FolderBackuper.Features.Destinations;
 
 public sealed record DestinationSummary(
@@ -38,7 +39,7 @@ public enum DestinationOperationStatus
 public sealed record DestinationOperationResult(
     bool Succeeded,
     DestinationAccessResult Result,
-    string Message,
+    UiMessage Message,
     int? NativeErrorCode = null,
     long? AvailableBytes = null,
     DestinationOperationStatus? OperationStatus = null,
@@ -49,11 +50,11 @@ public sealed record DestinationOperationResult(
     public DestinationOperationStatus Status => OperationStatus ??
         (Succeeded ? DestinationOperationStatus.Succeeded : DestinationOperationStatus.Failed);
 
-    public static DestinationOperationResult Success(string message, long? availableBytes = null) =>
-        new(true, DestinationAccessResult.Succeeded, message, AvailableBytes: availableBytes);
+    public static DestinationOperationResult Success(DestinationMessage message, long? availableBytes = null) =>
+        new(true, DestinationAccessResult.Succeeded, UiMessage.For(message), AvailableBytes: availableBytes);
 
     public static DestinationOperationResult Completed(
-        string message,
+        UiMessage message,
         DestinationSummary? destination = null,
         int pausedJobCount = 0,
         int unmanagedArtifactCount = 0) =>
@@ -63,8 +64,18 @@ public sealed record DestinationOperationResult(
             PausedJobCount: pausedJobCount,
             UnmanagedArtifactCount: unmanagedArtifactCount);
 
-    public static DestinationOperationResult Failure(DestinationOperationStatus status, string message) =>
+    public static DestinationOperationResult Completed(
+        DestinationMessage message,
+        DestinationSummary? destination = null,
+        int pausedJobCount = 0,
+        int unmanagedArtifactCount = 0) =>
+        Completed(UiMessage.For(message), destination, pausedJobCount, unmanagedArtifactCount);
+
+    public static DestinationOperationResult Failure(DestinationOperationStatus status, UiMessage message) =>
         new(false, DestinationAccessResult.NotAttempted, message, OperationStatus: status);
+
+    public static DestinationOperationResult Failure(DestinationOperationStatus status, DestinationMessage message) =>
+        Failure(status, UiMessage.For(message));
 }
 
 public sealed record DestinationAccessConfiguration(

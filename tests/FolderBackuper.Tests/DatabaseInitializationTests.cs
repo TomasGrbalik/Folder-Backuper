@@ -176,7 +176,8 @@ public sealed class DatabaseInitializationTests
         Assert.Equal(1L, await ScalarAsync(context,
             "SELECT COUNT(*) FROM Runs WHERE Outcome IS NULL AND Phase <> 'Planned';"));
         Assert.Equal(1L, await ScalarAsync(context,
-            "SELECT COUNT(*) FROM Runs WHERE Outcome = 'Failed' AND ErrorSummary LIKE 'Duplicate active work%';"));
+            "SELECT COUNT(*) FROM Runs WHERE Outcome = 'Failed' "
+            + "AND ErrorMessageKey = 'BackupProblemMessage_DuplicateActiveWorkReconciled';"));
         Assert.Equal(2L, await ScalarAsync(context,
             "SELECT COUNT(*) FROM Runs WHERE DueAtUtc = QueuedAtUtc;"));
         Assert.Equal(second, Guid.Parse((string)(await ScalarAsync(context,

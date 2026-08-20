@@ -1,0 +1,1412 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ActionArchive" xml:space="preserve">
+    <value>Archive</value>
+  </data>
+  <data name="ActionCancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="ActionClose" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="ActionEdit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="ActionRefresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="ActionRestore" xml:space="preserve">
+    <value>Restore</value>
+  </data>
+  <data name="ActionSave" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="ActiveRunArchiveSize" xml:space="preserve">
+    <value>archive size</value>
+  </data>
+  <data name="ActiveRunCancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="ActiveRunCancelling" xml:space="preserve">
+    <value>Cancelling…</value>
+  </data>
+  <data name="ActiveRunCompression" xml:space="preserve">
+    <value>compression</value>
+  </data>
+  <data name="ActiveRunElapsed" xml:space="preserve">
+    <value>elapsed</value>
+  </data>
+  <data name="ActiveRunHeading" xml:space="preserve">
+    <value>Active backup</value>
+  </data>
+  <data name="ActiveRunLiveUnavailable" xml:space="preserve">
+    <value>Live progress is unavailable; showing durable phase from the last saved state.</value>
+  </data>
+  <data name="ActiveRunPercentComplete" xml:space="preserve">
+    <value>{0}% complete</value>
+  </data>
+  <data name="ActiveRunPreparing" xml:space="preserve">
+    <value>Preparing…</value>
+  </data>
+  <data name="ActiveRunRemaining" xml:space="preserve">
+    <value>remaining</value>
+  </data>
+  <data name="ActiveRunScanning" xml:space="preserve">
+    <value>Scanning source to establish total work…</value>
+  </data>
+  <data name="ActiveRunSourceRead" xml:space="preserve">
+    <value>source read</value>
+  </data>
+  <data name="AppBarServiceOnline" xml:space="preserve">
+    <value>Service online</value>
+  </data>
+  <data name="AppBarToggleNavigation" xml:space="preserve">
+    <value>Toggle navigation</value>
+  </data>
+  <data name="AppName" xml:space="preserve">
+    <value>Folder Backuper</value>
+    <comment>The product name. Never translated.</comment>
+  </data>
+  <data name="AppTagline" xml:space="preserve">
+    <value>LOCAL BACKUP CONTROL</value>
+  </data>
+  <data name="ArtifactStateNone" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="ArtifactState_FoundMissing" xml:space="preserve">
+    <value>Found missing</value>
+  </data>
+  <data name="ArtifactState_PendingFinalization" xml:space="preserve">
+    <value>Pending</value>
+  </data>
+  <data name="ArtifactState_RemovedByRetention" xml:space="preserve">
+    <value>Removed by retention</value>
+  </data>
+  <data name="ArtifactState_Retained" xml:space="preserve">
+    <value>Retained</value>
+  </data>
+  <data name="ArtifactState_Unmanaged" xml:space="preserve">
+    <value>Unmanaged</value>
+  </data>
+  <data name="BackupOperation_BuildSourceManifest" xml:space="preserve">
+    <value>Build source manifest</value>
+  </data>
+  <data name="BackupOperation_CancelBackup" xml:space="preserve">
+    <value>Cancel backup</value>
+  </data>
+  <data name="BackupOperation_CleanDestinationPartial" xml:space="preserve">
+    <value>Clean destination partial</value>
+  </data>
+  <data name="BackupOperation_CleanInterruptedBackup" xml:space="preserve">
+    <value>Clean interrupted backup</value>
+  </data>
+  <data name="BackupOperation_CleanStagingArchive" xml:space="preserve">
+    <value>Clean staging archive</value>
+  </data>
+  <data name="BackupOperation_CompareSourceManifest" xml:space="preserve">
+    <value>Compare source manifest</value>
+  </data>
+  <data name="BackupOperation_CreateStagingArchive" xml:space="preserve">
+    <value>Create staging archive</value>
+  </data>
+  <data name="BackupOperation_DeleteRetainedArchive" xml:space="preserve">
+    <value>Delete retained archive</value>
+  </data>
+  <data name="BackupOperation_EnumerateSourceDirectory" xml:space="preserve">
+    <value>Enumerate source directory</value>
+  </data>
+  <data name="BackupOperation_ExecuteBackup" xml:space="preserve">
+    <value>Execute backup</value>
+  </data>
+  <data name="BackupOperation_LoadConfiguration" xml:space="preserve">
+    <value>Load backup configuration</value>
+  </data>
+  <data name="BackupOperation_ReadSourceFile" xml:space="preserve">
+    <value>Read source file</value>
+  </data>
+  <data name="BackupOperation_ReadSourceMetadata" xml:space="preserve">
+    <value>Read source metadata</value>
+  </data>
+  <data name="BackupOperation_RecordDestinationAccess" xml:space="preserve">
+    <value>Record destination access</value>
+  </data>
+  <data name="BackupOperation_RecoverFinalArchive" xml:space="preserve">
+    <value>Recover final archive</value>
+  </data>
+  <data name="BackupOperation_RecoverInterruptedBackup" xml:space="preserve">
+    <value>Recover interrupted backup</value>
+  </data>
+  <data name="BackupOperation_RetentionOwnershipVerification" xml:space="preserve">
+    <value>Retention ownership verification</value>
+  </data>
+  <data name="BackupOperation_SkipReparsePoint" xml:space="preserve">
+    <value>Skip reparse point</value>
+  </data>
+  <data name="BackupOperation_TransferDestinationArchive" xml:space="preserve">
+    <value>Transfer destination archive</value>
+  </data>
+  <data name="BackupOperation_ValidateDestinationArchive" xml:space="preserve">
+    <value>Validate destination archive</value>
+  </data>
+  <data name="BackupOperation_ValidateDestinationVerification" xml:space="preserve">
+    <value>Validate destination verification</value>
+  </data>
+  <data name="BackupOperation_ValidateEffectiveDestination" xml:space="preserve">
+    <value>Validate effective destination</value>
+  </data>
+  <data name="BackupOperation_ValidateJobLifecycle" xml:space="preserve">
+    <value>Validate job lifecycle</value>
+  </data>
+  <data name="BackupOperation_ValidateSmbDestination" xml:space="preserve">
+    <value>Validate SMB destination</value>
+  </data>
+  <data name="BackupOperation_ValidateSource" xml:space="preserve">
+    <value>Validate source</value>
+  </data>
+  <data name="BackupOperation_ValidateStaging" xml:space="preserve">
+    <value>Validate staging</value>
+  </data>
+  <data name="BackupOperation_ValidateStagingOverlap" xml:space="preserve">
+    <value>Validate staging overlap</value>
+  </data>
+  <data name="BackupOperation_ValidateZipArchive" xml:space="preserve">
+    <value>Validate ZIP archive</value>
+  </data>
+  <data name="BackupOperation_VerifyDestinationOwnership" xml:space="preserve">
+    <value>Verify destination ownership</value>
+  </data>
+  <data name="BackupProblemSeverity_Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="BackupProblemSeverity_Warning" xml:space="preserve">
+    <value>Warning</value>
+  </data>
+  <data name="CalendarAgendaEmpty" xml:space="preserve">
+    <value>No entries this month for the selected filters.</value>
+  </data>
+  <data name="CalendarEntryTitle" xml:space="preserve">
+    <value>{0} — {1} at {2}</value>
+    <comment>Tooltip on a calendar entry: job name, status, time.</comment>
+  </data>
+  <data name="CalendarLead" xml:space="preserve">
+    <value>Past run attempts and future planned runs together.</value>
+  </data>
+  <data name="CalendarLegendCancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+  <data name="CalendarLegendFailed" xml:space="preserve">
+    <value>Failed / missing</value>
+  </data>
+  <data name="CalendarLegendPlanned" xml:space="preserve">
+    <value>Planned / running</value>
+  </data>
+  <data name="CalendarLegendSuccessful" xml:space="preserve">
+    <value>Successful</value>
+  </data>
+  <data name="CalendarLegendWarnings" xml:space="preserve">
+    <value>Warnings</value>
+  </data>
+  <data name="CalendarNextMonth" xml:space="preserve">
+    <value>Next month</value>
+  </data>
+  <data name="CalendarPreviousMonth" xml:space="preserve">
+    <value>Previous month</value>
+  </data>
+  <data name="CalendarTitle" xml:space="preserve">
+    <value>Calendar</value>
+  </data>
+  <data name="CalendarToday" xml:space="preserve">
+    <value>Today</value>
+  </data>
+  <data name="CalendarViewAgenda" xml:space="preserve">
+    <value>Agenda</value>
+  </data>
+  <data name="CalendarViewMonth" xml:space="preserve">
+    <value>Month</value>
+  </data>
+  <data name="CountFilesProcessed_Few" xml:space="preserve">
+    <value>files processed</value>
+  </data>
+  <data name="CountFilesProcessed_Many" xml:space="preserve">
+    <value>files processed</value>
+  </data>
+  <data name="CountFilesProcessed_One" xml:space="preserve">
+    <value>file processed</value>
+  </data>
+  <data name="CountFiles_Few" xml:space="preserve">
+    <value>files</value>
+  </data>
+  <data name="CountFiles_Many" xml:space="preserve">
+    <value>files</value>
+  </data>
+  <data name="CountFiles_One" xml:space="preserve">
+    <value>file</value>
+  </data>
+  <data name="CountFolders_Few" xml:space="preserve">
+    <value>folders</value>
+  </data>
+  <data name="CountFolders_Many" xml:space="preserve">
+    <value>folders</value>
+  </data>
+  <data name="CountFolders_One" xml:space="preserve">
+    <value>folder</value>
+  </data>
+  <data name="CountInaccessible_Few" xml:space="preserve">
+    <value>inaccessible</value>
+  </data>
+  <data name="CountInaccessible_Many" xml:space="preserve">
+    <value>inaccessible</value>
+  </data>
+  <data name="CountInaccessible_One" xml:space="preserve">
+    <value>inaccessible</value>
+  </data>
+  <data name="CountReparsePointsSkipped_Few" xml:space="preserve">
+    <value>reparse points skipped</value>
+  </data>
+  <data name="CountReparsePointsSkipped_Many" xml:space="preserve">
+    <value>reparse points skipped</value>
+  </data>
+  <data name="CountReparsePointsSkipped_One" xml:space="preserve">
+    <value>reparse point skipped</value>
+  </data>
+  <data name="DashboardAlertFailed_Few" xml:space="preserve">
+    <value>{0} jobs reported a failed last run.</value>
+  </data>
+  <data name="DashboardAlertFailed_Many" xml:space="preserve">
+    <value>{0} jobs reported a failed last run.</value>
+  </data>
+  <data name="DashboardAlertFailed_One" xml:space="preserve">
+    <value>{0} job reported a failed last run.</value>
+  </data>
+  <data name="DashboardAlertNotification_Few" xml:space="preserve">
+    <value>{0} jobs have an unresolved notification delivery result.</value>
+  </data>
+  <data name="DashboardAlertNotification_Many" xml:space="preserve">
+    <value>{0} jobs have an unresolved notification delivery result.</value>
+  </data>
+  <data name="DashboardAlertNotification_One" xml:space="preserve">
+    <value>{0} job has an unresolved notification delivery result.</value>
+  </data>
+  <data name="DashboardAlertWarnings_Few" xml:space="preserve">
+    <value>{0} jobs completed their last run with warnings.</value>
+  </data>
+  <data name="DashboardAlertWarnings_Many" xml:space="preserve">
+    <value>{0} jobs completed their last run with warnings.</value>
+  </data>
+  <data name="DashboardAlertWarnings_One" xml:space="preserve">
+    <value>{0} job completed its last run with warnings.</value>
+  </data>
+  <data name="DashboardHistory" xml:space="preserve">
+    <value>History</value>
+  </data>
+  <data name="DashboardIdle" xml:space="preserve">
+    <value>No backup is running right now.</value>
+  </data>
+  <data name="DashboardLastAccess" xml:space="preserve">
+    <value>Last access: {0} on {1}</value>
+  </data>
+  <data name="DashboardLastAccessNotAttempted" xml:space="preserve">
+    <value>Last access: Not attempted</value>
+  </data>
+  <data name="DashboardLastRun" xml:space="preserve">
+    <value>Last run</value>
+  </data>
+  <data name="DashboardLastSuccess" xml:space="preserve">
+    <value>Last success</value>
+  </data>
+  <data name="DashboardLead" xml:space="preserve">
+    <value>Backup health, active work, and per-job status at a glance.</value>
+  </data>
+  <data name="DashboardMissingArchives_Few" xml:space="preserve">
+    <value>{0} archives found missing</value>
+  </data>
+  <data name="DashboardMissingArchives_Many" xml:space="preserve">
+    <value>{0} archives found missing</value>
+  </data>
+  <data name="DashboardMissingArchives_One" xml:space="preserve">
+    <value>{0} archive found missing</value>
+  </data>
+  <data name="DashboardNextRun" xml:space="preserve">
+    <value>Next run</value>
+  </data>
+  <data name="DashboardNoJobsBody" xml:space="preserve">
+    <value>Create a job to schedule backups.</value>
+  </data>
+  <data name="DashboardNoJobsHeading" xml:space="preserve">
+    <value>No jobs configured</value>
+  </data>
+  <data name="DashboardNoRunsYet" xml:space="preserve">
+    <value>No runs yet</value>
+  </data>
+  <data name="DashboardNotificationLabel" xml:space="preserve">
+    <value>Notification:</value>
+  </data>
+  <data name="DashboardPaused" xml:space="preserve">
+    <value>Paused</value>
+  </data>
+  <data name="DashboardQueueEntry" xml:space="preserve">
+    <value>{0}, due {1}</value>
+    <comment>Follows the queued job name: the trigger and when it is due.</comment>
+  </data>
+  <data name="DashboardRefreshStorage" xml:space="preserve">
+    <value>Refresh storage</value>
+  </data>
+  <data name="DashboardRunNow" xml:space="preserve">
+    <value>Run now</value>
+  </data>
+  <data name="DashboardSectionActive" xml:space="preserve">
+    <value>Active backup</value>
+  </data>
+  <data name="DashboardSectionDestinations" xml:space="preserve">
+    <value>Destinations</value>
+  </data>
+  <data name="DashboardSectionJobs" xml:space="preserve">
+    <value>Jobs</value>
+  </data>
+  <data name="DashboardSectionQueued" xml:space="preserve">
+    <value>Queued ({0})</value>
+  </data>
+  <data name="DashboardStorageAcross_Few" xml:space="preserve">
+    <value>across {0} of {1} retained backups</value>
+  </data>
+  <data name="DashboardStorageAcross_Many" xml:space="preserve">
+    <value>across {0} of {1} retained backups</value>
+  </data>
+  <data name="DashboardStorageAcross_One" xml:space="preserve">
+    <value>across {0} of {1} retained backup</value>
+  </data>
+  <data name="DashboardStorageConfirmed" xml:space="preserve">
+    <value>Confirmed: {0}</value>
+  </data>
+  <data name="DashboardStorageConfirmedResult_Few" xml:space="preserve">
+    <value>Storage confirmed: {0} archives checked, {1} found missing.</value>
+  </data>
+  <data name="DashboardStorageConfirmedResult_Many" xml:space="preserve">
+    <value>Storage confirmed: {0} archives checked, {1} found missing.</value>
+  </data>
+  <data name="DashboardStorageConfirmedResult_One" xml:space="preserve">
+    <value>Storage confirmed: {0} archive checked, {1} found missing.</value>
+  </data>
+  <data name="DashboardStorageLatest" xml:space="preserve">
+    <value>Latest: {0}</value>
+  </data>
+  <data name="DashboardStorageStale" xml:space="preserve">
+    <value>stale</value>
+  </data>
+  <data name="DashboardStorageUnreachable" xml:space="preserve">
+    <value>The destination was unavailable; the last confirmed storage figures are unchanged.</value>
+  </data>
+  <data name="DashboardTitle" xml:space="preserve">
+    <value>Dashboard</value>
+  </data>
+  <data name="DashboardUnmanagedArchives_Few" xml:space="preserve">
+    <value>{0} unmanaged historical archives</value>
+  </data>
+  <data name="DashboardUnmanagedArchives_Many" xml:space="preserve">
+    <value>{0} unmanaged historical archives</value>
+  </data>
+  <data name="DashboardUnmanagedArchives_One" xml:space="preserve">
+    <value>{0} unmanaged historical archive</value>
+  </data>
+  <data name="DestinationAccessResult_AccessDenied" xml:space="preserve">
+    <value>Access denied</value>
+  </data>
+  <data name="DestinationAccessResult_AuthenticationFailed" xml:space="preserve">
+    <value>Authentication failed</value>
+  </data>
+  <data name="DestinationAccessResult_CleanupFailed" xml:space="preserve">
+    <value>Cleanup failed</value>
+  </data>
+  <data name="DestinationAccessResult_Failed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="DestinationAccessResult_InvalidPath" xml:space="preserve">
+    <value>Invalid path</value>
+  </data>
+  <data name="DestinationAccessResult_NotAttempted" xml:space="preserve">
+    <value>Not attempted</value>
+  </data>
+  <data name="DestinationAccessResult_Succeeded" xml:space="preserve">
+    <value>Succeeded</value>
+  </data>
+  <data name="DestinationAccessResult_Unavailable" xml:space="preserve">
+    <value>Unavailable</value>
+  </data>
+  <data name="DestinationFormAddTitle" xml:space="preserve">
+    <value>Add destination</value>
+  </data>
+  <data name="DestinationFormChangeRootBody" xml:space="preserve">
+    <value>Changing this root pauses affected jobs and makes retained artifacts unmanaged. Continue?</value>
+  </data>
+  <data name="DestinationFormChangeRootConfirm" xml:space="preserve">
+    <value>Change root</value>
+  </data>
+  <data name="DestinationFormChangeRootKeep" xml:space="preserve">
+    <value>Keep current root</value>
+  </data>
+  <data name="DestinationFormChangeRootTitle" xml:space="preserve">
+    <value>Change storage root?</value>
+  </data>
+  <data name="DestinationFormEditTitle" xml:space="preserve">
+    <value>Edit destination</value>
+  </data>
+  <data name="DestinationFormLocalExample" xml:space="preserve">
+    <value>Example: D:\Backups</value>
+  </data>
+  <data name="DestinationFormLocalFolder" xml:space="preserve">
+    <value>Local folder</value>
+  </data>
+  <data name="DestinationFormName" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="DestinationFormPassword" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="DestinationFormPasswordHelp" xml:space="preserve">
+    <value>Saved passwords are never displayed. Leave blank to keep the existing password.</value>
+  </data>
+  <data name="DestinationFormPasswordReplacement" xml:space="preserve">
+    <value>Replacement password (optional)</value>
+  </data>
+  <data name="DestinationFormRootPath" xml:space="preserve">
+    <value>Root path</value>
+  </data>
+  <data name="DestinationFormSaveFailed" xml:space="preserve">
+    <value>The destination could not be saved. Try again or check the application logs.</value>
+  </data>
+  <data name="DestinationFormSmbExample" xml:space="preserve">
+    <value>Example: \\nas\backups</value>
+  </data>
+  <data name="DestinationFormSmbShare" xml:space="preserve">
+    <value>SMB network share</value>
+  </data>
+  <data name="DestinationFormStorageType" xml:space="preserve">
+    <value>Storage type</value>
+  </data>
+  <data name="DestinationFormUsername" xml:space="preserve">
+    <value>Username</value>
+  </data>
+  <data name="DestinationTestRunning" xml:space="preserve">
+    <value>Writing and reading a private test file at {0}...</value>
+  </data>
+  <data name="DestinationTestSpaceAvailable" xml:space="preserve">
+    <value>{0} bytes available</value>
+  </data>
+  <data name="DestinationTestTitle" xml:space="preserve">
+    <value>Test access</value>
+  </data>
+  <data name="DestinationType_Local" xml:space="preserve">
+    <value>Local</value>
+  </data>
+  <data name="DestinationType_Smb" xml:space="preserve">
+    <value>SMB</value>
+  </data>
+  <data name="DestinationVerificationResult_Failed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="DestinationVerificationResult_Succeeded" xml:space="preserve">
+    <value>Succeeded</value>
+  </data>
+  <data name="DestinationVerificationResult_Unverified" xml:space="preserve">
+    <value>Unverified</value>
+  </data>
+  <data name="DestinationsAccount" xml:space="preserve">
+    <value>Account: {0}</value>
+  </data>
+  <data name="DestinationsAdd" xml:space="preserve">
+    <value>Add destination</value>
+  </data>
+  <data name="DestinationsArchiveBody" xml:space="preserve">
+    <value>Archive {0}? It can be restored later.</value>
+  </data>
+  <data name="DestinationsArchiveTitle" xml:space="preserve">
+    <value>Archive destination?</value>
+  </data>
+  <data name="DestinationsAvailable" xml:space="preserve">
+    <value>Available: {0}</value>
+  </data>
+  <data name="DestinationsEditTitle" xml:space="preserve">
+    <value>Edit destination</value>
+  </data>
+  <data name="DestinationsEmptyBody" xml:space="preserve">
+    <value>Add a local folder or an SMB share, then verify service access.</value>
+  </data>
+  <data name="DestinationsEmptyHeading" xml:space="preserve">
+    <value>No storage roots configured</value>
+  </data>
+  <data name="DestinationsLastTest" xml:space="preserve">
+    <value>Last test: {0} on {1}</value>
+  </data>
+  <data name="DestinationsLastTestNotAttempted" xml:space="preserve">
+    <value>Last test: Not attempted</value>
+  </data>
+  <data name="DestinationsLead" xml:space="preserve">
+    <value>Verified local and network storage roots for future backup jobs.</value>
+  </data>
+  <data name="DestinationsLocalStorage" xml:space="preserve">
+    <value>LOCAL STORAGE</value>
+  </data>
+  <data name="DestinationsRestoreBody" xml:space="preserve">
+    <value>Restore {0}? It will need access verification.</value>
+  </data>
+  <data name="DestinationsRestoreTitle" xml:space="preserve">
+    <value>Restore destination?</value>
+  </data>
+  <data name="DestinationsShowActive" xml:space="preserve">
+    <value>Show active</value>
+  </data>
+  <data name="DestinationsShowArchived" xml:space="preserve">
+    <value>Show archived</value>
+  </data>
+  <data name="DestinationsSmbStorage" xml:space="preserve">
+    <value>SMB STORAGE</value>
+  </data>
+  <data name="DestinationsTestAccess" xml:space="preserve">
+    <value>Test access</value>
+  </data>
+  <data name="DestinationsTestDialogTitle" xml:space="preserve">
+    <value>Test destination access</value>
+  </data>
+  <data name="DestinationsTitle" xml:space="preserve">
+    <value>Destinations</value>
+  </data>
+  <data name="DriveType_CDRom" xml:space="preserve">
+    <value>Optical</value>
+  </data>
+  <data name="DriveType_Fixed" xml:space="preserve">
+    <value>Fixed</value>
+  </data>
+  <data name="DriveType_Network" xml:space="preserve">
+    <value>Network</value>
+  </data>
+  <data name="DriveType_NoRootDirectory" xml:space="preserve">
+    <value>No root directory</value>
+  </data>
+  <data name="DriveType_Ram" xml:space="preserve">
+    <value>RAM disk</value>
+  </data>
+  <data name="DriveType_Removable" xml:space="preserve">
+    <value>Removable</value>
+  </data>
+  <data name="DriveType_Unknown" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+  <data name="EffectiveFolderTestMissing" xml:space="preserve">
+    <value>The job or destination no longer exists.</value>
+  </data>
+  <data name="EffectiveFolderTestRunning" xml:space="preserve">
+    <value>Verifying ownership, write, readback, and cleanup...</value>
+  </data>
+  <data name="EffectiveFolderTestTitle" xml:space="preserve">
+    <value>Test effective folder</value>
+  </data>
+  <data name="ErrorBoundaryBody" xml:space="preserve">
+    <value>Try the operation again. The backup service continues running independently of this page.</value>
+  </data>
+  <data name="ErrorBoundaryHeading" xml:space="preserve">
+    <value>This view could not be displayed</value>
+  </data>
+  <data name="ErrorBoundaryRetry" xml:space="preserve">
+    <value>Try again</value>
+  </data>
+  <data name="FilterAllJobs" xml:space="preserve">
+    <value>All jobs</value>
+  </data>
+  <data name="FilterJob" xml:space="preserve">
+    <value>Job</value>
+  </data>
+  <data name="FilterStatus" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="HistoryColumnArchive" xml:space="preserve">
+    <value>Archive</value>
+  </data>
+  <data name="HistoryColumnDuration" xml:space="preserve">
+    <value>Duration</value>
+  </data>
+  <data name="HistoryColumnJob" xml:space="preserve">
+    <value>Job</value>
+  </data>
+  <data name="HistoryColumnNotification" xml:space="preserve">
+    <value>Notification</value>
+  </data>
+  <data name="HistoryColumnProblems" xml:space="preserve">
+    <value>Problems</value>
+  </data>
+  <data name="HistoryColumnStarted" xml:space="preserve">
+    <value>Started</value>
+  </data>
+  <data name="HistoryColumnStatus" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="HistoryColumnTrigger" xml:space="preserve">
+    <value>Trigger</value>
+  </data>
+  <data name="HistoryLead" xml:space="preserve">
+    <value>Permanent record of every run attempt. This history cannot be cleared.</value>
+  </data>
+  <data name="HistoryNoRecords" xml:space="preserve">
+    <value>No runs match the selected filters.</value>
+  </data>
+  <data name="HistoryTitle" xml:space="preserve">
+    <value>History</value>
+  </data>
+  <data name="JobLifecycle_Active" xml:space="preserve">
+    <value>Active</value>
+  </data>
+  <data name="JobLifecycle_Archived" xml:space="preserve">
+    <value>Archived</value>
+  </data>
+  <data name="JobLifecycle_Paused" xml:space="preserve">
+    <value>Paused</value>
+  </data>
+  <data name="JobsActivateAfterSaving" xml:space="preserve">
+    <value>Activate after saving</value>
+  </data>
+  <data name="JobsActivateThis" xml:space="preserve">
+    <value>Activate this job</value>
+  </data>
+  <data name="JobsActivationNote" xml:space="preserve">
+    <value>Activation verifies access and ownership of the effective destination folder.</value>
+  </data>
+  <data name="JobsArchiveBody" xml:space="preserve">
+    <value>Archive {0}? Its managed files are not deleted.</value>
+  </data>
+  <data name="JobsArchiveTitle" xml:space="preserve">
+    <value>Archive job?</value>
+  </data>
+  <data name="JobsBrowse" xml:space="preserve">
+    <value>Browse</value>
+  </data>
+  <data name="JobsChangeDestinationBody" xml:space="preserve">
+    <value>Changing the effective folder makes existing retained artifacts unmanaged. Continue?</value>
+  </data>
+  <data name="JobsChangeDestinationConfirm" xml:space="preserve">
+    <value>Change folder</value>
+  </data>
+  <data name="JobsChangeDestinationKeep" xml:space="preserve">
+    <value>Keep current folder</value>
+  </data>
+  <data name="JobsChangeDestinationTitle" xml:space="preserve">
+    <value>Change job destination?</value>
+  </data>
+  <data name="JobsChooseDestination" xml:space="preserve">
+    <value>Choose a destination</value>
+  </data>
+  <data name="JobsCurrentTimezone" xml:space="preserve">
+    <value>Current timezone</value>
+  </data>
+  <data name="JobsCurrentlyActive" xml:space="preserve">
+    <value>Currently active</value>
+  </data>
+  <data name="JobsDiscardBody" xml:space="preserve">
+    <value>Your unsaved job changes will be lost.</value>
+  </data>
+  <data name="JobsDiscardConfirm" xml:space="preserve">
+    <value>Discard</value>
+  </data>
+  <data name="JobsDiscardKeep" xml:space="preserve">
+    <value>Keep editing</value>
+  </data>
+  <data name="JobsDiscardTitle" xml:space="preserve">
+    <value>Discard changes?</value>
+  </data>
+  <data name="JobsEdit" xml:space="preserve">
+    <value>Edit job</value>
+  </data>
+  <data name="JobsEmptyArchivedBody" xml:space="preserve">
+    <value>Archived jobs will appear here.</value>
+  </data>
+  <data name="JobsEmptyArchivedHeading" xml:space="preserve">
+    <value>No archived jobs</value>
+  </data>
+  <data name="JobsEmptyCurrentBody" xml:space="preserve">
+    <value>Create a job to define what should be backed up and when.</value>
+  </data>
+  <data name="JobsEmptyCurrentHeading" xml:space="preserve">
+    <value>No jobs configured</value>
+  </data>
+  <data name="JobsFieldName" xml:space="preserve">
+    <value>Job name</value>
+  </data>
+  <data name="JobsFieldRetention" xml:space="preserve">
+    <value>Backups to retain</value>
+  </data>
+  <data name="JobsFieldScheduledTime" xml:space="preserve">
+    <value>Local scheduled time</value>
+  </data>
+  <data name="JobsFieldSourceDirectory" xml:space="preserve">
+    <value>Source directory</value>
+  </data>
+  <data name="JobsFieldStorageRoot" xml:space="preserve">
+    <value>Storage root</value>
+  </data>
+  <data name="JobsFieldSubfolder" xml:space="preserve">
+    <value>Subfolder</value>
+  </data>
+  <data name="JobsFormLead" xml:space="preserve">
+    <value>One schedule, one source, and one owned destination folder.</value>
+  </data>
+  <data name="JobsLead" xml:space="preserve">
+    <value>Scheduled backup definitions and their current lifecycle state.</value>
+  </data>
+  <data name="JobsLeaveConfirm" xml:space="preserve">
+    <value>Leave</value>
+  </data>
+  <data name="JobsLeaveStay" xml:space="preserve">
+    <value>Stay</value>
+  </data>
+  <data name="JobsLeaveTitle" xml:space="preserve">
+    <value>Leave without saving?</value>
+  </data>
+  <data name="JobsLifecycleFailed" xml:space="preserve">
+    <value>The lifecycle change could not be completed. Try again or check the application logs.</value>
+  </data>
+  <data name="JobsLifecycleNote" xml:space="preserve">
+    <value>Use the Pause action from the jobs list to change lifecycle state.</value>
+  </data>
+  <data name="JobsManagedStorage" xml:space="preserve">
+    <value>Managed storage: {0} artifacts, {1}</value>
+  </data>
+  <data name="JobsNew" xml:space="preserve">
+    <value>New job</value>
+  </data>
+  <data name="JobsNextRunLabel" xml:space="preserve">
+    <value>Next run</value>
+  </data>
+  <data name="JobsNotFound" xml:space="preserve">
+    <value>The job was not found.</value>
+  </data>
+  <data name="JobsPause" xml:space="preserve">
+    <value>Pause</value>
+  </data>
+  <data name="JobsPauseBody" xml:space="preserve">
+    <value>Pause {0}?</value>
+  </data>
+  <data name="JobsPauseTitle" xml:space="preserve">
+    <value>Pause job?</value>
+  </data>
+  <data name="JobsPreviewResult" xml:space="preserve">
+    <value>Preview: {0}. Retention estimate: {1}.</value>
+  </data>
+  <data name="JobsPreviewSource" xml:space="preserve">
+    <value>Preview source</value>
+  </data>
+  <data name="JobsReactivate" xml:space="preserve">
+    <value>Reactivate</value>
+  </data>
+  <data name="JobsReactivateBody" xml:space="preserve">
+    <value>Reactivate {0}?</value>
+  </data>
+  <data name="JobsReactivateTitle" xml:space="preserve">
+    <value>Reactivate job?</value>
+  </data>
+  <data name="JobsRestoreBody" xml:space="preserve">
+    <value>Restore {0}? It will activate only when its configuration and destination remain valid.</value>
+  </data>
+  <data name="JobsRestoreTitle" xml:space="preserve">
+    <value>Restore job?</value>
+  </data>
+  <data name="JobsRetentionOverflow" xml:space="preserve">
+    <value>More than 8 EB</value>
+  </data>
+  <data name="JobsRunNow" xml:space="preserve">
+    <value>Run now</value>
+  </data>
+  <data name="JobsSave" xml:space="preserve">
+    <value>Save job</value>
+  </data>
+  <data name="JobsSaveBeforeTesting" xml:space="preserve">
+    <value>Save changes before testing the persisted effective folder.</value>
+  </data>
+  <data name="JobsSaveFailed" xml:space="preserve">
+    <value>The job could not be saved. Try again or check the application logs.</value>
+  </data>
+  <data name="JobsSaving" xml:space="preserve">
+    <value>Saving…</value>
+  </data>
+  <data name="JobsScheduleIncomplete" xml:space="preserve">
+    <value>Schedule incomplete</value>
+  </data>
+  <data name="JobsScheduleSummary" xml:space="preserve">
+    <value>{0} at {1} · Next: {2}</value>
+    <comment>Weekday list, scheduled time, and the next occurrence, on a job card.</comment>
+  </data>
+  <data name="JobsSectionDestination" xml:space="preserve">
+    <value>Destination</value>
+  </data>
+  <data name="JobsSectionIdentity" xml:space="preserve">
+    <value>Identity and source</value>
+  </data>
+  <data name="JobsSectionSchedule" xml:space="preserve">
+    <value>Schedule and retention</value>
+  </data>
+  <data name="JobsSelectAWeekday" xml:space="preserve">
+    <value>Select a weekday</value>
+  </data>
+  <data name="JobsShowArchived" xml:space="preserve">
+    <value>Show archived</value>
+  </data>
+  <data name="JobsShowCurrent" xml:space="preserve">
+    <value>Show current</value>
+  </data>
+  <data name="JobsSubfolderPlaceholder" xml:space="preserve">
+    <value>Finance\Weekly</value>
+  </data>
+  <data name="JobsTestEffectiveFolder" xml:space="preserve">
+    <value>Test effective folder</value>
+  </data>
+  <data name="JobsTestOpenFailed" xml:space="preserve">
+    <value>The effective folder test could not be opened. Try again or check the application logs.</value>
+  </data>
+  <data name="JobsTitle" xml:space="preserve">
+    <value>Jobs</value>
+  </data>
+  <data name="JobsUnavailableDestination" xml:space="preserve">
+    <value>Unavailable destination</value>
+  </data>
+  <data name="JobsValidationDestination" xml:space="preserve">
+    <value>Choose a destination.</value>
+  </data>
+  <data name="JobsValidationName" xml:space="preserve">
+    <value>A job name is required.</value>
+  </data>
+  <data name="JobsValidationRetention" xml:space="preserve">
+    <value>Retention must be at least one.</value>
+  </data>
+  <data name="JobsValidationSourcePath" xml:space="preserve">
+    <value>Choose a source directory.</value>
+  </data>
+  <data name="JobsValidationWeekdays" xml:space="preserve">
+    <value>Select at least one weekday.</value>
+  </data>
+  <data name="LanguageEnglish" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="LanguageEnglishShort" xml:space="preserve">
+    <value>EN</value>
+  </data>
+  <data name="LanguageGroupLabel" xml:space="preserve">
+    <value>Language</value>
+    <comment>Accessible name of the application bar language control.</comment>
+  </data>
+  <data name="LanguageSlovak" xml:space="preserve">
+    <value>Slovenčina</value>
+  </data>
+  <data name="LanguageSlovakShort" xml:space="preserve">
+    <value>SK</value>
+  </data>
+  <data name="NavCalendar" xml:space="preserve">
+    <value>Calendar</value>
+  </data>
+  <data name="NavDashboard" xml:space="preserve">
+    <value>Dashboard</value>
+  </data>
+  <data name="NavDestinations" xml:space="preserve">
+    <value>Destinations</value>
+  </data>
+  <data name="NavHistory" xml:space="preserve">
+    <value>History</value>
+  </data>
+  <data name="NavJobs" xml:space="preserve">
+    <value>Jobs</value>
+  </data>
+  <data name="NavLoopbackOnly" xml:space="preserve">
+    <value>Loopback access only</value>
+  </data>
+  <data name="NavPrimaryLabel" xml:space="preserve">
+    <value>Primary navigation</value>
+  </data>
+  <data name="NavSectionWorkspace" xml:space="preserve">
+    <value>Workspace</value>
+  </data>
+  <data name="NavSettings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="NavVersion" xml:space="preserve">
+    <value>Version {0}</value>
+  </data>
+  <data name="NotificationDeliveryStateNotSent" xml:space="preserve">
+    <value>Not sent</value>
+  </data>
+  <data name="NotificationDeliveryState_Delivered" xml:space="preserve">
+    <value>Delivered</value>
+  </data>
+  <data name="NotificationDeliveryState_DeliveryUnknown" xml:space="preserve">
+    <value>Delivery unknown</value>
+  </data>
+  <data name="NotificationDeliveryState_Failed" xml:space="preserve">
+    <value>Delivery failed</value>
+  </data>
+  <data name="NotificationDeliveryState_Pending" xml:space="preserve">
+    <value>Pending</value>
+  </data>
+  <data name="NotificationDeliveryState_Sending" xml:space="preserve">
+    <value>Sending</value>
+  </data>
+  <data name="PageTitleFormat" xml:space="preserve">
+    <value>{0} | Folder Backuper</value>
+    <comment>The browser tab title. Only the page name is translated.</comment>
+  </data>
+  <data name="PagerInfoFormat" xml:space="preserve">
+    <value>{first_item}-{last_item} of {all_items}</value>
+  </data>
+  <data name="PagerRowsPerPage" xml:space="preserve">
+    <value>Rows per page:</value>
+  </data>
+  <data name="ReconnectBody" xml:space="preserve">
+    <value>The page will resume when the local service is available.</value>
+  </data>
+  <data name="ReconnectFailedBody" xml:space="preserve">
+    <value>Start the Folder Backuper service, then retry.</value>
+  </data>
+  <data name="ReconnectFailedHeading" xml:space="preserve">
+    <value>Connection could not be restored</value>
+  </data>
+  <data name="ReconnectHeading" xml:space="preserve">
+    <value>Reconnecting to the backup service</value>
+  </data>
+  <data name="ReconnectRejectedBody" xml:space="preserve">
+    <value>Reload to establish a new session.</value>
+  </data>
+  <data name="ReconnectRejectedHeading" xml:space="preserve">
+    <value>The service restarted</value>
+  </data>
+  <data name="ReconnectReload" xml:space="preserve">
+    <value>Reload</value>
+  </data>
+  <data name="ReconnectRetry" xml:space="preserve">
+    <value>Retry</value>
+  </data>
+  <data name="RouteNotFound" xml:space="preserve">
+    <value>That page does not exist.</value>
+  </data>
+  <data name="RunDetailsArchive" xml:space="preserve">
+    <value>Archive</value>
+  </data>
+  <data name="RunDetailsArchiveSize" xml:space="preserve">
+    <value>Archive size</value>
+  </data>
+  <data name="RunDetailsColumnMessage" xml:space="preserve">
+    <value>Message</value>
+  </data>
+  <data name="RunDetailsColumnOperation" xml:space="preserve">
+    <value>Operation</value>
+  </data>
+  <data name="RunDetailsColumnPath" xml:space="preserve">
+    <value>Path</value>
+  </data>
+  <data name="RunDetailsColumnPhase" xml:space="preserve">
+    <value>Phase</value>
+  </data>
+  <data name="RunDetailsColumnSeverity" xml:space="preserve">
+    <value>Severity</value>
+  </data>
+  <data name="RunDetailsCompleted" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <data name="RunDetailsDestination" xml:space="preserve">
+    <value>Destination</value>
+  </data>
+  <data name="RunDetailsDuration" xml:space="preserve">
+    <value>Duration</value>
+  </data>
+  <data name="RunDetailsFilesFolders" xml:space="preserve">
+    <value>Files / folders</value>
+  </data>
+  <data name="RunDetailsNoProblems" xml:space="preserve">
+    <value>No problems were recorded for this run.</value>
+  </data>
+  <data name="RunDetailsNotification" xml:space="preserve">
+    <value>Notification:</value>
+  </data>
+  <data name="RunDetailsPhaseReached" xml:space="preserve">
+    <value>Phase reached</value>
+  </data>
+  <data name="RunDetailsProblems" xml:space="preserve">
+    <value>Problems ({0})</value>
+  </data>
+  <data name="RunDetailsRetention" xml:space="preserve">
+    <value>Retention</value>
+  </data>
+  <data name="RunDetailsRetentionKeep" xml:space="preserve">
+    <value>keep {0}</value>
+  </data>
+  <data name="RunDetailsScheduled" xml:space="preserve">
+    <value>Scheduled</value>
+  </data>
+  <data name="RunDetailsSource" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="RunDetailsSourceSize" xml:space="preserve">
+    <value>Source size</value>
+  </data>
+  <data name="RunDetailsStarted" xml:space="preserve">
+    <value>Started</value>
+  </data>
+  <data name="RunDetailsTimeZone" xml:space="preserve">
+    <value>Time zone</value>
+  </data>
+  <data name="RunDetailsTitle" xml:space="preserve">
+    <value>Run details</value>
+  </data>
+  <data name="RunOutcomeInProgress" xml:space="preserve">
+    <value>In progress</value>
+  </data>
+  <data name="RunOutcome_Cancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+  <data name="RunOutcome_Failed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="RunOutcome_Successful" xml:space="preserve">
+    <value>Successful</value>
+  </data>
+  <data name="RunOutcome_SuccessfulWithWarnings" xml:space="preserve">
+    <value>Completed with warnings</value>
+  </data>
+  <data name="RunPhase_Compressing" xml:space="preserve">
+    <value>Compressing</value>
+  </data>
+  <data name="RunPhase_Finalizing" xml:space="preserve">
+    <value>Finalizing</value>
+  </data>
+  <data name="RunPhase_Planned" xml:space="preserve">
+    <value>Planned</value>
+  </data>
+  <data name="RunPhase_Queued" xml:space="preserve">
+    <value>Queued</value>
+  </data>
+  <data name="RunPhase_Scanning" xml:space="preserve">
+    <value>Scanning</value>
+  </data>
+  <data name="RunPhase_Transferring" xml:space="preserve">
+    <value>Transferring</value>
+  </data>
+  <data name="RunStatusFilter_All" xml:space="preserve">
+    <value>All statuses</value>
+  </data>
+  <data name="RunStatusFilter_Cancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+  <data name="RunStatusFilter_Failed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="RunStatusFilter_Successful" xml:space="preserve">
+    <value>Successful</value>
+  </data>
+  <data name="RunStatusFilter_Warnings" xml:space="preserve">
+    <value>With warnings</value>
+  </data>
+  <data name="RunTrigger_CatchUp" xml:space="preserve">
+    <value>Catch-up</value>
+  </data>
+  <data name="RunTrigger_Manual" xml:space="preserve">
+    <value>Manual</value>
+  </data>
+  <data name="RunTrigger_Scheduled" xml:space="preserve">
+    <value>Scheduled</value>
+  </data>
+  <data name="SettingsAboutHeading" xml:space="preserve">
+    <value>About and updates</value>
+  </data>
+  <data name="SettingsApiKey" xml:space="preserve">
+    <value>API key</value>
+  </data>
+  <data name="SettingsApiKeyKeepPlaceholder" xml:space="preserve">
+    <value>Leave blank to keep the saved key</value>
+  </data>
+  <data name="SettingsApiKeyNote" xml:space="preserve">
+    <value>Saved API keys are never displayed. Leave the field blank to keep the existing key.</value>
+  </data>
+  <data name="SettingsApiKeyReplacement" xml:space="preserve">
+    <value> (optional replacement)</value>
+  </data>
+  <data name="SettingsBuild" xml:space="preserve">
+    <value>Build {0}</value>
+  </data>
+  <data name="SettingsCheckNow" xml:space="preserve">
+    <value>Check now</value>
+  </data>
+  <data name="SettingsChecking" xml:space="preserve">
+    <value>Checking…</value>
+  </data>
+  <data name="SettingsDiscardChanges" xml:space="preserve">
+    <value>Discard changes</value>
+  </data>
+  <data name="SettingsEmailEnable" xml:space="preserve">
+    <value>Send email for finished runs</value>
+  </data>
+  <data name="SettingsEmailHeading" xml:space="preserve">
+    <value>Email notifications</value>
+  </data>
+  <data name="SettingsEmailLead" xml:space="preserve">
+    <value>Folder Backuper sends one email after a run finishes successfully, finishes with warnings, or fails. Cancelled runs never send email, and a delivery problem never changes a backup result.</value>
+  </data>
+  <data name="SettingsLanguageFailed" xml:space="preserve">
+    <value>The interface language could not be saved. Try again or check the application logs.</value>
+  </data>
+  <data name="SettingsLanguageHeading" xml:space="preserve">
+    <value>Interface language</value>
+  </data>
+  <data name="SettingsLanguageLabel" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="SettingsLanguageLead" xml:space="preserve">
+    <value>The language applies to this installation rather than to one browser, so every open tab uses it, and it is the language notification email is written in. It also selects how dates, numbers, and file sizes are shown. Archive file names never change with it.</value>
+  </data>
+  <data name="SettingsLanguageReloadNote" xml:space="preserve">
+    <value>Changing the language reloads this page.</value>
+  </data>
+  <data name="SettingsLastSaved" xml:space="preserve">
+    <value>Last saved: {0}</value>
+  </data>
+  <data name="SettingsLead" xml:space="preserve">
+    <value>One global email configuration shared by every job.</value>
+  </data>
+  <data name="SettingsLeaveBody" xml:space="preserve">
+    <value>Your unsaved notification settings will be lost.</value>
+  </data>
+  <data name="SettingsLeaveConfirm" xml:space="preserve">
+    <value>Leave</value>
+  </data>
+  <data name="SettingsLeaveStay" xml:space="preserve">
+    <value>Stay</value>
+  </data>
+  <data name="SettingsLeaveTitle" xml:space="preserve">
+    <value>Leave without saving?</value>
+  </data>
+  <data name="SettingsLoadFailed" xml:space="preserve">
+    <value>Notification settings could not be loaded. Try again or check the application logs.</value>
+  </data>
+  <data name="SettingsNoBuildIdentifier" xml:space="preserve">
+    <value>No build identifier</value>
+  </data>
+  <data name="SettingsNotConfigured" xml:space="preserve">
+    <value>Not configured</value>
+  </data>
+  <data name="SettingsNotSavedYet" xml:space="preserve">
+    <value>Not saved yet</value>
+  </data>
+  <data name="SettingsReadyToSend" xml:space="preserve">
+    <value>Ready to send</value>
+  </data>
+  <data name="SettingsRecipientAddresses" xml:space="preserve">
+    <value>Recipient addresses</value>
+  </data>
+  <data name="SettingsRecipientsHeading" xml:space="preserve">
+    <value>Recipients</value>
+  </data>
+  <data name="SettingsRecipientsNote" xml:space="preserve">
+    <value>One address per line, or separated by commas. Every job notifies this same list.</value>
+  </data>
+  <data name="SettingsResendHeading" xml:space="preserve">
+    <value>Resend account</value>
+  </data>
+  <data name="SettingsResendLead" xml:space="preserve">
+    <value>Messages are delivered through Resend over HTTPS. Resend requires a verified sending domain. Run details in the email — job names, folder paths, and error messages — are processed by that external service.</value>
+  </data>
+  <data name="SettingsSave" xml:space="preserve">
+    <value>Save settings</value>
+  </data>
+  <data name="SettingsSaveBeforeTest" xml:space="preserve">
+    <value>Save changes before sending a test email. A test email verifies the saved configuration.</value>
+  </data>
+  <data name="SettingsSaveFailed" xml:space="preserve">
+    <value>Notification settings could not be saved. Try again or check the application logs.</value>
+  </data>
+  <data name="SettingsSaving" xml:space="preserve">
+    <value>Saving…</value>
+  </data>
+  <data name="SettingsSendTestEmail" xml:space="preserve">
+    <value>Send test email</value>
+  </data>
+  <data name="SettingsSenderAddress" xml:space="preserve">
+    <value>Sender address</value>
+  </data>
+  <data name="SettingsSenderName" xml:space="preserve">
+    <value>Sender name (optional)</value>
+  </data>
+  <data name="SettingsTestEmailNote" xml:space="preserve">
+    <value>A test email uses the saved configuration, so unsaved changes are not tested.</value>
+  </data>
+  <data name="SettingsTitle" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="SettingsUpdateAvailableLink" xml:space="preserve">
+    <value>Version {0} is available</value>
+  </data>
+  <data name="SettingsUpdateCheckEnable" xml:space="preserve">
+    <value>Check GitHub for newer versions</value>
+  </data>
+  <data name="SettingsUpdateCheckOff" xml:space="preserve">
+    <value>Version checking is off. Nothing is sent to GitHub, and no notice appears when a newer version is released.</value>
+  </data>
+  <data name="SettingsUpdateCheckedLatest" xml:space="preserve">
+    <value>Checked {0}. The newest release is {1}.</value>
+  </data>
+  <data name="SettingsUpdateCheckedNone" xml:space="preserve">
+    <value>Checked {0}. No release has been published yet.</value>
+  </data>
+  <data name="SettingsUpdateInconclusive" xml:space="preserve">
+    <value>The last check did not get an answer: {0} This says nothing about whether a newer version exists.</value>
+  </data>
+  <data name="SettingsUpdateLead" xml:space="preserve">
+    <value>Folder Backuper asks GitHub once a day whether a newer version has been released, over HTTPS. The request is anonymous: it sends no installation identity, no configuration, and nothing about this machine or its backups. Nothing is ever downloaded or installed on its own; an upgrade always means running a newer installer yourself.</value>
+  </data>
+  <data name="SettingsUpdateNotCheckedYet" xml:space="preserve">
+    <value>Not checked yet in this session. The first check runs a few minutes after the service starts.</value>
+  </data>
+  <data name="SettingsUpdatePreferenceFailed" xml:space="preserve">
+    <value>The update preference could not be saved. Try again or check the application logs.</value>
+  </data>
+  <data name="SettingsVerificationHeading" xml:space="preserve">
+    <value>Verification</value>
+  </data>
+  <data name="SettingsVersionChip" xml:space="preserve">
+    <value>Version {0}</value>
+  </data>
+  <data name="SourceBrowserBack" xml:space="preserve">
+    <value>Back</value>
+  </data>
+  <data name="SourceBrowserBytes" xml:space="preserve">
+    <value>{0} bytes</value>
+  </data>
+  <data name="SourceBrowserEntriesRange" xml:space="preserve">
+    <value>Entries {0}-{1}</value>
+  </data>
+  <data name="SourceBrowserNext" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="SourceBrowserNote" xml:space="preserve">
+    <value>Choose a local directory. Reparse points are shown but cannot be opened or selected.</value>
+  </data>
+  <data name="SourceBrowserReparsePoint" xml:space="preserve">
+    <value>Reparse point · unavailable</value>
+  </data>
+  <data name="SourceBrowserSelectThis" xml:space="preserve">
+    <value>Select this directory</value>
+  </data>
+  <data name="SourceBrowserTitle" xml:space="preserve">
+    <value>Browse source</value>
+  </data>
+  <data name="SourceEntryType_Directory" xml:space="preserve">
+    <value>Folder</value>
+  </data>
+  <data name="SourceEntryType_File" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="SourceEntryType_Unknown" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+  <data name="SourcePreviewCancelScan" xml:space="preserve">
+    <value>Cancel scan</value>
+  </data>
+  <data name="SourcePreviewNotice" xml:space="preserve">
+    <value>This preview is informational only. It reads metadata without copying, changing, or writing files; the source will be rechecked during backup.</value>
+  </data>
+  <data name="SourcePreviewSourceData" xml:space="preserve">
+    <value>source data</value>
+  </data>
+  <data name="SourcePreviewTitle" xml:space="preserve">
+    <value>Source preview</value>
+  </data>
+  <data name="TestEmailDeliveryNote" xml:space="preserve">
+    <value>Check the configured recipients. Delivery to the inbox depends on the receiving mail service, which Folder Backuper cannot observe.</value>
+  </data>
+  <data name="TestEmailSending" xml:space="preserve">
+    <value>Sending a test email through the saved configuration...</value>
+  </data>
+  <data name="TestEmailTitle" xml:space="preserve">
+    <value>Send test email</value>
+  </data>
+  <data name="ThemeDark" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="ThemeGroupLabel" xml:space="preserve">
+    <value>Theme</value>
+  </data>
+  <data name="ThemeLight" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="TransferVerbCopying" xml:space="preserve">
+    <value>Copying</value>
+  </data>
+  <data name="TransferVerbUploading" xml:space="preserve">
+    <value>Uploading</value>
+  </data>
+  <data name="UpdateNoticeAvailable" xml:space="preserve">
+    <value>Version {0} available</value>
+  </data>
+  <data name="ValueNever" xml:space="preserve">
+    <value>never</value>
+  </data>
+  <data name="ValueNotReported" xml:space="preserve">
+    <value>Not reported</value>
+  </data>
+  <data name="ValueNotScheduled" xml:space="preserve">
+    <value>Not scheduled</value>
+  </data>
+  <data name="ValueUnknownDash" xml:space="preserve">
+    <value>—</value>
+    <comment>An em dash standing in for a value that is not known. The same in every language.</comment>
+  </data>
+</root>

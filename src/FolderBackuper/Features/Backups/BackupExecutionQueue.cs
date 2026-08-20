@@ -5,6 +5,7 @@ using FolderBackuper.Infrastructure.ServiceHosting;
 using FolderBackuper.Features.Settings;
 using Microsoft.Extensions.Hosting;
 
+using FolderBackuper.Infrastructure.Localization;
 namespace FolderBackuper.Features.Backups;
 
 public sealed class BackupExecutionQueue
@@ -137,14 +138,14 @@ public sealed class BackupExecutionService(
         if (outcome.Status == ManualRunEnqueueStatus.Queued) queue.Signal();
         return outcome;
 
-        async Task<string?> ValidateOwnershipAsync(
+        async Task<UiMessage?> ValidateOwnershipAsync(
             Features.Jobs.BackupJob job,
             Features.Destinations.Destination destination,
             CancellationToken ct)
         {
             if (destination.VerificationResult != Features.Destinations.DestinationVerificationResult.Succeeded ||
                 string.IsNullOrWhiteSpace(destination.VerificationFingerprint))
-                return "The destination must have a current successful verification before queueing.";
+                return UiMessage.For(BackupProblemMessage.DestinationNeedsVerification);
             var effective = await effectiveDestinations.ResolveAsync(
                 destination, job.DestinationSubfolder, job.SourcePath, create: false, ct);
             if (!effective.Succeeded || effective.EffectivePath is null)

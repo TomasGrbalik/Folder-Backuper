@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using System.Text.Json;
 using FolderBackuper.Infrastructure.Versioning;
 
+using FolderBackuper.Infrastructure.Localization;
 namespace FolderBackuper.Features.Updates;
 
 /// <summary>
@@ -56,7 +57,7 @@ public sealed class GitHubReleaseClient(
         }
         catch (TaskCanceledException)
         {
-            return LatestReleaseResult.Unavailable("The release feed did not respond in time.");
+            return LatestReleaseResult.Unavailable(UpdateProblemMessage.Timeout);
         }
         catch (HttpRequestException exception)
         {
@@ -65,7 +66,7 @@ public sealed class GitHubReleaseClient(
         catch (IOException exception)
         {
             logger.LogDebug(exception, "The connection to the release feed was lost while reading it");
-            return LatestReleaseResult.Unavailable("The connection to the release feed was lost.");
+            return LatestReleaseResult.Unavailable(UpdateProblemMessage.ConnectionLost);
         }
     }
 
@@ -88,14 +89,12 @@ public sealed class GitHubReleaseClient(
             if (reset is not null)
             {
                 logger.LogDebug("The release feed throttled the request until {Reset}", reset);
-                return LatestReleaseResult.Unavailable(
-                    "The release feed is temporarily rate limited.",
-                    reset);
+                return LatestReleaseResult.Unavailable(UpdateProblemMessage.RateLimited, reset);
             }
 
             logger.LogDebug("The release feed answered {StatusCode}", code);
-            return LatestReleaseResult.Unavailable(
-                string.Create(CultureInfo.InvariantCulture, $"The release feed answered {code}."));
+            return LatestReleaseResult.Unavailable(UiMessage.For(
+                UpdateProblemMessage.UnexpectedStatus, UiMessageArgument.FromNumber(code)));
         }
 
         GitHubRelease? payload;
@@ -109,12 +108,12 @@ public sealed class GitHubReleaseClient(
             when (exception is JsonException or NotSupportedException or HttpRequestException or IOException)
         {
             logger.LogDebug(exception, "The release feed returned a response that could not be read");
-            return LatestReleaseResult.Unavailable("The release feed returned an unreadable response.");
+            return LatestReleaseResult.Unavailable(UpdateProblemMessage.UnreadableResponse);
         }
 
         if (payload is null)
         {
-            return LatestReleaseResult.Unavailable("The release feed returned an empty response.");
+            return LatestReleaseResult.Unavailable(UpdateProblemMessage.EmptyResponse);
         }
 
         // This endpoint never returns a draft or a pre-release. Honouring the flags anyway means a
@@ -132,10 +131,8 @@ public sealed class GitHubReleaseClient(
         if (!ReleaseVersion.TryParse(candidate, out var version))
         {
             logger.LogDebug("The newest release is tagged {Tag}, which is not a version", Truncate(tag));
-            return LatestReleaseResult.Unavailable(
-                string.Create(
-                    CultureInfo.InvariantCulture,
-                    $"The newest release is tagged '{Truncate(tag)}', which is not a version."));
+            return LatestReleaseResult.Unavailable(UiMessage.For(
+                UpdateProblemMessage.TagIsNotAVersion, UiMessageArgument.FromText(Truncate(tag))));
         }
 
         return LatestReleaseResult.Read(version, payload.HtmlUrl, payload.PublishedAt);
@@ -148,7 +145,7 @@ public sealed class GitHubReleaseClient(
         // browse the web but the service cannot, which is what a per-user proxy setting looks like.
         var socketError = (exception.InnerException as SocketException)?.SocketErrorCode;
         logger.LogDebug(exception, "The release feed could not be reached ({SocketError})", socketError);
-        return LatestReleaseResult.Unavailable("The release feed could not be reached.");
+        return LatestReleaseResult.Unavailable(UpdateProblemMessage.Unreachable);
     }
 
     /// <summary>

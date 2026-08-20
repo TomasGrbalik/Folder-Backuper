@@ -1,3 +1,4 @@
+using FolderBackuper.Infrastructure.Localization;
 using FolderBackuper.Infrastructure.Versioning;
 
 namespace FolderBackuper.Features.Updates;
@@ -32,7 +33,7 @@ public sealed record LatestReleaseResult(
     ReleaseVersion? Version,
     string? ReleaseUrl,
     DateTimeOffset? PublishedAt,
-    string? Detail,
+    UiMessage? Detail,
     DateTimeOffset? RateLimitResetUtc)
 {
     public static LatestReleaseResult Read(
@@ -44,6 +45,11 @@ public sealed record LatestReleaseResult(
     public static LatestReleaseResult NoRelease() =>
         new(LatestReleaseStatus.NoRelease, null, null, null, null, null);
 
-    public static LatestReleaseResult Unavailable(string detail, DateTimeOffset? rateLimitResetUtc = null) =>
+    public static LatestReleaseResult Unavailable(UiMessage detail, DateTimeOffset? rateLimitResetUtc = null) =>
         new(LatestReleaseStatus.Unavailable, null, null, null, detail, rateLimitResetUtc);
+
+    public static LatestReleaseResult Unavailable(
+        UpdateProblemMessage detail,
+        DateTimeOffset? rateLimitResetUtc = null) =>
+        Unavailable(UiMessage.For(detail), rateLimitResetUtc);
 }

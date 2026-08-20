@@ -44,7 +44,7 @@ pwsh installer/Build-Installer.ps1
 - Every test passes.
 - `artifacts/installer/FolderBackuper-<version>-setup.exe` exists. A local build is named for the development version, for example `FolderBackuper-1.2.1-dev-setup.exe`; only the workflow produces the plain release name.
 - The published executable reports the expected version: `(Get-Item artifacts/publish/FolderBackuper.exe).VersionInfo` shows a numeric `FileVersion` and a `ProductVersion` carrying the suffix and the commit hash.
-- The published application directory contains no `web.config`, no satellite resource directories for languages other than English, and `FolderBackuper.pdb`.
+- The published application directory contains no `web.config`, `FolderBackuper.pdb`, and exactly one satellite resource directory, `sk`, holding `FolderBackuper.resources.dll`. Any other language directory means `SatelliteResourceLanguages` in `Directory.Build.props` has drifted.
 - `FolderBackuper.exe` and `setup.exe` both carry the application icon.
 
 ## 3. Clean Windows VM lifecycle

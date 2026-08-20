@@ -12,6 +12,35 @@
     <ApplicationIcon>wwwroot\favicon.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <!-- The resource completeness tests reach the generated accessors, which MSBuild emits as
+         internal types. Nothing else in the test project needs internal access. -->
+    <InternalsVisibleTo Include="FolderBackuper.Tests" />
+  </ItemGroup>
+  <ItemGroup Label="Interface language">
+    <!-- MSBuild's GenerateResource task emits a strongly typed accessor into the intermediate
+         directory for each neutral resource file, so no resource key is ever written as a literal
+         and a renamed key breaks the build rather than the interface. The Slovak files carry no
+         accessor: they are satellite content for the same keys. -->
+    <EmbeddedResource Update="Resources\UiStrings.resx">
+      <StronglyTypedFileName>$(IntermediateOutputPath)UiStrings.Designer.cs</StronglyTypedFileName>
+      <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
+      <StronglyTypedNamespace>FolderBackuper.Resources</StronglyTypedNamespace>
+      <StronglyTypedClassName>UiStrings</StronglyTypedClassName>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Resources\MessageStrings.resx">
+      <StronglyTypedFileName>$(IntermediateOutputPath)MessageStrings.Designer.cs</StronglyTypedFileName>
+      <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
+      <StronglyTypedNamespace>FolderBackuper.Resources</StronglyTypedNamespace>
+      <StronglyTypedClassName>MessageStrings</StronglyTypedClassName>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Resources\EmailStrings.resx">
+      <StronglyTypedFileName>$(IntermediateOutputPath)EmailStrings.Designer.cs</StronglyTypedFileName>
+      <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
+      <StronglyTypedNamespace>FolderBackuper.Resources</StronglyTypedNamespace>
+      <StronglyTypedClassName>EmailStrings</StronglyTypedClassName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <PrivateAssets>all</PrivateAssets>

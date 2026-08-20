@@ -1,3 +1,5 @@
+using System.Globalization;
+using FolderBackuper.Infrastructure.Localization;
 using FolderBackuper.Features.Backups;
 using FolderBackuper.Features.Destinations;
 using FolderBackuper.Features.Jobs;
@@ -24,7 +26,7 @@ public sealed class RunPersistenceService(
 {
     public async Task<ManualRunEnqueueOutcome> EnqueueManualAsync(
         Guid jobId,
-        Func<BackupJob, Destination, CancellationToken, Task<string?>>? validate = null,
+        Func<BackupJob, Destination, CancellationToken, Task<UiMessage?>>? validate = null,
         CancellationToken cancellationToken = default)
     {
         var outcome = await mutationGate.ExecuteRunStateChangeAsync<ManualRunEnqueueOutcome>(async ct =>
@@ -36,7 +38,7 @@ public sealed class RunPersistenceService(
                 job.Destination is null || job.Destination.Lifecycle != DestinationLifecycle.Active)
             {
                 return new(ManualRunEnqueueStatus.Unavailable, null,
-                    "The job or destination is unavailable for a manual backup.");
+                    RunOperationMessage.JobOrDestinationUnavailable);
             }
 
             if (validate is not null && await validate(job, job.Destination, ct) is { } validationError)
@@ -55,10 +57,10 @@ public sealed class RunPersistenceService(
             catch (DbUpdateException)
             {
                 return new(ManualRunEnqueueStatus.Busy, null,
-                    "The job already has backup work pending or running.");
+                    RunOperationMessage.WorkAlreadyPending);
             }
 
-            return new(ManualRunEnqueueStatus.Queued, run.Id, "The backup was queued.");
+            return new(ManualRunEnqueueStatus.Queued, run.Id, RunOperationMessage.Queued);
         }, cancellationToken);
 
         if (outcome.Status == ManualRunEnqueueStatus.Queued) activity?.Signal();
@@ -106,18 +108,19 @@ public sealed class RunPersistenceService(
         {
             await using var context = await contextFactory.CreateDbContextAsync(ct);
             var run = await context.Runs.SingleOrDefaultAsync(item => item.Id == runId, ct);
-            if (run is null) return new(RunCancellationStatus.NotFound, "The backup run was not found.");
-            if (run.Outcome is not null) return new(RunCancellationStatus.AlreadyTerminal, "The backup run has already finished.");
+            if (run is null) return new(RunCancellationStatus.NotFound, RunOperationMessage.RunNotFound);
+            if (run.Outcome is not null) return new(RunCancellationStatus.AlreadyTerminal, RunOperationMessage.RunAlreadyFinished);
             if (run.FinalCommitStartedAtUtc is not null)
             {
-                return new(RunCancellationStatus.CommitStarted,
-                    "The backup can no longer be cancelled because finalization has started.");
+                return new(RunCancellationStatus.CommitStarted, RunOperationMessage.FinalizationStarted);
             }
 
             run.RequestCancellation(timeProvider.GetUtcNow());
             await context.SaveChangesAsync(ct);
             return new(run.Outcome == RunOutcome.Cancelled ? RunCancellationStatus.Cancelled : RunCancellationStatus.Requested,
-                run.Outcome == RunOutcome.Cancelled ? "The queued backup was cancelled." : "Cancellation was requested.");
+                run.Outcome == RunOutcome.Cancelled
+                    ? RunOperationMessage.QueuedRunCancelled
+                    : RunOperationMessage.CancellationRequested);
         }, cancellationToken);
 
         if (outcome.Status is RunCancellationStatus.Requested or RunCancellationStatus.Cancelled) activity?.Signal();
@@ -158,7 +161,9 @@ public sealed class RunPersistenceService(
             run.ArchiveBytes = result.ArchiveBytes;
             run.CompressionDuration = result.CompressionDuration;
             run.TransferDuration = result.TransferDuration;
-            run.ErrorSummary = result.Problems.FirstOrDefault(problem => problem.Severity == BackupProblemSeverity.Error)?.Message;
+            var firstError = result.Problems.FirstOrDefault(problem => problem.Severity == BackupProblemSeverity.Error)?.Message;
+            run.ErrorMessageKey = firstError?.Key;
+            run.ErrorMessageArguments = StoredMessage.EncodeArguments(firstError);
             AddProblems(context, run.Id, result.Problems);
 
             await context.SaveChangesAsync(ct);
@@ -257,12 +262,13 @@ public sealed class RunPersistenceService(
     public async Task CompleteAsync(
         Guid runId,
         RunOutcome outcome,
-        string? errorSummary,
+        UiMessage? errorSummary,
         CancellationToken cancellationToken = default)
     {
         var queued = await ChangeRunAsync(runId, async (context, run, ct) =>
         {
-            run.ErrorSummary = errorSummary;
+            run.ErrorMessageKey = errorSummary?.Key;
+            run.ErrorMessageArguments = StoredMessage.EncodeArguments(errorSummary);
             run.Complete(outcome, timeProvider.GetUtcNow());
             return notifications is not null && await notifications.AddIfEligibleAsync(context, run, ct);
         }, cancellationToken);
@@ -359,7 +365,8 @@ public sealed class RunPersistenceService(
                 Operation = problem.Operation,
                 ErrorCategory = problem.Category.ToString(),
                 NativeErrorCode = problem.NativeErrorCode?.ToString(),
-                UserMessage = problem.Message
+                MessageKey = problem.Message.Key,
+                MessageArguments = StoredMessage.EncodeArguments(problem.Message)
             });
         }
     }
@@ -385,7 +392,10 @@ public sealed class RunPersistenceService(
         ScheduledWeekdays = job.Weekdays,
         ScheduledTime = job.ScheduledTime,
         RetentionCount = job.RetentionCount,
-        RegionalCulture = "",
+        // The culture the run was executed under, which since Milestone 12 follows the selected
+        // interface language. Recorded so that a run can be read against the formatting it was
+        // reported in, even after the language changes.
+        RegionalCulture = CultureInfo.CurrentCulture.Name,
         TimeZoneId = occurrence?.TimeZoneId ?? TimeZoneInfo.Local.Id,
         Trigger = trigger,
         DueAtUtc = dueAtUtc,
@@ -401,7 +411,13 @@ public enum ManualRunEnqueueStatus
     OwnershipInvalid
 }
 
-public sealed record ManualRunEnqueueOutcome(ManualRunEnqueueStatus Status, Guid? RunId, string Message);
+public sealed record ManualRunEnqueueOutcome(ManualRunEnqueueStatus Status, Guid? RunId, UiMessage Message)
+{
+    public ManualRunEnqueueOutcome(ManualRunEnqueueStatus status, Guid? runId, RunOperationMessage message)
+        : this(status, runId, UiMessage.For(message))
+    {
+    }
+}
 
 public enum RunCancellationStatus
 {
@@ -412,7 +428,13 @@ public enum RunCancellationStatus
     NotFound
 }
 
-public sealed record RunCancellationOutcome(RunCancellationStatus Status, string Message);
+public sealed record RunCancellationOutcome(RunCancellationStatus Status, UiMessage Message)
+{
+    public RunCancellationOutcome(RunCancellationStatus status, RunOperationMessage message)
+        : this(status, UiMessage.For(message))
+    {
+    }
+}
 
 public sealed class DurableCancellationRequestedException(Guid runId)
     : OperationCanceledException($"Cancellation was requested for run {runId} before final commit.");

@@ -4,15 +4,15 @@
     <DialogContent>
         @if (testing)
         {
-            <MudStack AlignItems="AlignItems.Center"><MudProgressCircular Indeterminate="true" /><MudText>Verifying ownership, write, readback, and cleanup...</MudText></MudStack>
+            <MudStack AlignItems="AlignItems.Center"><MudProgressCircular Indeterminate="true" /><MudText>@UiStrings.EffectiveFolderTestRunning</MudText></MudStack>
         }
         else if (outcome is not null)
         {
-            <MudAlert Severity="@(outcome.Succeeded ? Severity.Success : Severity.Error)">@outcome.Message</MudAlert>
+            <MudAlert Severity="@(outcome.Succeeded ? Severity.Success : Severity.Error)">@MessageText.Resolve(outcome.Message)</MudAlert>
         }
-        else { <MudAlert Severity="Severity.Error">The job or destination no longer exists.</MudAlert> }
+        else { <MudAlert Severity="Severity.Error">@UiStrings.EffectiveFolderTestMissing</MudAlert> }
     </DialogContent>
-    <DialogActions><MudButton Disabled="testing" Color="Color.Primary" OnClick="Close">Close</MudButton></DialogActions>
+    <DialogActions><MudButton Disabled="testing" Color="Color.Primary" OnClick="Close">@UiStrings.ActionClose</MudButton></DialogActions>
 </MudDialog>
 
 @code {
@@ -28,7 +28,7 @@
         }
         catch (Exception)
         {
-            outcome = new(JobOperationStatus.Failed, "The effective folder test could not be completed. Try again or check the application logs.");
+            outcome = new(JobOperationStatus.Failed, JobMessage.EffectiveFolderTestFailed);
         }
         finally
         {

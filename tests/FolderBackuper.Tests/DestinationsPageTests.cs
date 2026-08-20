@@ -82,7 +82,7 @@ public sealed class DestinationsPageTests
     {
         public DestinationType Type => DestinationType.Local;
         public Task<DestinationOperationResult> TestAsync(DestinationAccessConfiguration configuration, CancellationToken cancellationToken) =>
-            Task.FromResult(DestinationOperationResult.Success("Passed"));
+            Task.FromResult(DestinationOperationResult.Success(DestinationMessage.TestSucceeded));
         public Task<long?> GetAvailableBytesAsync(DestinationAccessConfiguration configuration, CancellationToken cancellationToken) => Task.FromResult<long?>(1024);
         public Task<T> ExecuteAsync<T>(DestinationAccessConfiguration configuration, Func<Task<T>> action) => action();
     }

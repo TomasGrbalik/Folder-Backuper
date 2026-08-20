@@ -1,5 +1,6 @@
 using FolderBackuper.Features.Backups;
 
+using FolderBackuper.Infrastructure.Localization;
 namespace FolderBackuper.Features.Notifications;
 
 public enum NotificationDeliveryState
@@ -25,7 +26,13 @@ public sealed class NotificationOutboxItem
     public DateTimeOffset? SendingAtUtc { get; private set; }
     public DateTimeOffset? DeliveredAtUtc { get; private set; }
     public DateTimeOffset? FailedAtUtc { get; private set; }
-    public string? LastSafeError { get; private set; }
+    /// <summary>
+    /// The message code of the last delivery problem, and its arguments. Stored as a code for the same
+    /// reason a run problem is: the row outlives the language it was written in.
+    /// </summary>
+    public string? LastSafeErrorKey { get; private set; }
+
+    public string? LastSafeErrorArguments { get; private set; }
 
     public void Claim(DateTimeOffset now)
     {
@@ -42,19 +49,21 @@ public sealed class NotificationOutboxItem
         DeliveredAtUtc = now;
     }
 
-    public void MarkFailed(string safeError, DateTimeOffset now)
+    public void MarkFailed(UiMessage safeError, DateTimeOffset now)
     {
         RequireState(NotificationDeliveryState.Sending);
         State = NotificationDeliveryState.Failed;
-        LastSafeError = safeError;
+        LastSafeErrorKey = safeError.Key;
+        LastSafeErrorArguments = StoredMessage.EncodeArguments(safeError);
         FailedAtUtc = now;
     }
 
-    public void MarkDeliveryUnknown(string safeError, DateTimeOffset now)
+    public void MarkDeliveryUnknown(UiMessage safeError, DateTimeOffset now)
     {
         RequireState(NotificationDeliveryState.Sending);
         State = NotificationDeliveryState.DeliveryUnknown;
-        LastSafeError = safeError;
+        LastSafeErrorKey = safeError.Key;
+        LastSafeErrorArguments = StoredMessage.EncodeArguments(safeError);
         FailedAtUtc = now;
     }
 

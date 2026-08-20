@@ -2,6 +2,7 @@ using System.Text.Json;
 using FolderBackuper.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 
+using FolderBackuper.Infrastructure.Localization;
 namespace FolderBackuper.Features.Notifications;
 
 /// <summary>
@@ -24,9 +25,8 @@ public sealed class NotificationOutboxService(
     TimeProvider timeProvider,
     ILogger<NotificationOutboxService> logger)
 {
-    internal const string InterruptedError =
-        "The service stopped after the delivery attempt began. Whether the email was sent is unknown, "
-        + "and it is deliberately not retried so that no duplicate can be sent.";
+    internal static readonly UiMessage InterruptedError =
+        UiMessage.For(NotificationResultMessage.InterruptedMidAttempt);
 
     /// <summary>
     /// Converts every record left Sending by an interruption to delivery-unknown, without contacting
@@ -122,7 +122,7 @@ public sealed class NotificationOutboxService(
             // provider can never hold a write lock on the application database.
             result = payload is null
                 ? new NotificationSendResult(NotificationSendStatus.Rejected,
-                    "The saved notification content could not be read and was not sent.")
+                    NotificationResultMessage.StoredContentUnreadable)
                 : await sender.SendRunResultAsync(payload, cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -138,7 +138,7 @@ public sealed class NotificationOutboxService(
             logger.LogError(exception,
                 "Notification {NotificationId} for run {RunId} failed unexpectedly", claimed.Id, claimed.RunId);
             result = new NotificationSendResult(NotificationSendStatus.Uncertain,
-                "The delivery attempt failed unexpectedly. Delivery is unknown.");
+                NotificationResultMessage.AttemptFailedUnexpectedly);
         }
 
         await RecordAsync(claimed.Id, result, cancellationToken);
@@ -191,7 +191,8 @@ public sealed class NotificationOutboxService(
         if (run is null) return;
 
         run.NotificationState = item.State;
-        run.NotificationErrorSummary = Truncate(item.LastSafeError);
+        run.NotificationMessageKey = item.LastSafeErrorKey;
+        run.NotificationMessageArguments = Truncate(item.LastSafeErrorArguments);
     }
 
     private NotificationPayload? Deserialize(NotificationOutboxItem item)

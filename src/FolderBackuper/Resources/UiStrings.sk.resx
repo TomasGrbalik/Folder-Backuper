@@ -1,0 +1,1405 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ActionArchive" xml:space="preserve">
+    <value>Archivovať</value>
+  </data>
+  <data name="ActionCancel" xml:space="preserve">
+    <value>Zrušiť</value>
+  </data>
+  <data name="ActionClose" xml:space="preserve">
+    <value>Zavrieť</value>
+  </data>
+  <data name="ActionEdit" xml:space="preserve">
+    <value>Upraviť</value>
+  </data>
+  <data name="ActionRefresh" xml:space="preserve">
+    <value>Obnoviť</value>
+  </data>
+  <data name="ActionRestore" xml:space="preserve">
+    <value>Obnoviť</value>
+  </data>
+  <data name="ActionSave" xml:space="preserve">
+    <value>Uložiť</value>
+  </data>
+  <data name="ActiveRunArchiveSize" xml:space="preserve">
+    <value>veľkosť archívu</value>
+  </data>
+  <data name="ActiveRunCancel" xml:space="preserve">
+    <value>Zrušiť</value>
+  </data>
+  <data name="ActiveRunCancelling" xml:space="preserve">
+    <value>Ruším…</value>
+  </data>
+  <data name="ActiveRunCompression" xml:space="preserve">
+    <value>komprimovanie</value>
+  </data>
+  <data name="ActiveRunElapsed" xml:space="preserve">
+    <value>uplynulo</value>
+  </data>
+  <data name="ActiveRunHeading" xml:space="preserve">
+    <value>Prebiehajúca záloha</value>
+  </data>
+  <data name="ActiveRunLiveUnavailable" xml:space="preserve">
+    <value>Živý priebeh nie je dostupný; zobrazuje sa fáza z posledného uloženého stavu.</value>
+  </data>
+  <data name="ActiveRunPercentComplete" xml:space="preserve">
+    <value>Hotových {0} %</value>
+  </data>
+  <data name="ActiveRunPreparing" xml:space="preserve">
+    <value>Pripravujem…</value>
+  </data>
+  <data name="ActiveRunRemaining" xml:space="preserve">
+    <value>zostáva</value>
+  </data>
+  <data name="ActiveRunScanning" xml:space="preserve">
+    <value>Prehľadávam zdroj, aby sa zistil celkový rozsah práce…</value>
+  </data>
+  <data name="ActiveRunSourceRead" xml:space="preserve">
+    <value>prečítaných zo zdroja</value>
+  </data>
+  <data name="AppBarServiceOnline" xml:space="preserve">
+    <value>Služba je spustená</value>
+  </data>
+  <data name="AppBarToggleNavigation" xml:space="preserve">
+    <value>Prepnúť navigáciu</value>
+  </data>
+  <data name="AppName" xml:space="preserve">
+    <value>Folder Backuper</value>
+  </data>
+  <data name="AppTagline" xml:space="preserve">
+    <value>SPRÁVA LOKÁLNYCH ZÁLOH</value>
+  </data>
+  <data name="ArtifactStateNone" xml:space="preserve">
+    <value>Žiadny</value>
+  </data>
+  <data name="ArtifactState_FoundMissing" xml:space="preserve">
+    <value>Chýba</value>
+  </data>
+  <data name="ArtifactState_PendingFinalization" xml:space="preserve">
+    <value>Čaká</value>
+  </data>
+  <data name="ArtifactState_RemovedByRetention" xml:space="preserve">
+    <value>Odstránený pri uchovávaní</value>
+  </data>
+  <data name="ArtifactState_Retained" xml:space="preserve">
+    <value>Uchovaný</value>
+  </data>
+  <data name="ArtifactState_Unmanaged" xml:space="preserve">
+    <value>Nespravovaný</value>
+  </data>
+  <data name="BackupOperation_BuildSourceManifest" xml:space="preserve">
+    <value>Zostavenie zoznamu zdroja</value>
+  </data>
+  <data name="BackupOperation_CancelBackup" xml:space="preserve">
+    <value>Zrušenie zálohovania</value>
+  </data>
+  <data name="BackupOperation_CleanDestinationPartial" xml:space="preserve">
+    <value>Odstránenie neúplného súboru v cieli</value>
+  </data>
+  <data name="BackupOperation_CleanInterruptedBackup" xml:space="preserve">
+    <value>Vyčistenie prerušeného zálohovania</value>
+  </data>
+  <data name="BackupOperation_CleanStagingArchive" xml:space="preserve">
+    <value>Odstránenie prípravného archívu</value>
+  </data>
+  <data name="BackupOperation_CompareSourceManifest" xml:space="preserve">
+    <value>Porovnanie zoznamu zdroja</value>
+  </data>
+  <data name="BackupOperation_CreateStagingArchive" xml:space="preserve">
+    <value>Vytvorenie prípravného archívu</value>
+  </data>
+  <data name="BackupOperation_DeleteRetainedArchive" xml:space="preserve">
+    <value>Odstránenie uchovaného archívu</value>
+  </data>
+  <data name="BackupOperation_EnumerateSourceDirectory" xml:space="preserve">
+    <value>Prechádzanie zdrojového priečinka</value>
+  </data>
+  <data name="BackupOperation_ExecuteBackup" xml:space="preserve">
+    <value>Vykonanie zálohovania</value>
+  </data>
+  <data name="BackupOperation_LoadConfiguration" xml:space="preserve">
+    <value>Načítanie nastavenia zálohovania</value>
+  </data>
+  <data name="BackupOperation_ReadSourceFile" xml:space="preserve">
+    <value>Čítanie zdrojového súboru</value>
+  </data>
+  <data name="BackupOperation_ReadSourceMetadata" xml:space="preserve">
+    <value>Čítanie metadát zdroja</value>
+  </data>
+  <data name="BackupOperation_RecordDestinationAccess" xml:space="preserve">
+    <value>Zaznamenanie prístupu k cieľu</value>
+  </data>
+  <data name="BackupOperation_RecoverFinalArchive" xml:space="preserve">
+    <value>Obnovenie konečného archívu</value>
+  </data>
+  <data name="BackupOperation_RecoverInterruptedBackup" xml:space="preserve">
+    <value>Obnovenie prerušeného zálohovania</value>
+  </data>
+  <data name="BackupOperation_RetentionOwnershipVerification" xml:space="preserve">
+    <value>Overenie vlastníctva pri uchovávaní</value>
+  </data>
+  <data name="BackupOperation_SkipReparsePoint" xml:space="preserve">
+    <value>Preskočenie bodu opätovného spracovania</value>
+  </data>
+  <data name="BackupOperation_TransferDestinationArchive" xml:space="preserve">
+    <value>Prenos archívu do cieľa</value>
+  </data>
+  <data name="BackupOperation_ValidateDestinationArchive" xml:space="preserve">
+    <value>Overenie archívu v cieli</value>
+  </data>
+  <data name="BackupOperation_ValidateDestinationVerification" xml:space="preserve">
+    <value>Kontrola overenia cieľa</value>
+  </data>
+  <data name="BackupOperation_ValidateEffectiveDestination" xml:space="preserve">
+    <value>Kontrola cieľového priečinka</value>
+  </data>
+  <data name="BackupOperation_ValidateJobLifecycle" xml:space="preserve">
+    <value>Kontrola stavu úlohy</value>
+  </data>
+  <data name="BackupOperation_ValidateSmbDestination" xml:space="preserve">
+    <value>Kontrola cieľa SMB</value>
+  </data>
+  <data name="BackupOperation_ValidateSource" xml:space="preserve">
+    <value>Kontrola zdroja</value>
+  </data>
+  <data name="BackupOperation_ValidateStaging" xml:space="preserve">
+    <value>Kontrola prípravného priečinka</value>
+  </data>
+  <data name="BackupOperation_ValidateStagingOverlap" xml:space="preserve">
+    <value>Kontrola prekrytia prípravného priečinka</value>
+  </data>
+  <data name="BackupOperation_ValidateZipArchive" xml:space="preserve">
+    <value>Overenie archívu ZIP</value>
+  </data>
+  <data name="BackupOperation_VerifyDestinationOwnership" xml:space="preserve">
+    <value>Overenie vlastníctva cieľa</value>
+  </data>
+  <data name="BackupProblemSeverity_Error" xml:space="preserve">
+    <value>Chyba</value>
+  </data>
+  <data name="BackupProblemSeverity_Warning" xml:space="preserve">
+    <value>Upozornenie</value>
+  </data>
+  <data name="CalendarAgendaEmpty" xml:space="preserve">
+    <value>V tomto mesiaci nie sú pre zvolené filtre žiadne položky.</value>
+  </data>
+  <data name="CalendarEntryTitle" xml:space="preserve">
+    <value>{0} — {1} v {2}</value>
+  </data>
+  <data name="CalendarLead" xml:space="preserve">
+    <value>Minulé pokusy o spustenie a budúce naplánované spustenia spolu.</value>
+  </data>
+  <data name="CalendarLegendCancelled" xml:space="preserve">
+    <value>Zrušené</value>
+  </data>
+  <data name="CalendarLegendFailed" xml:space="preserve">
+    <value>Zlyhalo / chýba</value>
+  </data>
+  <data name="CalendarLegendPlanned" xml:space="preserve">
+    <value>Naplánované / prebieha</value>
+  </data>
+  <data name="CalendarLegendSuccessful" xml:space="preserve">
+    <value>Úspešné</value>
+  </data>
+  <data name="CalendarLegendWarnings" xml:space="preserve">
+    <value>Upozornenia</value>
+  </data>
+  <data name="CalendarNextMonth" xml:space="preserve">
+    <value>Nasledujúci mesiac</value>
+  </data>
+  <data name="CalendarPreviousMonth" xml:space="preserve">
+    <value>Predchádzajúci mesiac</value>
+  </data>
+  <data name="CalendarTitle" xml:space="preserve">
+    <value>Kalendár</value>
+  </data>
+  <data name="CalendarToday" xml:space="preserve">
+    <value>Dnes</value>
+  </data>
+  <data name="CalendarViewAgenda" xml:space="preserve">
+    <value>Program</value>
+  </data>
+  <data name="CalendarViewMonth" xml:space="preserve">
+    <value>Mesiac</value>
+  </data>
+  <data name="CountFilesProcessed_Few" xml:space="preserve">
+    <value>spracované súbory</value>
+  </data>
+  <data name="CountFilesProcessed_Many" xml:space="preserve">
+    <value>spracovaných súborov</value>
+  </data>
+  <data name="CountFilesProcessed_One" xml:space="preserve">
+    <value>spracovaný súbor</value>
+  </data>
+  <data name="CountFiles_Few" xml:space="preserve">
+    <value>súbory</value>
+  </data>
+  <data name="CountFiles_Many" xml:space="preserve">
+    <value>súborov</value>
+  </data>
+  <data name="CountFiles_One" xml:space="preserve">
+    <value>súbor</value>
+  </data>
+  <data name="CountFolders_Few" xml:space="preserve">
+    <value>priečinky</value>
+  </data>
+  <data name="CountFolders_Many" xml:space="preserve">
+    <value>priečinkov</value>
+  </data>
+  <data name="CountFolders_One" xml:space="preserve">
+    <value>priečinok</value>
+  </data>
+  <data name="CountInaccessible_Few" xml:space="preserve">
+    <value>neprístupné</value>
+  </data>
+  <data name="CountInaccessible_Many" xml:space="preserve">
+    <value>neprístupných</value>
+  </data>
+  <data name="CountInaccessible_One" xml:space="preserve">
+    <value>neprístupný</value>
+  </data>
+  <data name="CountReparsePointsSkipped_Few" xml:space="preserve">
+    <value>preskočené body opätovného spracovania</value>
+  </data>
+  <data name="CountReparsePointsSkipped_Many" xml:space="preserve">
+    <value>preskočených bodov opätovného spracovania</value>
+  </data>
+  <data name="CountReparsePointsSkipped_One" xml:space="preserve">
+    <value>preskočený bod opätovného spracovania</value>
+  </data>
+  <data name="DashboardAlertFailed_Few" xml:space="preserve">
+    <value>{0} úlohy nahlásili zlyhanie posledného spustenia.</value>
+  </data>
+  <data name="DashboardAlertFailed_Many" xml:space="preserve">
+    <value>{0} úloh nahlásilo zlyhanie posledného spustenia.</value>
+  </data>
+  <data name="DashboardAlertFailed_One" xml:space="preserve">
+    <value>{0} úloha nahlásila zlyhanie posledného spustenia.</value>
+  </data>
+  <data name="DashboardAlertNotification_Few" xml:space="preserve">
+    <value>{0} úlohy majú nevyriešený výsledok doručenia upozornenia.</value>
+  </data>
+  <data name="DashboardAlertNotification_Many" xml:space="preserve">
+    <value>{0} úloh má nevyriešený výsledok doručenia upozornenia.</value>
+  </data>
+  <data name="DashboardAlertNotification_One" xml:space="preserve">
+    <value>{0} úloha má nevyriešený výsledok doručenia upozornenia.</value>
+  </data>
+  <data name="DashboardAlertWarnings_Few" xml:space="preserve">
+    <value>{0} úlohy dokončili posledné spustenie s upozorneniami.</value>
+  </data>
+  <data name="DashboardAlertWarnings_Many" xml:space="preserve">
+    <value>{0} úloh dokončilo posledné spustenie s upozorneniami.</value>
+  </data>
+  <data name="DashboardAlertWarnings_One" xml:space="preserve">
+    <value>{0} úloha dokončila posledné spustenie s upozorneniami.</value>
+  </data>
+  <data name="DashboardHistory" xml:space="preserve">
+    <value>História</value>
+  </data>
+  <data name="DashboardIdle" xml:space="preserve">
+    <value>Práve neprebieha žiadna záloha.</value>
+  </data>
+  <data name="DashboardLastAccess" xml:space="preserve">
+    <value>Posledný prístup: {0}, {1}</value>
+  </data>
+  <data name="DashboardLastAccessNotAttempted" xml:space="preserve">
+    <value>Posledný prístup: nevyskúšaný</value>
+  </data>
+  <data name="DashboardLastRun" xml:space="preserve">
+    <value>Posledné spustenie</value>
+  </data>
+  <data name="DashboardLastSuccess" xml:space="preserve">
+    <value>Posledné úspešné</value>
+  </data>
+  <data name="DashboardLead" xml:space="preserve">
+    <value>Stav záloh, prebiehajúca práca a stav jednotlivých úloh na jednom mieste.</value>
+  </data>
+  <data name="DashboardMissingArchives_Few" xml:space="preserve">
+    <value>chýbajú {0} archívy</value>
+  </data>
+  <data name="DashboardMissingArchives_Many" xml:space="preserve">
+    <value>chýba {0} archívov</value>
+  </data>
+  <data name="DashboardMissingArchives_One" xml:space="preserve">
+    <value>chýba {0} archív</value>
+  </data>
+  <data name="DashboardNextRun" xml:space="preserve">
+    <value>Ďalšie spustenie</value>
+  </data>
+  <data name="DashboardNoJobsBody" xml:space="preserve">
+    <value>Vytvorte úlohu a naplánujte zálohovanie.</value>
+  </data>
+  <data name="DashboardNoJobsHeading" xml:space="preserve">
+    <value>Nie sú nastavené žiadne úlohy</value>
+  </data>
+  <data name="DashboardNoRunsYet" xml:space="preserve">
+    <value>Zatiaľ žiadne spustenie</value>
+  </data>
+  <data name="DashboardNotificationLabel" xml:space="preserve">
+    <value>Upozornenie:</value>
+  </data>
+  <data name="DashboardPaused" xml:space="preserve">
+    <value>Pozastavené</value>
+  </data>
+  <data name="DashboardQueueEntry" xml:space="preserve">
+    <value>{0}, naplánované na {1}</value>
+  </data>
+  <data name="DashboardRefreshStorage" xml:space="preserve">
+    <value>Obnoviť údaje o úložisku</value>
+  </data>
+  <data name="DashboardRunNow" xml:space="preserve">
+    <value>Spustiť teraz</value>
+  </data>
+  <data name="DashboardSectionActive" xml:space="preserve">
+    <value>Prebiehajúca záloha</value>
+  </data>
+  <data name="DashboardSectionDestinations" xml:space="preserve">
+    <value>Cieľové umiestnenia</value>
+  </data>
+  <data name="DashboardSectionJobs" xml:space="preserve">
+    <value>Úlohy</value>
+  </data>
+  <data name="DashboardSectionQueued" xml:space="preserve">
+    <value>V poradí ({0})</value>
+  </data>
+  <data name="DashboardStorageAcross_Few" xml:space="preserve">
+    <value>v {0} z {1} uchovaných záloh</value>
+  </data>
+  <data name="DashboardStorageAcross_Many" xml:space="preserve">
+    <value>v {0} z {1} uchovaných záloh</value>
+  </data>
+  <data name="DashboardStorageAcross_One" xml:space="preserve">
+    <value>v {0} z {1} uchovanej zálohy</value>
+  </data>
+  <data name="DashboardStorageConfirmed" xml:space="preserve">
+    <value>Potvrdené: {0}</value>
+  </data>
+  <data name="DashboardStorageConfirmedResult_Few" xml:space="preserve">
+    <value>Úložisko potvrdené: skontrolované {0} archívy, {1} chýba.</value>
+  </data>
+  <data name="DashboardStorageConfirmedResult_Many" xml:space="preserve">
+    <value>Úložisko potvrdené: skontrolovaných {0} archívov, {1} chýba.</value>
+  </data>
+  <data name="DashboardStorageConfirmedResult_One" xml:space="preserve">
+    <value>Úložisko potvrdené: skontrolovaný {0} archív, {1} chýba.</value>
+  </data>
+  <data name="DashboardStorageLatest" xml:space="preserve">
+    <value>Najnovšia: {0}</value>
+  </data>
+  <data name="DashboardStorageStale" xml:space="preserve">
+    <value>neaktuálne</value>
+  </data>
+  <data name="DashboardStorageUnreachable" xml:space="preserve">
+    <value>Cieľové umiestnenie nebolo dostupné; posledné potvrdené údaje o úložisku sa nezmenili.</value>
+  </data>
+  <data name="DashboardTitle" xml:space="preserve">
+    <value>Prehľad</value>
+  </data>
+  <data name="DashboardUnmanagedArchives_Few" xml:space="preserve">
+    <value>{0} nespravované historické archívy</value>
+  </data>
+  <data name="DashboardUnmanagedArchives_Many" xml:space="preserve">
+    <value>{0} nespravovaných historických archívov</value>
+  </data>
+  <data name="DashboardUnmanagedArchives_One" xml:space="preserve">
+    <value>{0} nespravovaný historický archív</value>
+  </data>
+  <data name="DestinationAccessResult_AccessDenied" xml:space="preserve">
+    <value>Prístup odmietnutý</value>
+  </data>
+  <data name="DestinationAccessResult_AuthenticationFailed" xml:space="preserve">
+    <value>Prihlásenie zlyhalo</value>
+  </data>
+  <data name="DestinationAccessResult_CleanupFailed" xml:space="preserve">
+    <value>Vyčistenie zlyhalo</value>
+  </data>
+  <data name="DestinationAccessResult_Failed" xml:space="preserve">
+    <value>Zlyhalo</value>
+  </data>
+  <data name="DestinationAccessResult_InvalidPath" xml:space="preserve">
+    <value>Neplatná cesta</value>
+  </data>
+  <data name="DestinationAccessResult_NotAttempted" xml:space="preserve">
+    <value>Nevyskúšané</value>
+  </data>
+  <data name="DestinationAccessResult_Succeeded" xml:space="preserve">
+    <value>Úspešné</value>
+  </data>
+  <data name="DestinationAccessResult_Unavailable" xml:space="preserve">
+    <value>Nedostupné</value>
+  </data>
+  <data name="DestinationFormAddTitle" xml:space="preserve">
+    <value>Pridať cieľové umiestnenie</value>
+  </data>
+  <data name="DestinationFormChangeRootBody" xml:space="preserve">
+    <value>Zmena tohto koreňa pozastaví dotknuté úlohy a uchované archívy sa stanú nespravovanými. Pokračovať?</value>
+  </data>
+  <data name="DestinationFormChangeRootConfirm" xml:space="preserve">
+    <value>Zmeniť koreň</value>
+  </data>
+  <data name="DestinationFormChangeRootKeep" xml:space="preserve">
+    <value>Ponechať súčasný koreň</value>
+  </data>
+  <data name="DestinationFormChangeRootTitle" xml:space="preserve">
+    <value>Zmeniť koreň úložiska?</value>
+  </data>
+  <data name="DestinationFormEditTitle" xml:space="preserve">
+    <value>Upraviť cieľové umiestnenie</value>
+  </data>
+  <data name="DestinationFormLocalExample" xml:space="preserve">
+    <value>Napríklad: D:\Zalohy</value>
+  </data>
+  <data name="DestinationFormLocalFolder" xml:space="preserve">
+    <value>Lokálny priečinok</value>
+  </data>
+  <data name="DestinationFormName" xml:space="preserve">
+    <value>Názov</value>
+  </data>
+  <data name="DestinationFormPassword" xml:space="preserve">
+    <value>Heslo</value>
+  </data>
+  <data name="DestinationFormPasswordHelp" xml:space="preserve">
+    <value>Uložené heslá sa nikdy nezobrazujú. Ponechajte prázdne, ak chcete zachovať existujúce heslo.</value>
+  </data>
+  <data name="DestinationFormPasswordReplacement" xml:space="preserve">
+    <value>Nové heslo (nepovinné)</value>
+  </data>
+  <data name="DestinationFormRootPath" xml:space="preserve">
+    <value>Koreňová cesta</value>
+  </data>
+  <data name="DestinationFormSaveFailed" xml:space="preserve">
+    <value>Cieľové umiestnenie sa nepodarilo uložiť. Skúste to znova alebo skontrolujte protokoly aplikácie.</value>
+  </data>
+  <data name="DestinationFormSmbExample" xml:space="preserve">
+    <value>Napríklad: \\nas\zalohy</value>
+  </data>
+  <data name="DestinationFormSmbShare" xml:space="preserve">
+    <value>Sieťové zdieľanie SMB</value>
+  </data>
+  <data name="DestinationFormStorageType" xml:space="preserve">
+    <value>Typ úložiska</value>
+  </data>
+  <data name="DestinationFormUsername" xml:space="preserve">
+    <value>Používateľské meno</value>
+  </data>
+  <data name="DestinationTestRunning" xml:space="preserve">
+    <value>Zapisujem a čítam súkromný testovací súbor v {0}...</value>
+  </data>
+  <data name="DestinationTestSpaceAvailable" xml:space="preserve">
+    <value>K dispozícii je {0} bajtov</value>
+  </data>
+  <data name="DestinationTestTitle" xml:space="preserve">
+    <value>Test prístupu</value>
+  </data>
+  <data name="DestinationType_Local" xml:space="preserve">
+    <value>Lokálne</value>
+  </data>
+  <data name="DestinationType_Smb" xml:space="preserve">
+    <value>SMB</value>
+  </data>
+  <data name="DestinationVerificationResult_Failed" xml:space="preserve">
+    <value>Zlyhalo</value>
+  </data>
+  <data name="DestinationVerificationResult_Succeeded" xml:space="preserve">
+    <value>Úspešné</value>
+  </data>
+  <data name="DestinationVerificationResult_Unverified" xml:space="preserve">
+    <value>Neoverené</value>
+  </data>
+  <data name="DestinationsAccount" xml:space="preserve">
+    <value>Konto: {0}</value>
+  </data>
+  <data name="DestinationsAdd" xml:space="preserve">
+    <value>Pridať cieľové umiestnenie</value>
+  </data>
+  <data name="DestinationsArchiveBody" xml:space="preserve">
+    <value>Archivovať {0}? Neskôr sa dá obnoviť.</value>
+  </data>
+  <data name="DestinationsArchiveTitle" xml:space="preserve">
+    <value>Archivovať cieľové umiestnenie?</value>
+  </data>
+  <data name="DestinationsAvailable" xml:space="preserve">
+    <value>K dispozícii: {0}</value>
+  </data>
+  <data name="DestinationsEditTitle" xml:space="preserve">
+    <value>Upraviť cieľové umiestnenie</value>
+  </data>
+  <data name="DestinationsEmptyBody" xml:space="preserve">
+    <value>Pridajte lokálny priečinok alebo zdieľanie SMB a potom overte prístup služby.</value>
+  </data>
+  <data name="DestinationsEmptyHeading" xml:space="preserve">
+    <value>Nie sú nastavené žiadne korene úložísk</value>
+  </data>
+  <data name="DestinationsLastTest" xml:space="preserve">
+    <value>Posledný test: {0}, {1}</value>
+  </data>
+  <data name="DestinationsLastTestNotAttempted" xml:space="preserve">
+    <value>Posledný test: nevyskúšaný</value>
+  </data>
+  <data name="DestinationsLead" xml:space="preserve">
+    <value>Overené lokálne a sieťové korene úložísk pre budúce zálohovacie úlohy.</value>
+  </data>
+  <data name="DestinationsLocalStorage" xml:space="preserve">
+    <value>LOKÁLNE ÚLOŽISKO</value>
+  </data>
+  <data name="DestinationsRestoreBody" xml:space="preserve">
+    <value>Obnoviť {0}? Bude potrebné overiť prístup.</value>
+  </data>
+  <data name="DestinationsRestoreTitle" xml:space="preserve">
+    <value>Obnoviť cieľové umiestnenie?</value>
+  </data>
+  <data name="DestinationsShowActive" xml:space="preserve">
+    <value>Zobraziť aktívne</value>
+  </data>
+  <data name="DestinationsShowArchived" xml:space="preserve">
+    <value>Zobraziť archivované</value>
+  </data>
+  <data name="DestinationsSmbStorage" xml:space="preserve">
+    <value>ÚLOŽISKO SMB</value>
+  </data>
+  <data name="DestinationsTestAccess" xml:space="preserve">
+    <value>Test</value>
+  </data>
+  <data name="DestinationsTestDialogTitle" xml:space="preserve">
+    <value>Test prístupu k cieľovému umiestneniu</value>
+  </data>
+  <data name="DestinationsTitle" xml:space="preserve">
+    <value>Cieľové umiestnenia</value>
+  </data>
+  <data name="DriveType_CDRom" xml:space="preserve">
+    <value>Optické</value>
+  </data>
+  <data name="DriveType_Fixed" xml:space="preserve">
+    <value>Pevné</value>
+  </data>
+  <data name="DriveType_Network" xml:space="preserve">
+    <value>Sieťové</value>
+  </data>
+  <data name="DriveType_NoRootDirectory" xml:space="preserve">
+    <value>Bez koreňového priečinka</value>
+  </data>
+  <data name="DriveType_Ram" xml:space="preserve">
+    <value>RAM disk</value>
+  </data>
+  <data name="DriveType_Removable" xml:space="preserve">
+    <value>Vymeniteľné</value>
+  </data>
+  <data name="DriveType_Unknown" xml:space="preserve">
+    <value>Neznáme</value>
+  </data>
+  <data name="EffectiveFolderTestMissing" xml:space="preserve">
+    <value>Úloha alebo cieľové umiestnenie už neexistuje.</value>
+  </data>
+  <data name="EffectiveFolderTestRunning" xml:space="preserve">
+    <value>Overujem vlastníctvo, zápis, spätné načítanie a vyčistenie...</value>
+  </data>
+  <data name="EffectiveFolderTestTitle" xml:space="preserve">
+    <value>Test cieľového priečinka</value>
+  </data>
+  <data name="ErrorBoundaryBody" xml:space="preserve">
+    <value>Skúste operáciu zopakovať. Zálohovacia služba beží ďalej nezávisle od tejto stránky.</value>
+  </data>
+  <data name="ErrorBoundaryHeading" xml:space="preserve">
+    <value>Toto zobrazenie sa nepodarilo zobraziť</value>
+  </data>
+  <data name="ErrorBoundaryRetry" xml:space="preserve">
+    <value>Skúsiť znova</value>
+  </data>
+  <data name="FilterAllJobs" xml:space="preserve">
+    <value>Všetky úlohy</value>
+  </data>
+  <data name="FilterJob" xml:space="preserve">
+    <value>Úloha</value>
+  </data>
+  <data name="FilterStatus" xml:space="preserve">
+    <value>Stav</value>
+  </data>
+  <data name="HistoryColumnArchive" xml:space="preserve">
+    <value>Archív</value>
+  </data>
+  <data name="HistoryColumnDuration" xml:space="preserve">
+    <value>Trvanie</value>
+  </data>
+  <data name="HistoryColumnJob" xml:space="preserve">
+    <value>Úloha</value>
+  </data>
+  <data name="HistoryColumnNotification" xml:space="preserve">
+    <value>Upozornenie</value>
+  </data>
+  <data name="HistoryColumnProblems" xml:space="preserve">
+    <value>Problémy</value>
+  </data>
+  <data name="HistoryColumnStarted" xml:space="preserve">
+    <value>Začaté</value>
+  </data>
+  <data name="HistoryColumnStatus" xml:space="preserve">
+    <value>Stav</value>
+  </data>
+  <data name="HistoryColumnTrigger" xml:space="preserve">
+    <value>Spúšťač</value>
+  </data>
+  <data name="HistoryLead" xml:space="preserve">
+    <value>Trvalý záznam každého pokusu o spustenie. Túto históriu nie je možné vymazať.</value>
+  </data>
+  <data name="HistoryNoRecords" xml:space="preserve">
+    <value>Zvoleným filtrom nezodpovedá žiadne spustenie.</value>
+  </data>
+  <data name="HistoryTitle" xml:space="preserve">
+    <value>História</value>
+  </data>
+  <data name="JobLifecycle_Active" xml:space="preserve">
+    <value>Aktívna</value>
+  </data>
+  <data name="JobLifecycle_Archived" xml:space="preserve">
+    <value>Archivovaná</value>
+  </data>
+  <data name="JobLifecycle_Paused" xml:space="preserve">
+    <value>Pozastavená</value>
+  </data>
+  <data name="JobsActivateAfterSaving" xml:space="preserve">
+    <value>Aktivovať po uložení</value>
+  </data>
+  <data name="JobsActivateThis" xml:space="preserve">
+    <value>Aktivovať túto úlohu</value>
+  </data>
+  <data name="JobsActivationNote" xml:space="preserve">
+    <value>Aktivácia overí prístup k cieľovému priečinku a jeho vlastníctvo.</value>
+  </data>
+  <data name="JobsArchiveBody" xml:space="preserve">
+    <value>Archivovať {0}? Jej spravované súbory sa neodstránia.</value>
+  </data>
+  <data name="JobsArchiveTitle" xml:space="preserve">
+    <value>Archivovať úlohu?</value>
+  </data>
+  <data name="JobsBrowse" xml:space="preserve">
+    <value>Prehľadávať</value>
+  </data>
+  <data name="JobsChangeDestinationBody" xml:space="preserve">
+    <value>Zmena cieľového priečinka spôsobí, že existujúce uchované archívy sa stanú nespravovanými. Pokračovať?</value>
+  </data>
+  <data name="JobsChangeDestinationConfirm" xml:space="preserve">
+    <value>Zmeniť priečinok</value>
+  </data>
+  <data name="JobsChangeDestinationKeep" xml:space="preserve">
+    <value>Ponechať súčasný priečinok</value>
+  </data>
+  <data name="JobsChangeDestinationTitle" xml:space="preserve">
+    <value>Zmeniť cieľové umiestnenie úlohy?</value>
+  </data>
+  <data name="JobsChooseDestination" xml:space="preserve">
+    <value>Vyberte cieľové umiestnenie</value>
+  </data>
+  <data name="JobsCurrentTimezone" xml:space="preserve">
+    <value>Aktuálna časová zóna</value>
+  </data>
+  <data name="JobsCurrentlyActive" xml:space="preserve">
+    <value>Momentálne aktívna</value>
+  </data>
+  <data name="JobsDiscardBody" xml:space="preserve">
+    <value>Neuložené zmeny úlohy sa stratia.</value>
+  </data>
+  <data name="JobsDiscardConfirm" xml:space="preserve">
+    <value>Zahodiť</value>
+  </data>
+  <data name="JobsDiscardKeep" xml:space="preserve">
+    <value>Pokračovať v úprave</value>
+  </data>
+  <data name="JobsDiscardTitle" xml:space="preserve">
+    <value>Zahodiť zmeny?</value>
+  </data>
+  <data name="JobsEdit" xml:space="preserve">
+    <value>Upraviť úlohu</value>
+  </data>
+  <data name="JobsEmptyArchivedBody" xml:space="preserve">
+    <value>Archivované úlohy sa zobrazia tu.</value>
+  </data>
+  <data name="JobsEmptyArchivedHeading" xml:space="preserve">
+    <value>Žiadne archivované úlohy</value>
+  </data>
+  <data name="JobsEmptyCurrentBody" xml:space="preserve">
+    <value>Vytvorte úlohu a určite, čo a kedy sa má zálohovať.</value>
+  </data>
+  <data name="JobsEmptyCurrentHeading" xml:space="preserve">
+    <value>Nie sú nastavené žiadne úlohy</value>
+  </data>
+  <data name="JobsFieldName" xml:space="preserve">
+    <value>Názov úlohy</value>
+  </data>
+  <data name="JobsFieldRetention" xml:space="preserve">
+    <value>Počet uchovaných záloh</value>
+  </data>
+  <data name="JobsFieldScheduledTime" xml:space="preserve">
+    <value>Naplánovaný miestny čas</value>
+  </data>
+  <data name="JobsFieldSourceDirectory" xml:space="preserve">
+    <value>Zdrojový priečinok</value>
+  </data>
+  <data name="JobsFieldStorageRoot" xml:space="preserve">
+    <value>Koreň úložiska</value>
+  </data>
+  <data name="JobsFieldSubfolder" xml:space="preserve">
+    <value>Podpriečinok</value>
+  </data>
+  <data name="JobsFormLead" xml:space="preserve">
+    <value>Jeden plán, jeden zdroj a jeden vlastnený cieľový priečinok.</value>
+  </data>
+  <data name="JobsLead" xml:space="preserve">
+    <value>Definície naplánovaných záloh a ich aktuálny stav.</value>
+  </data>
+  <data name="JobsLeaveConfirm" xml:space="preserve">
+    <value>Odísť</value>
+  </data>
+  <data name="JobsLeaveStay" xml:space="preserve">
+    <value>Zostať</value>
+  </data>
+  <data name="JobsLeaveTitle" xml:space="preserve">
+    <value>Odísť bez uloženia?</value>
+  </data>
+  <data name="JobsLifecycleFailed" xml:space="preserve">
+    <value>Zmenu stavu sa nepodarilo dokončiť. Skúste to znova alebo skontrolujte protokoly aplikácie.</value>
+  </data>
+  <data name="JobsLifecycleNote" xml:space="preserve">
+    <value>Stav úlohy zmeníte akciou Pozastaviť v zozname úloh.</value>
+  </data>
+  <data name="JobsManagedStorage" xml:space="preserve">
+    <value>Spravované úložisko: {0} archívov, {1}</value>
+  </data>
+  <data name="JobsNew" xml:space="preserve">
+    <value>Nová úloha</value>
+  </data>
+  <data name="JobsNextRunLabel" xml:space="preserve">
+    <value>Ďalšie spustenie</value>
+  </data>
+  <data name="JobsNotFound" xml:space="preserve">
+    <value>Úloha sa nenašla.</value>
+  </data>
+  <data name="JobsPause" xml:space="preserve">
+    <value>Pozastaviť</value>
+  </data>
+  <data name="JobsPauseBody" xml:space="preserve">
+    <value>Pozastaviť {0}?</value>
+  </data>
+  <data name="JobsPauseTitle" xml:space="preserve">
+    <value>Pozastaviť úlohu?</value>
+  </data>
+  <data name="JobsPreviewResult" xml:space="preserve">
+    <value>Náhľad: {0}. Odhad pri uchovávaní: {1}.</value>
+  </data>
+  <data name="JobsPreviewSource" xml:space="preserve">
+    <value>Náhľad zdroja</value>
+  </data>
+  <data name="JobsReactivate" xml:space="preserve">
+    <value>Reaktivovať</value>
+  </data>
+  <data name="JobsReactivateBody" xml:space="preserve">
+    <value>Reaktivovať {0}?</value>
+  </data>
+  <data name="JobsReactivateTitle" xml:space="preserve">
+    <value>Reaktivovať úlohu?</value>
+  </data>
+  <data name="JobsRestoreBody" xml:space="preserve">
+    <value>Obnoviť {0}? Aktivuje sa len vtedy, ak jej nastavenie a cieľové umiestnenie zostali platné.</value>
+  </data>
+  <data name="JobsRestoreTitle" xml:space="preserve">
+    <value>Obnoviť úlohu?</value>
+  </data>
+  <data name="JobsRetentionOverflow" xml:space="preserve">
+    <value>Viac ako 8 EB</value>
+  </data>
+  <data name="JobsRunNow" xml:space="preserve">
+    <value>Spustiť teraz</value>
+  </data>
+  <data name="JobsSave" xml:space="preserve">
+    <value>Uložiť úlohu</value>
+  </data>
+  <data name="JobsSaveBeforeTesting" xml:space="preserve">
+    <value>Pred testovaním uloženého cieľového priečinka uložte zmeny.</value>
+  </data>
+  <data name="JobsSaveFailed" xml:space="preserve">
+    <value>Úlohu sa nepodarilo uložiť. Skúste to znova alebo skontrolujte protokoly aplikácie.</value>
+  </data>
+  <data name="JobsSaving" xml:space="preserve">
+    <value>Ukladám…</value>
+  </data>
+  <data name="JobsScheduleIncomplete" xml:space="preserve">
+    <value>Plán je nedokončený</value>
+  </data>
+  <data name="JobsScheduleSummary" xml:space="preserve">
+    <value>{0} v {1} · Ďalšie: {2}</value>
+  </data>
+  <data name="JobsSectionDestination" xml:space="preserve">
+    <value>Cieľové umiestnenie</value>
+  </data>
+  <data name="JobsSectionIdentity" xml:space="preserve">
+    <value>Označenie a zdroj</value>
+  </data>
+  <data name="JobsSectionSchedule" xml:space="preserve">
+    <value>Plán a uchovávanie</value>
+  </data>
+  <data name="JobsSelectAWeekday" xml:space="preserve">
+    <value>Vyberte deň v týždni</value>
+  </data>
+  <data name="JobsShowArchived" xml:space="preserve">
+    <value>Zobraziť archivované</value>
+  </data>
+  <data name="JobsShowCurrent" xml:space="preserve">
+    <value>Zobraziť aktuálne</value>
+  </data>
+  <data name="JobsSubfolderPlaceholder" xml:space="preserve">
+    <value>Finance\Tyzdenne</value>
+  </data>
+  <data name="JobsTestEffectiveFolder" xml:space="preserve">
+    <value>Otestovať cieľový priečinok</value>
+  </data>
+  <data name="JobsTestOpenFailed" xml:space="preserve">
+    <value>Test cieľového priečinka sa nepodarilo otvoriť. Skúste to znova alebo skontrolujte protokoly aplikácie.</value>
+  </data>
+  <data name="JobsTitle" xml:space="preserve">
+    <value>Úlohy</value>
+  </data>
+  <data name="JobsUnavailableDestination" xml:space="preserve">
+    <value>Nedostupné cieľové umiestnenie</value>
+  </data>
+  <data name="JobsValidationDestination" xml:space="preserve">
+    <value>Vyberte cieľové umiestnenie.</value>
+  </data>
+  <data name="JobsValidationName" xml:space="preserve">
+    <value>Názov úlohy je povinný.</value>
+  </data>
+  <data name="JobsValidationRetention" xml:space="preserve">
+    <value>Uchovávať treba aspoň jednu zálohu.</value>
+  </data>
+  <data name="JobsValidationSourcePath" xml:space="preserve">
+    <value>Vyberte zdrojový priečinok.</value>
+  </data>
+  <data name="JobsValidationWeekdays" xml:space="preserve">
+    <value>Vyberte aspoň jeden deň v týždni.</value>
+  </data>
+  <data name="LanguageEnglish" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="LanguageEnglishShort" xml:space="preserve">
+    <value>EN</value>
+  </data>
+  <data name="LanguageGroupLabel" xml:space="preserve">
+    <value>Jazyk</value>
+  </data>
+  <data name="LanguageSlovak" xml:space="preserve">
+    <value>Slovenčina</value>
+  </data>
+  <data name="LanguageSlovakShort" xml:space="preserve">
+    <value>SK</value>
+  </data>
+  <data name="NavCalendar" xml:space="preserve">
+    <value>Kalendár</value>
+  </data>
+  <data name="NavDashboard" xml:space="preserve">
+    <value>Prehľad</value>
+  </data>
+  <data name="NavDestinations" xml:space="preserve">
+    <value>Cieľové umiestnenia</value>
+  </data>
+  <data name="NavHistory" xml:space="preserve">
+    <value>História</value>
+  </data>
+  <data name="NavJobs" xml:space="preserve">
+    <value>Úlohy</value>
+  </data>
+  <data name="NavLoopbackOnly" xml:space="preserve">
+    <value>Prístup len z tohto počítača</value>
+  </data>
+  <data name="NavPrimaryLabel" xml:space="preserve">
+    <value>Hlavná navigácia</value>
+  </data>
+  <data name="NavSectionWorkspace" xml:space="preserve">
+    <value>Pracovná plocha</value>
+  </data>
+  <data name="NavSettings" xml:space="preserve">
+    <value>Nastavenia</value>
+  </data>
+  <data name="NavVersion" xml:space="preserve">
+    <value>Verzia {0}</value>
+  </data>
+  <data name="NotificationDeliveryStateNotSent" xml:space="preserve">
+    <value>Neodoslané</value>
+  </data>
+  <data name="NotificationDeliveryState_Delivered" xml:space="preserve">
+    <value>Doručené</value>
+  </data>
+  <data name="NotificationDeliveryState_DeliveryUnknown" xml:space="preserve">
+    <value>Doručenie neznáme</value>
+  </data>
+  <data name="NotificationDeliveryState_Failed" xml:space="preserve">
+    <value>Doručenie zlyhalo</value>
+  </data>
+  <data name="NotificationDeliveryState_Pending" xml:space="preserve">
+    <value>Čaká</value>
+  </data>
+  <data name="NotificationDeliveryState_Sending" xml:space="preserve">
+    <value>Odosiela sa</value>
+  </data>
+  <data name="PageTitleFormat" xml:space="preserve">
+    <value>{0} | Folder Backuper</value>
+  </data>
+  <data name="PagerInfoFormat" xml:space="preserve">
+    <value>{first_item} – {last_item} z {all_items}</value>
+  </data>
+  <data name="PagerRowsPerPage" xml:space="preserve">
+    <value>Riadkov na stránku:</value>
+  </data>
+  <data name="ReconnectBody" xml:space="preserve">
+    <value>Stránka bude pokračovať, keď bude lokálna služba dostupná.</value>
+  </data>
+  <data name="ReconnectFailedBody" xml:space="preserve">
+    <value>Spustite službu Folder Backuper a skúste to znova.</value>
+  </data>
+  <data name="ReconnectFailedHeading" xml:space="preserve">
+    <value>Pripojenie sa nepodarilo obnoviť</value>
+  </data>
+  <data name="ReconnectHeading" xml:space="preserve">
+    <value>Znovu sa pripájam k zálohovacej službe</value>
+  </data>
+  <data name="ReconnectRejectedBody" xml:space="preserve">
+    <value>Znovu načítajte stránku a vytvorte nové pripojenie.</value>
+  </data>
+  <data name="ReconnectRejectedHeading" xml:space="preserve">
+    <value>Služba sa reštartovala</value>
+  </data>
+  <data name="ReconnectReload" xml:space="preserve">
+    <value>Znovu načítať</value>
+  </data>
+  <data name="ReconnectRetry" xml:space="preserve">
+    <value>Skúsiť znova</value>
+  </data>
+  <data name="RouteNotFound" xml:space="preserve">
+    <value>Taká stránka neexistuje.</value>
+  </data>
+  <data name="RunDetailsArchive" xml:space="preserve">
+    <value>Archív</value>
+  </data>
+  <data name="RunDetailsArchiveSize" xml:space="preserve">
+    <value>Veľkosť archívu</value>
+  </data>
+  <data name="RunDetailsColumnMessage" xml:space="preserve">
+    <value>Správa</value>
+  </data>
+  <data name="RunDetailsColumnOperation" xml:space="preserve">
+    <value>Operácia</value>
+  </data>
+  <data name="RunDetailsColumnPath" xml:space="preserve">
+    <value>Cesta</value>
+  </data>
+  <data name="RunDetailsColumnPhase" xml:space="preserve">
+    <value>Fáza</value>
+  </data>
+  <data name="RunDetailsColumnSeverity" xml:space="preserve">
+    <value>Závažnosť</value>
+  </data>
+  <data name="RunDetailsCompleted" xml:space="preserve">
+    <value>Dokončené</value>
+  </data>
+  <data name="RunDetailsDestination" xml:space="preserve">
+    <value>Cieľové umiestnenie</value>
+  </data>
+  <data name="RunDetailsDuration" xml:space="preserve">
+    <value>Trvanie</value>
+  </data>
+  <data name="RunDetailsFilesFolders" xml:space="preserve">
+    <value>Súbory / priečinky</value>
+  </data>
+  <data name="RunDetailsNoProblems" xml:space="preserve">
+    <value>Pri tomto spustení sa nezaznamenali žiadne problémy.</value>
+  </data>
+  <data name="RunDetailsNotification" xml:space="preserve">
+    <value>Upozornenie:</value>
+  </data>
+  <data name="RunDetailsPhaseReached" xml:space="preserve">
+    <value>Dosiahnutá fáza</value>
+  </data>
+  <data name="RunDetailsProblems" xml:space="preserve">
+    <value>Problémy ({0})</value>
+  </data>
+  <data name="RunDetailsRetention" xml:space="preserve">
+    <value>Uchovávanie</value>
+  </data>
+  <data name="RunDetailsRetentionKeep" xml:space="preserve">
+    <value>uchovať {0} posledné</value>
+  </data>
+  <data name="RunDetailsScheduled" xml:space="preserve">
+    <value>Naplánované</value>
+  </data>
+  <data name="RunDetailsSource" xml:space="preserve">
+    <value>Zdroj</value>
+  </data>
+  <data name="RunDetailsSourceSize" xml:space="preserve">
+    <value>Veľkosť zdroja</value>
+  </data>
+  <data name="RunDetailsStarted" xml:space="preserve">
+    <value>Začaté</value>
+  </data>
+  <data name="RunDetailsTimeZone" xml:space="preserve">
+    <value>Časová zóna</value>
+  </data>
+  <data name="RunDetailsTitle" xml:space="preserve">
+    <value>Podrobnosti spustenia</value>
+  </data>
+  <data name="RunOutcomeInProgress" xml:space="preserve">
+    <value>Prebieha</value>
+  </data>
+  <data name="RunOutcome_Cancelled" xml:space="preserve">
+    <value>Zrušené</value>
+  </data>
+  <data name="RunOutcome_Failed" xml:space="preserve">
+    <value>Zlyhalo</value>
+  </data>
+  <data name="RunOutcome_Successful" xml:space="preserve">
+    <value>Úspešné</value>
+  </data>
+  <data name="RunOutcome_SuccessfulWithWarnings" xml:space="preserve">
+    <value>Dokončené s upozorneniami</value>
+  </data>
+  <data name="RunPhase_Compressing" xml:space="preserve">
+    <value>Komprimovanie</value>
+  </data>
+  <data name="RunPhase_Finalizing" xml:space="preserve">
+    <value>Dokončovanie</value>
+  </data>
+  <data name="RunPhase_Planned" xml:space="preserve">
+    <value>Naplánované</value>
+  </data>
+  <data name="RunPhase_Queued" xml:space="preserve">
+    <value>V poradí</value>
+  </data>
+  <data name="RunPhase_Scanning" xml:space="preserve">
+    <value>Prehľadávanie</value>
+  </data>
+  <data name="RunPhase_Transferring" xml:space="preserve">
+    <value>Prenos</value>
+  </data>
+  <data name="RunStatusFilter_All" xml:space="preserve">
+    <value>Všetky stavy</value>
+  </data>
+  <data name="RunStatusFilter_Cancelled" xml:space="preserve">
+    <value>Zrušené</value>
+  </data>
+  <data name="RunStatusFilter_Failed" xml:space="preserve">
+    <value>Zlyhalo</value>
+  </data>
+  <data name="RunStatusFilter_Successful" xml:space="preserve">
+    <value>Úspešné</value>
+  </data>
+  <data name="RunStatusFilter_Warnings" xml:space="preserve">
+    <value>S upozorneniami</value>
+  </data>
+  <data name="RunTrigger_CatchUp" xml:space="preserve">
+    <value>Dobehnutie</value>
+  </data>
+  <data name="RunTrigger_Manual" xml:space="preserve">
+    <value>Manuálne</value>
+  </data>
+  <data name="RunTrigger_Scheduled" xml:space="preserve">
+    <value>Podľa plánu</value>
+  </data>
+  <data name="SettingsAboutHeading" xml:space="preserve">
+    <value>O aplikácii a aktualizácie</value>
+  </data>
+  <data name="SettingsApiKey" xml:space="preserve">
+    <value>Kľúč API</value>
+  </data>
+  <data name="SettingsApiKeyKeepPlaceholder" xml:space="preserve">
+    <value>Ponechajte prázdne, ak chcete zachovať uložený kľúč</value>
+  </data>
+  <data name="SettingsApiKeyNote" xml:space="preserve">
+    <value>Uložené kľúče API sa nikdy nezobrazujú. Ponechajte pole prázdne, ak chcete zachovať existujúci kľúč.</value>
+  </data>
+  <data name="SettingsApiKeyReplacement" xml:space="preserve">
+    <value> (nepovinná náhrada)</value>
+  </data>
+  <data name="SettingsBuild" xml:space="preserve">
+    <value>Build {0}</value>
+  </data>
+  <data name="SettingsCheckNow" xml:space="preserve">
+    <value>Skontrolovať teraz</value>
+  </data>
+  <data name="SettingsChecking" xml:space="preserve">
+    <value>Kontrolujem…</value>
+  </data>
+  <data name="SettingsDiscardChanges" xml:space="preserve">
+    <value>Zahodiť zmeny</value>
+  </data>
+  <data name="SettingsEmailEnable" xml:space="preserve">
+    <value>Odosielať e-mail po dokončených spusteniach</value>
+  </data>
+  <data name="SettingsEmailHeading" xml:space="preserve">
+    <value>E-mailové upozornenia</value>
+  </data>
+  <data name="SettingsEmailLead" xml:space="preserve">
+    <value>Folder Backuper odošle jeden e-mail po tom, ako sa spustenie úspešne dokončí, dokončí s upozorneniami alebo zlyhá. Zrušené spustenia neodosielajú e-mail nikdy a problém s doručením nikdy nezmení výsledok zálohovania.</value>
+  </data>
+  <data name="SettingsLanguageFailed" xml:space="preserve">
+    <value>Jazyk rozhrania sa nepodarilo uložiť. Skúste to znova alebo skontrolujte protokoly aplikácie.</value>
+  </data>
+  <data name="SettingsLanguageHeading" xml:space="preserve">
+    <value>Jazyk rozhrania</value>
+  </data>
+  <data name="SettingsLanguageLabel" xml:space="preserve">
+    <value>Jazyk</value>
+  </data>
+  <data name="SettingsLanguageLead" xml:space="preserve">
+    <value>Jazyk platí pre celú túto inštaláciu, nie pre jeden prehliadač, takže ho používa každá otvorená karta, a je to jazyk, v ktorom sa píšu e-mailové upozornenia. Určuje aj spôsob zobrazovania dátumov, čísel a veľkostí súborov. Názvy archívnych súborov sa ním nikdy nemenia.</value>
+  </data>
+  <data name="SettingsLanguageReloadNote" xml:space="preserve">
+    <value>Zmena jazyka znovu načíta túto stránku.</value>
+  </data>
+  <data name="SettingsLastSaved" xml:space="preserve">
+    <value>Naposledy uložené: {0}</value>
+  </data>
+  <data name="SettingsLead" xml:space="preserve">
+    <value>Jedno globálne nastavenie e-mailu, ktoré používajú všetky úlohy.</value>
+  </data>
+  <data name="SettingsLeaveBody" xml:space="preserve">
+    <value>Neuložené nastavenia upozornení sa stratia.</value>
+  </data>
+  <data name="SettingsLeaveConfirm" xml:space="preserve">
+    <value>Odísť</value>
+  </data>
+  <data name="SettingsLeaveStay" xml:space="preserve">
+    <value>Zostať</value>
+  </data>
+  <data name="SettingsLeaveTitle" xml:space="preserve">
+    <value>Odísť bez uloženia?</value>
+  </data>
+  <data name="SettingsLoadFailed" xml:space="preserve">
+    <value>Nastavenia upozornení sa nepodarilo načítať. Skúste to znova alebo skontrolujte protokoly aplikácie.</value>
+  </data>
+  <data name="SettingsNoBuildIdentifier" xml:space="preserve">
+    <value>Bez identifikátora buildu</value>
+  </data>
+  <data name="SettingsNotConfigured" xml:space="preserve">
+    <value>Nenastavené</value>
+  </data>
+  <data name="SettingsNotSavedYet" xml:space="preserve">
+    <value>Zatiaľ neuložené</value>
+  </data>
+  <data name="SettingsReadyToSend" xml:space="preserve">
+    <value>Pripravené na odosielanie</value>
+  </data>
+  <data name="SettingsRecipientAddresses" xml:space="preserve">
+    <value>Adresy adresátov</value>
+  </data>
+  <data name="SettingsRecipientsHeading" xml:space="preserve">
+    <value>Adresáti</value>
+  </data>
+  <data name="SettingsRecipientsNote" xml:space="preserve">
+    <value>Jedna adresa na riadok alebo adresy oddelené čiarkami. Každá úloha upozorňuje ten istý zoznam.</value>
+  </data>
+  <data name="SettingsResendHeading" xml:space="preserve">
+    <value>Konto Resend</value>
+  </data>
+  <data name="SettingsResendLead" xml:space="preserve">
+    <value>Správy sa doručujú cez službu Resend prostredníctvom HTTPS. Resend vyžaduje overenú odosielaciu domému. Podrobnosti o spustení v e-maile — názvy úloh, cesty k priečinkom a chybové správy — spracúva táto externá služba.</value>
+  </data>
+  <data name="SettingsSave" xml:space="preserve">
+    <value>Uložiť nastavenia</value>
+  </data>
+  <data name="SettingsSaveBeforeTest" xml:space="preserve">
+    <value>Pred odoslaním testovacieho e-mailu uložte zmeny. Testovací e-mail overuje uložené nastavenie.</value>
+  </data>
+  <data name="SettingsSaveFailed" xml:space="preserve">
+    <value>Nastavenia upozornení sa nepodarilo uložiť. Skúste to znova alebo skontrolujte protokoly aplikácie.</value>
+  </data>
+  <data name="SettingsSaving" xml:space="preserve">
+    <value>Ukladám…</value>
+  </data>
+  <data name="SettingsSendTestEmail" xml:space="preserve">
+    <value>Odoslať testovací e-mail</value>
+  </data>
+  <data name="SettingsSenderAddress" xml:space="preserve">
+    <value>Adresa odosielateľa</value>
+  </data>
+  <data name="SettingsSenderName" xml:space="preserve">
+    <value>Meno odosielateľa (nepovinné)</value>
+  </data>
+  <data name="SettingsTestEmailNote" xml:space="preserve">
+    <value>Testovací e-mail použije uložené nastavenie, takže neuložené zmeny sa netestujú.</value>
+  </data>
+  <data name="SettingsTitle" xml:space="preserve">
+    <value>Nastavenia</value>
+  </data>
+  <data name="SettingsUpdateAvailableLink" xml:space="preserve">
+    <value>Je dostupná verzia {0}</value>
+  </data>
+  <data name="SettingsUpdateCheckEnable" xml:space="preserve">
+    <value>Kontrolovať novšie verzie na GitHube</value>
+  </data>
+  <data name="SettingsUpdateCheckOff" xml:space="preserve">
+    <value>Kontrola verzií je vypnutá. Na GitHub sa neodosiela nič a pri vydaní novšej verzie sa nezobrazí žiadne oznámenie.</value>
+  </data>
+  <data name="SettingsUpdateCheckedLatest" xml:space="preserve">
+    <value>Skontrolované {0}. Najnovšie vydanie je {1}.</value>
+  </data>
+  <data name="SettingsUpdateCheckedNone" xml:space="preserve">
+    <value>Skontrolované {0}. Zatiaľ nebolo zverejnené žiadne vydanie.</value>
+  </data>
+  <data name="SettingsUpdateInconclusive" xml:space="preserve">
+    <value>Posledná kontrola nedostala odpoveď: {0} To nehovorí nič o tom, či existuje novšia verzia.</value>
+  </data>
+  <data name="SettingsUpdateLead" xml:space="preserve">
+    <value>Folder Backuper sa raz denne prostredníctvom HTTPS spýta služby GitHub, či bola vydaná novšia verzia. Požiadavka je anonymná: neodosiela identitu inštalácie, žiadne nastavenia ani nič o tomto počítači či jeho zálohách. Nikdy sa nič samo nesťahuje ani neinštaluje; aktualizácia vždy znamená, že novší inštalátor spustíte sami.</value>
+  </data>
+  <data name="SettingsUpdateNotCheckedYet" xml:space="preserve">
+    <value>V tomto spustení sa ešte nekontrolovalo. Prvá kontrola prebehne niekoľko minút po spustení služby.</value>
+  </data>
+  <data name="SettingsUpdatePreferenceFailed" xml:space="preserve">
+    <value>Nastavenie kontroly aktualizácií sa nepodarilo uložiť. Skúste to znova alebo skontrolujte protokoly aplikácie.</value>
+  </data>
+  <data name="SettingsVerificationHeading" xml:space="preserve">
+    <value>Overenie</value>
+  </data>
+  <data name="SettingsVersionChip" xml:space="preserve">
+    <value>Verzia {0}</value>
+  </data>
+  <data name="SourceBrowserBack" xml:space="preserve">
+    <value>Späť</value>
+  </data>
+  <data name="SourceBrowserBytes" xml:space="preserve">
+    <value>{0} bajtov</value>
+  </data>
+  <data name="SourceBrowserEntriesRange" xml:space="preserve">
+    <value>Položky {0} – {1}</value>
+  </data>
+  <data name="SourceBrowserNext" xml:space="preserve">
+    <value>Ďalej</value>
+  </data>
+  <data name="SourceBrowserNote" xml:space="preserve">
+    <value>Vyberte lokálny priečinok. Body opätovného spracovania sa zobrazujú, ale nedajú sa otvoriť ani vybrať.</value>
+  </data>
+  <data name="SourceBrowserReparsePoint" xml:space="preserve">
+    <value>Bod opätovného spracovania · nedostupný</value>
+  </data>
+  <data name="SourceBrowserSelectThis" xml:space="preserve">
+    <value>Vybrať tento priečinok</value>
+  </data>
+  <data name="SourceBrowserTitle" xml:space="preserve">
+    <value>Prehľadávať zdroj</value>
+  </data>
+  <data name="SourceEntryType_Directory" xml:space="preserve">
+    <value>Priečinok</value>
+  </data>
+  <data name="SourceEntryType_File" xml:space="preserve">
+    <value>Súbor</value>
+  </data>
+  <data name="SourceEntryType_Unknown" xml:space="preserve">
+    <value>Neznáme</value>
+  </data>
+  <data name="SourcePreviewCancelScan" xml:space="preserve">
+    <value>Zrušiť prehľadávanie</value>
+  </data>
+  <data name="SourcePreviewNotice" xml:space="preserve">
+    <value>Tento náhľad je len informatívny. Číta metadáta bez kopírovania, zmeny alebo zápisu súborov; zdroj sa počas zálohovania skontroluje znova.</value>
+  </data>
+  <data name="SourcePreviewSourceData" xml:space="preserve">
+    <value>zdrojových dát</value>
+  </data>
+  <data name="SourcePreviewTitle" xml:space="preserve">
+    <value>Náhľad zdroja</value>
+  </data>
+  <data name="TestEmailDeliveryNote" xml:space="preserve">
+    <value>Skontrolujte nastavených adresátov. Doručenie do doručenej pošty závisí od prijímajúcej poštovej služby, ktorú Folder Backuper nedokáže sledovať.</value>
+  </data>
+  <data name="TestEmailSending" xml:space="preserve">
+    <value>Odosielam testovací e-mail cez uloženú konfiguráciu...</value>
+  </data>
+  <data name="TestEmailTitle" xml:space="preserve">
+    <value>Odoslať testovací e-mail</value>
+  </data>
+  <data name="ThemeDark" xml:space="preserve">
+    <value>Tmavý</value>
+  </data>
+  <data name="ThemeGroupLabel" xml:space="preserve">
+    <value>Vzhľad</value>
+  </data>
+  <data name="ThemeLight" xml:space="preserve">
+    <value>Svetlý</value>
+  </data>
+  <data name="TransferVerbCopying" xml:space="preserve">
+    <value>Kopírovanie</value>
+  </data>
+  <data name="TransferVerbUploading" xml:space="preserve">
+    <value>Nahrávanie</value>
+  </data>
+  <data name="UpdateNoticeAvailable" xml:space="preserve">
+    <value>Je dostupná verzia {0}</value>
+  </data>
+  <data name="ValueNever" xml:space="preserve">
+    <value>nikdy</value>
+  </data>
+  <data name="ValueNotReported" xml:space="preserve">
+    <value>Neuvedené</value>
+  </data>
+  <data name="ValueNotScheduled" xml:space="preserve">
+    <value>Bez plánu</value>
+  </data>
+  <data name="ValueUnknownDash" xml:space="preserve">
+    <value>—</value>
+  </data>
+</root>

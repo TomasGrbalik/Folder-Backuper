@@ -243,7 +243,8 @@ public sealed class PersistenceModelTests
             runId, RunOutcome.Failed, null, null, 2, 1, 12, 10,
             TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(3),
             [new(BackupProblemSeverity.Error, BackupProblemCategory.InvalidArchive, RunPhase.Finalizing,
-                "Validate archive", "The archive is invalid.", @"D:\backup\run.zip.partial")]));
+                BackupOperation.ValidateZipArchive, BackupProblemMessage.ZipValidationFailed,
+                @"D:\backup\run.zip.partial")]));
 
         await using var inspection = await database.ContextFactory.CreateDbContextAsync();
         var stored = await inspection.Runs.Include(item => item.Problems).SingleAsync();
@@ -404,10 +405,10 @@ public sealed class PersistenceModelTests
             RunId = run.Id,
             Path = @"C:\Source\locked.txt",
             Phase = RunPhase.Scanning,
-            Operation = "Read",
+            Operation = BackupOperation.ReadSourceFile,
             ErrorCategory = "AccessDenied",
             NativeErrorCode = "5",
-            UserMessage = "The file could not be read.",
+            MessageKey = UiMessage.KeyFor(BackupProblemMessage.SourceFileUnreadable),
             DiagnosticDetail = "Access was denied."
         };
         var notification = new NotificationOutboxItem
