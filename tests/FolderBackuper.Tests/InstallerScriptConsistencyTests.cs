@@ -101,6 +101,40 @@ public sealed class InstallerScriptConsistencyTests
         Assert.Contains("/REMOVEDATA=1", Script, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Script_CreatesADesktopShortcutForTheSelectedPort()
+    {
+        // The shortcut is optional, so the icon entry must be gated on the task, and its URL must
+        // come from the wizard's port page rather than the compile-time default.
+        var line = Script
+            .Split('\n')
+            .Select(candidate => candidate.Trim())
+            .Single(candidate => candidate.StartsWith(
+                @"Name: ""{autodesktop}\{#AppName}""",
+                StringComparison.Ordinal));
+
+        Assert.Contains(
+            @"Filename: ""http://localhost:{code:GetSelectedPort}""",
+            line,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            @"IconFilename: ""{app}\{#AppExeName}""",
+            line,
+            StringComparison.Ordinal);
+        Assert.EndsWith("Tasks: desktopicon", line, StringComparison.Ordinal);
+
+        Assert.Contains(
+            @"Name: ""desktopicon""; Description: ""{cm:CreateDesktopIcon}""",
+            Script,
+            StringComparison.Ordinal);
+
+        // Turning the task off on a re-run must remove a shortcut that still points at the old port.
+        Assert.Contains(
+            @"Name: ""{autodesktop}\{#AppName}.url""; Tasks: not desktopicon",
+            Script,
+            StringComparison.Ordinal);
+    }
+
     private static string FindRepositoryRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

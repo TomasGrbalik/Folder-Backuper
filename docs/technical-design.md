@@ -886,7 +886,7 @@ Inno Setup is responsible for:
 - Installing the `LocalSystem` Windows service.
 - Configuring automatic startup and recovery.
 - Stopping and restarting the service during upgrade.
-- Creating the start-menu shortcut.
+- Creating the start-menu shortcut, and an optional desktop shortcut.
 - Preserving application data by default.
 - Asking explicitly before deleting application data during uninstall.
 - Waiting for service readiness and verifying the localhost URL after install or upgrade.
@@ -899,9 +899,9 @@ Schema migration is performed by the application during startup, not by custom i
 
 The installer never writes directories or access-control lists itself. It runs the installed executable with `--configure-port`, which creates the application data directories, applies the documented access controls, verifies the chosen port is free, and writes `config\service.json`. Readiness is verified the same way, through `--wait-ready`. Both commands are handled before the host builder, so neither contends for the single-instance mutex held by a running service, and both return distinct exit codes that the installer maps to operator guidance.
 
-The port is chosen on a wizard page rather than by the application. Icons are written before the post-install step runs, so a port selected later would produce a shortcut with the wrong URL. The chosen value is remembered in `HKLM\SOFTWARE\FolderBackuper` and pre-filled on the next run; `config\service.json` remains the application's source of truth.
+The port is chosen on a wizard page rather than by the application. Icons are written before the post-install step runs, so a port selected later would produce a shortcut with the wrong URL. Both shortcuts are internet shortcuts to `http://localhost:<port>`, taking their icon from the installed executable, so opening the interface always goes through the default browser. The chosen value is remembered in `HKLM\SOFTWARE\FolderBackuper` and pre-filled on the next run; `config\service.json` remains the application's source of truth.
 
-Inno Setup has no separate repair mode. Re-running `setup.exe` over an existing installation is the repair, and it re-applies files, icons, registry values, and the post-install sequence. Because the port page is always shown with the previous value pre-filled, one code path covers installation, upgrade, and repair, including reconfiguring the port when the current one prevents UI startup.
+Inno Setup has no separate repair mode. Re-running `setup.exe` over an existing installation is the repair, and it re-applies files, icons, registry values, and the post-install sequence. The desktop shortcut is the one icon a re-run may need to remove rather than rewrite: it is optional, and its URL carries the port, so a run that leaves the task unticked deletes it instead of stranding a shortcut for the previous port. Because the port page is always shown with the previous value pre-filled, one code path covers installation, upgrade, and repair, including reconfiguring the port when the current one prevents UI startup.
 
 The service is registered as `FolderBackuper` with display name `Folder Backuper` and delayed automatic start, which keeps it out of the boot contention window so the network and SMB stacks have settled before startup recovery probes destinations. Recovery actions restart the service after unexpected termination. The service failure flag is deliberately not set, because a deterministic startup failure such as a failed migration would otherwise become a restart loop, and because recovery actions do not apply to start failures at all. Startup diagnostics are therefore carried by the Windows application event log, whose source the installer registers, rather than by automatic restarts.
 
