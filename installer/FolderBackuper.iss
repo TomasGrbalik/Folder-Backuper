@@ -80,6 +80,12 @@ Type: filesandordirs; Name: "{app}\wwwroot"
 Type: filesandordirs; Name: "{app}\runtimes"
 Type: files; Name: "{app}\*.dll"
 Type: files; Name: "{app}\*.json"
+; The desktop shortcut is optional, and it embeds the port in its URL. Deleting it when the task
+; is unselected stops a shortcut for an old port from surviving a re-run that turns the task off.
+Type: files; Name: "{autodesktop}\{#AppName}.url"; Tasks: not desktopicon
+
+[Tasks]
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Files]
 Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -89,6 +95,7 @@ Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 ; keeps the shortcut correct after an upgrade or a port change.
 Name: "{group}\{#AppName}"; Filename: "http://localhost:{code:GetSelectedPort}"; IconFilename: "{app}\{#AppExeName}"; IconIndex: 0
 Name: "{group}\{#AppName} log folder"; Filename: "{#DataRoot}\logs"
+Name: "{autodesktop}\{#AppName}"; Filename: "http://localhost:{code:GetSelectedPort}"; IconFilename: "{app}\{#AppExeName}"; IconIndex: 0; Tasks: desktopicon
 
 [Registry]
 Root: HKLM; Subkey: "{#RegistryKey}"; Flags: uninsdeletekeyifempty

@@ -13,8 +13,9 @@ This guide covers installing, upgrading, reconfiguring, and removing Folder Back
 1. Run `FolderBackuper-<version>-setup.exe` and accept the elevation prompt.
 2. Confirm the installation directory. The default is `C:\Program Files\FolderBackuper`.
 3. Choose the loopback port for the web interface. The default is `5180`. Any value between 1024 and 65535 is accepted; pick a different one if another program already uses the default.
-4. Finish the wizard. The installer writes the hosting configuration, registers the `FolderBackuper` service, starts it, and waits until the web interface reports ready.
-5. Leave **Open the Folder Backuper web interface** selected, or open **Folder Backuper** from the start menu afterwards.
+4. Leave **Create a desktop shortcut** ticked to put a **Folder Backuper** shortcut on the desktop, or untick it if you would rather not have one.
+5. Finish the wizard. The installer writes the hosting configuration, registers the `FolderBackuper` service, starts it, and waits until the web interface reports ready.
+6. Leave **Open the Folder Backuper web interface** selected, or use the desktop shortcut or the start menu afterwards.
 
 The web interface is reachable only from this computer, at `http://localhost:<port>`. It is never exposed to the network; the application refuses to serve a non-loopback address.
 
@@ -28,6 +29,7 @@ The web interface is reachable only from this computer, at `http://localhost:<po
 | `C:\ProgramData\FolderBackuper\staging` | Temporary archives during a backup run. |
 | `C:\ProgramData\FolderBackuper\logs` | Daily rolling log files, retained for thirty days and capped at roughly 360 MB. |
 | Start menu, **Folder Backuper** | A shortcut to the web interface and a shortcut to the log folder. |
+| Desktop, **Folder Backuper** | A shortcut that opens the web interface in your default browser. Optional; created only if you leave the task ticked. |
 
 `C:\ProgramData\FolderBackuper` is restricted to the local system account and local administrators. Inheritance is disabled so that other local accounts receive no access.
 
@@ -59,7 +61,7 @@ Email is sent through Resend, so the run details it carries — job names, folde
 
 ## Change the port
 
-Run the same `setup.exe` again. The port page is pre-filled with the current value; enter a new one and finish the wizard. The installer rewrites the hosting configuration, updates the start-menu shortcut, and restarts the service on the new port.
+Run the same `setup.exe` again. The port page is pre-filled with the current value; enter a new one and finish the wizard. The installer rewrites the hosting configuration, updates the start-menu and desktop shortcuts, and restarts the service on the new port.
 
 This is also the recovery path when the web interface will not start because another program has taken the port.
 

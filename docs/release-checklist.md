@@ -53,10 +53,11 @@ Use a snapshot of a clean 64-bit Windows installation with no prior Folder Backu
 
 - Fresh install completes, the service is registered as `FolderBackuper` running as `LocalSystem` with delayed automatic start, and `sc.exe qfailure FolderBackuper` shows the configured restart actions.
 - The start-menu shortcut opens the web interface on the selected port.
+- The desktop shortcut is offered ticked, is created on the desktop carrying the application icon, and opens the web interface in the default browser on the selected port. Unticking the task installs without one.
 - Occupying the default port before installing and choosing a different one produces a working installation on that port.
 - The service starts after a reboot with nobody logged on, and a scheduled backup runs.
 - Upgrading with a bumped version preserves every job, destination, history record, and log, applies pending migrations, and restarts the service.
-- Re-running the installer with a changed port moves the configuration, the registry value, the shortcut, and the running service.
+- Re-running the installer with a changed port moves the configuration, the registry value, both shortcuts, and the running service. Re-running with the desktop task unticked removes the desktop shortcut rather than leaving one for the old port.
 - Uninstalling with the default answer keeps `C:\ProgramData\FolderBackuper`; uninstalling and choosing removal deletes it; `/VERYSILENT /REMOVEDATA=1` deletes it without prompting.
 - Interrupting setup while files are being copied, and interrupting an upgrade between service stop and restart, both leave a recoverable machine with intact application data.
 - No installer action changed permissions on any source folder.
