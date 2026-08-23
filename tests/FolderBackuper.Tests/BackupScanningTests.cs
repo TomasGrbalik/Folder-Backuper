@@ -107,6 +107,37 @@ public sealed class BackupScanningTests : IDisposable
     }
 
     [Fact]
+    public async Task Preflight_AcceptsADestinationReachableOnlyInsideTheAdapterAccessScope()
+    {
+        // An SMB share is reachable only while the destination's own credentials are impersonated, so a
+        // preflight that probes the effective folder outside the adapter's scope reports a folder that is
+        // plainly there as missing. The adapter below models that by mounting the folder for the scope only.
+        var source = Directory.CreateDirectory(Path.Combine(root, "source"));
+        var destinationRoot = Directory.CreateDirectory(Path.Combine(root, "destination"));
+        var unmounted = Directory.CreateDirectory(Path.Combine(root, "share-content"));
+        var mountPath = Path.Combine(destinationRoot.FullName, "job");
+        var paths = ApplicationPaths.Resolve(Path.Combine(root, "app-data"));
+        paths.CreateDirectories();
+        var jobId = Guid.NewGuid();
+        var installationId = Guid.NewGuid();
+        var marker = await new OwnershipMarkerService().ClaimAsync(unmounted.FullName, installationId, jobId, CancellationToken.None);
+        Assert.True(marker.Succeeded);
+        var destination = Destination(destinationRoot.FullName, DestinationType.Smb, @"NAS\backup");
+        var job = Job(jobId, source.FullName, destination.Id);
+        var adapter = new ScopedMountAdapter(unmounted.FullName, mountPath);
+        var service = new BackupPreflightService(paths,
+            new EffectiveDestinationService([adapter], new PlaintextProtector()),
+            new OwnershipMarkerService(), new NeverLocalDetector());
+
+        var result = await service.ValidateAsync(job, destination, [source.FullName], installationId);
+
+        Assert.False(Directory.Exists(mountPath));
+        Assert.Empty(result.Problems);
+        Assert.True(result.Succeeded);
+        Assert.NotNull(result.EffectiveDestinationPath);
+    }
+
+    [Fact]
     public async Task Preflight_RejectsStagingOrDestinationOverlapAgainstAnySource()
     {
         var source = Directory.CreateDirectory(Path.Combine(root, "source"));
@@ -133,11 +164,15 @@ public sealed class BackupScanningTests : IDisposable
         return new(paths, effective, new OwnershipMarkerService(), new NeverLocalDetector());
     }
 
-    private static Destination Destination(string rootPath) => new()
+    private static Destination Destination(
+        string rootPath,
+        DestinationType type = DestinationType.Local,
+        string? username = null) => new()
     {
         Name = "Destination",
-        Type = DestinationType.Local,
+        Type = type,
         RootPath = rootPath,
+        SmbUsername = username,
         VerificationResult = DestinationVerificationResult.Succeeded,
         VerificationFingerprint = "verified"
     };
@@ -176,6 +211,25 @@ public sealed class BackupScanningTests : IDisposable
     {
         public byte[] Protect(string plaintext) => throw new NotSupportedException();
         public string Unprotect(byte[] protectedData) => throw new NotSupportedException();
+    }
+
+    /// <summary>An adapter whose destination folder exists only for the duration of an access scope.</summary>
+    private sealed class ScopedMountAdapter(string unmountedPath, string mountPath) : IDestinationAdapter
+    {
+        public DestinationType Type => DestinationType.Smb;
+
+        public Task<DestinationOperationResult> TestAsync(DestinationAccessConfiguration configuration, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<long?> GetAvailableBytesAsync(DestinationAccessConfiguration configuration, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public async Task<T> ExecuteAsync<T>(DestinationAccessConfiguration configuration, Func<Task<T>> action)
+        {
+            Directory.Move(unmountedPath, mountPath);
+            try { return await action(); }
+            finally { Directory.Move(mountPath, unmountedPath); }
+        }
     }
 
     private sealed class NeverLocalDetector : ILocalHostUncDetector
