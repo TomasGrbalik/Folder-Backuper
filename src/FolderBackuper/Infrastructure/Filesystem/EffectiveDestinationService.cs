@@ -14,11 +14,18 @@ public enum EffectiveDestinationResult
     AccessFailed
 }
 
+/// <param name="Exists">
+/// Whether the effective directory was present on disk. Observed inside the destination adapter's access
+/// scope, so a caller can trust it for an SMB destination whose share is only reachable under the
+/// destination's own credentials; re-testing the path outside that scope would report a mounted share as
+/// missing.
+/// </param>
 public sealed record EffectiveDestinationOutcome(
     EffectiveDestinationResult Result,
     UiMessage Message,
     string? EffectivePath = null,
-    string? OwnershipKey = null)
+    string? OwnershipKey = null,
+    bool Exists = false)
 {
     public bool Succeeded => Result == EffectiveDestinationResult.Ready;
 
@@ -26,8 +33,9 @@ public sealed record EffectiveDestinationOutcome(
         EffectiveDestinationResult result,
         EffectiveDestinationMessage message,
         string? effectivePath = null,
-        string? ownershipKey = null)
-        : this(result, UiMessage.For(message), effectivePath, ownershipKey)
+        string? ownershipKey = null,
+        bool exists = false)
+        : this(result, UiMessage.For(message), effectivePath, ownershipKey, exists)
     {
     }
 }
@@ -109,7 +117,7 @@ public sealed class EffectiveDestinationService(
                 {
                     return new EffectiveDestinationOutcome(EffectiveDestinationResult.Ready,
                         EffectiveDestinationMessage.ReadyExisting, projectedEffective,
-                        $"FS:{WindowsFilesystemInterop.GetIdentity(projectedEffective)}");
+                        $"FS:{WindowsFilesystemInterop.GetIdentity(projectedEffective)}", exists: true);
                 }
 
                 return new EffectiveDestinationOutcome(EffectiveDestinationResult.Ready,

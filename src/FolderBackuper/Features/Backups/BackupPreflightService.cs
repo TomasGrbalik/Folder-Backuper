@@ -88,7 +88,10 @@ public sealed class BackupPreflightService(
 
         var effective = await effectiveDestinations.ResolveAgainstSourcesAsync(
             destination, job.DestinationSubfolder, sources, create: false, cancellationToken);
-        if (!effective.Succeeded || effective.EffectivePath is null || !Directory.Exists(effective.EffectivePath))
+        // Existence is taken from the resolution itself, which observed the path inside the destination
+        // adapter's access scope. Probing it again here would run outside that scope and report an SMB
+        // share reachable only under the destination's credentials as a missing directory.
+        if (!effective.Succeeded || effective.EffectivePath is null || !effective.Exists)
         {
             problems.Add(Problem(
                 effective.Result == EffectiveDestinationResult.SourceOverlap
