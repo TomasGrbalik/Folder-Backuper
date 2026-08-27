@@ -91,11 +91,14 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-; Filename is a URL, so Inno creates an internet shortcut. Icons are rewritten on every run, which
-; keeps the shortcut correct after an upgrade or a port change.
+; Filename is a URL, so Inno creates an internet shortcut. Start-menu icons are rewritten on every run,
+; which keeps them correct after an upgrade or a port change. The desktop icon is created only when the
+; desktop has none: rewriting the .url file makes Explorer move the icon to the first free slot, and a
+; user who arranged their desktop then cannot find it. RefreshDesktopShortcut repoints an existing one
+; instead, so a changed port still lands without disturbing its position.
 Name: "{group}\{#AppName}"; Filename: "http://localhost:{code:GetSelectedPort}"; IconFilename: "{app}\{#AppExeName}"; IconIndex: 0
 Name: "{group}\{#AppName} log folder"; Filename: "{#DataRoot}\logs"
-Name: "{autodesktop}\{#AppName}"; Filename: "http://localhost:{code:GetSelectedPort}"; IconFilename: "{app}\{#AppExeName}"; IconIndex: 0; Tasks: desktopicon
+Name: "{autodesktop}\{#AppName}"; Filename: "http://localhost:{code:GetSelectedPort}"; IconFilename: "{app}\{#AppExeName}"; IconIndex: 0; Check: DesktopShortcutIsMissing; Tasks: desktopicon
 
 [Registry]
 Root: HKLM; Subkey: "{#RegistryKey}"; Flags: uninsdeletekeyifempty
@@ -118,6 +121,9 @@ Filename: "{sys}\sc.exe"; Parameters: "delete {#ServiceName}"; Flags: runhidden;
 
 [UninstallDelete]
 Type: dirifempty; Name: "{group}"
+; A run that left an existing desktop shortcut alone did not record one for removal, so the shortcut is
+; deleted here rather than through the uninstall log of whichever earlier run happened to create it.
+Type: files; Name: "{autodesktop}\{#AppName}.url"
 
 [Messages]
 SetupAppTitle={#AppName} Setup
@@ -132,6 +138,7 @@ const
 var
   PortPage: TInputQueryWizardPage;
   SelectedPort: String;
+  DesktopShortcutExisted: Boolean;
 
 function RunSystemTool(const Tool, Parameters: String; var ResultCode: Integer): Boolean;
 begin
@@ -318,10 +325,50 @@ begin
     ReportStartupProblem(DescribeMaintenanceFailure(ResultCode));
 end;
 
+function DesktopShortcutPath: String;
+begin
+  Result := ExpandConstant('{autodesktop}\{#AppName}.url');
+end;
+
+// Read once, before anything is installed, because the [Icons] check and the post-install refresh must
+// agree on whether the desktop already had a shortcut.
+function DesktopShortcutIsMissing: Boolean;
+begin
+  Result := not DesktopShortcutExisted;
+end;
+
+procedure UpdateShortcutValue(const Key, Value: String);
+begin
+  // Written only when it differs, so an upgrade that changes nothing leaves the file untouched and the
+  // icon keeps its position on the desktop.
+  if CompareText(Trim(GetIniString('InternetShortcut', Key, '', DesktopShortcutPath)), Value) <> 0 then
+    SetIniString('InternetShortcut', Key, Value, DesktopShortcutPath);
+end;
+
+procedure RefreshDesktopShortcut;
+begin
+  if not DesktopShortcutExisted then
+    Exit;
+  if not WizardIsTaskSelected('desktopicon') then
+    Exit;
+  if not FileExists(DesktopShortcutPath) then
+    Exit;
+
+  UpdateShortcutValue('URL', 'http://localhost:' + SelectedPort);
+  UpdateShortcutValue('IconFile', ExpandConstant('{app}\{#AppExeName}'));
+  UpdateShortcutValue('IconIndex', '0');
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
+  if CurStep = ssInstall then
+    DesktopShortcutExisted := FileExists(DesktopShortcutPath);
+
   if CurStep = ssPostInstall then
+  begin
     ConfigureService;
+    RefreshDesktopShortcut;
+  end;
 end;
 
 function CommandLineHasFlag(const Flag: String): Boolean;

@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using FolderBackuper.Resources;
 
 namespace FolderBackuper.Infrastructure.Formatting;
@@ -66,8 +66,16 @@ public static class DisplayFormat
         value is { } instant ? LocalDateTime(instant) : whenNull ?? UiStrings.ValueUnknownDash;
 
     /// <summary>Formats an instant with an abbreviated weekday prefix, e.g. <c>Mon, 8/18/2026 11:00 PM</c>.</summary>
+    /// <remarks>
+    /// The weekday and the timestamp are formatted separately on purpose. A single <c>"ddd, g"</c> pattern
+    /// reads like the intended combination but is longer than one character, so it is a custom pattern in
+    /// which <c>g</c> means the era rather than the general short date and time: it printed
+    /// <c>Mon, AD</c> and <c>po, po Kr.</c> and dropped the date altogether. Delegating to
+    /// <see cref="LocalDateTime(DateTimeOffset)"/> also keeps this timestamp identical to every other one
+    /// in the interface.
+    /// </remarks>
     public static string LocalDayAndTime(DateTimeOffset value) =>
-        value.ToLocalTime().ToString("ddd, g", CultureInfo.CurrentCulture);
+        value.ToLocalTime().ToString("ddd", CultureInfo.CurrentCulture) + ", " + LocalDateTime(value);
 
     /// <summary>Formats a duration compactly, e.g. <c>1:02:03</c> or <c>2.03:04:05</c>.</summary>
     public static string Duration(TimeSpan value)

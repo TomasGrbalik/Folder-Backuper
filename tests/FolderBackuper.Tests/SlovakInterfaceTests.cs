@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Bunit;
 using FolderBackuper.Components;
 using FolderBackuper.Components.Layout;
@@ -180,6 +180,39 @@ public sealed class SlovakInterfaceTests
             // that formatting follows the interface language.
             Assert.Equal("9,7 GB", DisplayFormat.Bytes(10_402_070_631));
             Assert.Equal("Neuvedené", DisplayFormat.Bytes(null));
+        }
+    }
+
+    [Fact]
+    public void TheNextOccurrenceCarriesADateRatherThanAnEra()
+    {
+        // "ddd, g" looks like a weekday followed by the general short date and time, but it is a custom
+        // pattern in which g is the era, so the job card read "Mon, AD" and "po, po Kr." with no date at
+        // all. Both halves are asserted: the era is gone, and the date it was standing in for is back.
+        var local = Instant.ToLocalTime();
+
+        using (CultureScope.English())
+        {
+            var text = DisplayFormat.LocalDayAndTime(Instant);
+
+            Assert.StartsWith(
+                CultureInfo.GetCultureInfo("en-US").DateTimeFormat.AbbreviatedDayNames[(int)local.DayOfWeek] + ", ",
+                text,
+                StringComparison.Ordinal);
+            Assert.Contains(local.Year.ToString(CultureInfo.InvariantCulture), text, StringComparison.Ordinal);
+            Assert.DoesNotContain("AD", text, StringComparison.Ordinal);
+        }
+
+        using (CultureScope.Slovak())
+        {
+            var text = DisplayFormat.LocalDayAndTime(Instant);
+
+            Assert.StartsWith(
+                CultureInfo.GetCultureInfo("sk-SK").DateTimeFormat.AbbreviatedDayNames[(int)local.DayOfWeek] + ", ",
+                text,
+                StringComparison.Ordinal);
+            Assert.Contains(local.Year.ToString(CultureInfo.InvariantCulture), text, StringComparison.Ordinal);
+            Assert.DoesNotContain("po Kr.", text, StringComparison.Ordinal);
         }
     }
 
