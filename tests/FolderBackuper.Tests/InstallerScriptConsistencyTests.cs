@@ -1,4 +1,4 @@
-using FolderBackuper.Infrastructure.Maintenance;
+﻿using FolderBackuper.Infrastructure.Maintenance;
 using FolderBackuper.Infrastructure.ServiceHosting;
 
 namespace FolderBackuper.Tests;
@@ -106,12 +106,7 @@ public sealed class InstallerScriptConsistencyTests
     {
         // The shortcut is optional, so the icon entry must be gated on the task, and its URL must
         // come from the wizard's port page rather than the compile-time default.
-        var line = Script
-            .Split('\n')
-            .Select(candidate => candidate.Trim())
-            .Single(candidate => candidate.StartsWith(
-                @"Name: ""{autodesktop}\{#AppName}""",
-                StringComparison.Ordinal));
+        var line = DesktopIconLine();
 
         Assert.Contains(
             @"Filename: ""http://localhost:{code:GetSelectedPort}""",
@@ -134,6 +129,34 @@ public sealed class InstallerScriptConsistencyTests
             Script,
             StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void Script_DoesNotRecreateAnExistingDesktopShortcut()
+    {
+        // Rewriting the .url file makes Explorer move the icon to the first free desktop slot, so a user
+        // who arranged their desktop loses track of it after every upgrade. The icon entry therefore only
+        // fires when the desktop has none, and an existing shortcut is repointed in place instead.
+        Assert.Contains("Check: DesktopShortcutIsMissing", DesktopIconLine(), StringComparison.Ordinal);
+
+        Assert.Contains("procedure RefreshDesktopShortcut", Script, StringComparison.Ordinal);
+        Assert.Contains("WizardIsTaskSelected('desktopicon')", Script, StringComparison.Ordinal);
+        Assert.Contains("SetIniString('InternetShortcut'", Script, StringComparison.Ordinal);
+
+        // A run that leaves an existing shortcut alone records nothing for the uninstaller to remove,
+        // so uninstall deletes the desktop shortcut explicitly.
+        Assert.Contains(
+            @"Type: files; Name: ""{autodesktop}\{#AppName}.url""",
+            Script,
+            StringComparison.Ordinal);
+    }
+
+    /// <summary>The single <c>[Icons]</c> entry for the desktop shortcut, trimmed.</summary>
+    private static string DesktopIconLine() => Script
+        .Split('\n')
+        .Select(candidate => candidate.Trim())
+        .Single(candidate => candidate.StartsWith(
+            @"Name: ""{autodesktop}\{#AppName}""",
+            StringComparison.Ordinal));
 
     private static string FindRepositoryRoot()
     {

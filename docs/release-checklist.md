@@ -58,6 +58,7 @@ Use a snapshot of a clean 64-bit Windows installation with no prior Folder Backu
 - The service starts after a reboot with nobody logged on, and a scheduled backup runs.
 - Upgrading with a bumped version preserves every job, destination, history record, and log, applies pending migrations, and restarts the service.
 - Re-running the installer with a changed port moves the configuration, the registry value, both shortcuts, and the running service. Re-running with the desktop task unticked removes the desktop shortcut rather than leaving one for the old port.
+- A desktop shortcut dragged to a distinctive spot stays in that spot across a re-run and across an upgrade, on both the same port and a changed one, and still opens the web interface on the current port.
 - Uninstalling with the default answer keeps `C:\ProgramData\FolderBackuper`; uninstalling and choosing removal deletes it; `/VERYSILENT /REMOVEDATA=1` deletes it without prompting.
 - Interrupting setup while files are being copied, and interrupting an upgrade between service stop and restart, both leave a recoverable machine with intact application data.
 - No installer action changed permissions on any source folder.
