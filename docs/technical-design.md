@@ -616,6 +616,8 @@ For each deletion:
 
 Failure to delete an old artifact changes an otherwise successful run to Successful with warnings. It does not delete the newly created backup.
 
+A deletion that failed or was refused is retried by every later successful run of the same job, before new candidates are selected. A retry that deletes the file, or finds it already gone, marks the artifact removed by retention; one that still cannot proceed warns again on the requesting run. Without the retry such an artifact would stay on the destination and in the job's managed-storage totals indefinitely. Inventory refreshes never retry, because they never delete.
+
 ### 10.9 Orphan recovery
 
 On startup, the recovery service reconciles every durable filesystem intent:

@@ -79,6 +79,19 @@ public sealed class BackupArtifact
         StateChangedAtUtc = now;
     }
 
+    public void RetryRetentionDeletion(Guid requestingRunId, DateTimeOffset now)
+    {
+        RequireState(ArtifactState.Retained);
+        if (RetentionState is not (RetentionOperationState.Failed or RetentionOperationState.OwnershipRefused))
+        {
+            throw InvalidTransition("retried retention deletion");
+        }
+
+        RetentionState = RetentionOperationState.PendingDeletion;
+        RetentionRequestedByRunId = requestingRunId;
+        StateChangedAtUtc = now;
+    }
+
     public void MarkRemovedByRetention(DateTimeOffset now)
     {
         RequireState(ArtifactState.Retained);

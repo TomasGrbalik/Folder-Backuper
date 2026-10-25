@@ -338,6 +338,140 @@ public sealed class DurableExecutionTests
         Assert.True(File.Exists(path));
     }
 
+    [Fact]
+    public async Task Retention_RetriesARefusedDeletionThatNowProvesOwnership()
+    {
+        await using var database = new TemporaryDatabase();
+        await database.Initializer.InitializeAsync();
+        var setup = await SetupOwnedJobAsync(database);
+        var refused = await SeedRefusedArtifactAsync(database, setup, ownedByItsRun: true);
+        var later = await SeedCompletedRunAsync(database, setup);
+
+        var warnings = await Retention(database).ApplyAsync(later.Id);
+
+        Assert.Empty(warnings);
+        Assert.False(File.Exists(refused.Path));
+        await using var inspection = await database.ContextFactory.CreateDbContextAsync();
+        var stored = await inspection.BackupArtifacts.SingleAsync();
+        Assert.Equal(ArtifactState.RemovedByRetention, stored.State);
+        Assert.Equal(RetentionOperationState.Completed, stored.RetentionState);
+        Assert.Equal(later.Id, stored.RetentionRequestedByRunId);
+        Assert.Equal(0, (await inspection.Jobs.SingleAsync()).ManagedArtifactCount);
+    }
+
+    [Fact]
+    public async Task Retention_WarnsAgainOnEveryRunWhileADeletionIsStillRefused()
+    {
+        await using var database = new TemporaryDatabase();
+        await database.Initializer.InitializeAsync();
+        var setup = await SetupOwnedJobAsync(database);
+        var refused = await SeedRefusedArtifactAsync(database, setup, ownedByItsRun: false);
+        var later = await SeedCompletedRunAsync(database, setup);
+        var latest = await SeedCompletedRunAsync(database, setup);
+        var retention = Retention(database);
+
+        Assert.Contains(await retention.ApplyAsync(later.Id),
+            warning => warning.Operation == BackupOperation.RetentionOwnershipVerification);
+        Assert.Contains(await retention.ApplyAsync(latest.Id),
+            warning => warning.Operation == BackupOperation.RetentionOwnershipVerification);
+
+        Assert.True(File.Exists(refused.Path));
+        await using var inspection = await database.ContextFactory.CreateDbContextAsync();
+        var stored = await inspection.BackupArtifacts.SingleAsync();
+        Assert.Equal(ArtifactState.Retained, stored.State);
+        Assert.Equal(RetentionOperationState.OwnershipRefused, stored.RetentionState);
+        Assert.Equal(latest.Id, stored.RetentionRequestedByRunId);
+    }
+
+    [Fact]
+    public async Task Retention_ForgetsARefusedArchiveThatWasRemovedByHand()
+    {
+        await using var database = new TemporaryDatabase();
+        await database.Initializer.InitializeAsync();
+        var setup = await SetupOwnedJobAsync(database);
+        var refused = await SeedRefusedArtifactAsync(database, setup, ownedByItsRun: false);
+        File.Delete(refused.Path);
+        var later = await SeedCompletedRunAsync(database, setup);
+
+        var warnings = await Retention(database).ApplyAsync(later.Id);
+
+        Assert.Empty(warnings);
+        await using var inspection = await database.ContextFactory.CreateDbContextAsync();
+        var stored = await inspection.BackupArtifacts.SingleAsync();
+        Assert.Equal(ArtifactState.RemovedByRetention, stored.State);
+        Assert.Equal(RetentionOperationState.Completed, stored.RetentionState);
+    }
+
+    /// <summary>
+    /// Seeds a kept archive whose earlier retention deletion was refused. When <paramref name="ownedByItsRun"/>
+    /// is false the file names another run, as a replacement would, so ownership keeps failing.
+    /// </summary>
+    private static async Task<(BackupArtifact Artifact, string Path)> SeedRefusedArtifactAsync(
+        TemporaryDatabase database,
+        (Destination Destination, BackupJob Job, string EffectivePath, Guid InstallationId) setup,
+        bool ownedByItsRun)
+    {
+        var run = CompletedRun(setup);
+        var now = DateTimeOffset.UtcNow;
+        var path = Path.Combine(setup.EffectivePath, $"archive-{run.Id:N}.zip");
+        CreateZip(path, new(setup.InstallationId, ownedByItsRun ? run.Id : Guid.NewGuid()));
+        var file = new FileInfo(path);
+        var artifact = new BackupArtifact
+        {
+            RunId = run.Id,
+            DestinationName = setup.Destination.Name,
+            DestinationRootPath = setup.Destination.RootPath,
+            EffectivePath = setup.EffectivePath,
+            FinalFileName = file.Name,
+            Size = file.Length,
+            CreatedAtUtc = now,
+            OwnershipRunId = run.Id,
+            OwnershipExpectedLength = file.Length,
+            OwnershipCreatedAtUtc = new DateTimeOffset(file.CreationTimeUtc, TimeSpan.Zero),
+            OwnershipFileSystemIdentity = WindowsFilesystemInterop.GetIdentity(path).ToString()
+        };
+        artifact.MarkRetained(now);
+        artifact.BeginRetentionDeletion(run.Id, now);
+        artifact.MarkRetentionFailed(ownershipRefused: true, now);
+        await using var context = await database.ContextFactory.CreateDbContextAsync();
+        context.AddRange(run, artifact);
+        await context.SaveChangesAsync();
+        return (artifact, path);
+    }
+
+    private static async Task<BackupRun> SeedCompletedRunAsync(
+        TemporaryDatabase database,
+        (Destination Destination, BackupJob Job, string EffectivePath, Guid InstallationId) setup)
+    {
+        var run = CompletedRun(setup);
+        await using var context = await database.ContextFactory.CreateDbContextAsync();
+        context.Add(run);
+        await context.SaveChangesAsync();
+        return run;
+    }
+
+    private static BackupRun CompletedRun(
+        (Destination Destination, BackupJob Job, string EffectivePath, Guid InstallationId) setup)
+    {
+        var run = PersistenceModelTests.Run(setup.Job, setup.Destination);
+        var now = DateTimeOffset.UtcNow;
+        run.AdvanceTo(RunPhase.Queued, now);
+        run.AdvanceTo(RunPhase.Scanning, now);
+        run.AdvanceTo(RunPhase.Compressing, now);
+        run.AdvanceTo(RunPhase.Transferring, now);
+        run.AdvanceTo(RunPhase.Finalizing, now);
+        run.BeginFinalCommit(now);
+        run.MarkFinalCommitted(now);
+        run.Complete(RunOutcome.Successful, now);
+        return run;
+    }
+
+    private static BackupRetentionService Retention(TemporaryDatabase database) =>
+        new(database.ContextFactory, database.MutationGate, database.RunPersistence,
+            new InstallationIdentityService(database.ContextFactory, TimeProvider.System),
+            new EffectiveDestinationService([new LocalDestinationAdapter()], new PassthroughProtector()),
+            new OwnershipMarkerService(), new BackupArtifactOwnershipVerifier(), TimeProvider.System);
+
     private static BackupRecoveryService Recovery(
         TemporaryDatabase database,
         IDestinationAdapter? adapter = null)

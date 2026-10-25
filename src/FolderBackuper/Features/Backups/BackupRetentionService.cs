@@ -23,8 +23,9 @@ public sealed class BackupRetentionService(
         var run = await context.Runs.AsNoTracking().SingleAsync(item => item.Id == runId, cancellationToken);
         var warnings = new List<BackupProblem>();
         warnings.AddRange(await ReconcilePendingForJobAsync(run.JobId, cancellationToken));
+        var retries = await BeginRetriesAsync(runId, cancellationToken);
         var candidates = await BeginExcessDeletionsAsync(runId, cancellationToken);
-        warnings.AddRange(await ProcessAsync(candidates, cancellationToken));
+        warnings.AddRange(await ProcessAsync([.. retries, .. candidates], cancellationToken));
         await RefreshAggregatesAsync(run.JobId, cancellationToken);
         return warnings;
     }
@@ -225,6 +226,30 @@ public sealed class BackupRetentionService(
             SmbUsername = run.DestinationUsername,
             ProtectedPassword = current.ProtectedPassword
         };
+    }
+
+    /// <summary>
+    /// Returns every earlier deletion that failed or was refused to pending, so each successful run tries it
+    /// again. Nothing else revisits these archives: without a retry one stays on the destination and counted
+    /// in the job's totals forever, even after the share is reachable again, the file is removed by hand or the
+    /// ownership rules accept it. A deletion that still cannot proceed warns again on the requesting run.
+    /// </summary>
+    private async Task<List<BackupArtifact>> BeginRetriesAsync(Guid runId, CancellationToken cancellationToken)
+    {
+        return await mutationGate.ExecuteRunStateChangeAsync(async ct =>
+        {
+            await using var context = await contextFactory.CreateDbContextAsync(ct);
+            var run = await context.Runs.SingleAsync(item => item.Id == runId, ct);
+            var unfinished = await context.BackupArtifacts.Include(item => item.Run)
+                .Where(item => item.Run!.JobId == run.JobId && item.State == ArtifactState.Retained &&
+                    (item.RetentionState == RetentionOperationState.Failed ||
+                        item.RetentionState == RetentionOperationState.OwnershipRefused))
+                .ToListAsync(ct);
+            unfinished = unfinished.OrderBy(item => item.CreatedAtUtc).ThenBy(item => item.Id).ToList();
+            foreach (var artifact in unfinished) artifact.RetryRetentionDeletion(run.Id, timeProvider.GetUtcNow());
+            await context.SaveChangesAsync(ct);
+            return unfinished;
+        }, cancellationToken);
     }
 
     private async Task<List<BackupArtifact>> BeginExcessDeletionsAsync(Guid runId, CancellationToken cancellationToken)
