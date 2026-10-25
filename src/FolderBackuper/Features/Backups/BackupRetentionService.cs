@@ -14,7 +14,8 @@ public sealed class BackupRetentionService(
     EffectiveDestinationService effectiveDestinations,
     OwnershipMarkerService ownershipMarkers,
     BackupArtifactOwnershipVerifier ownershipVerifier,
-    TimeProvider timeProvider)
+    TimeProvider timeProvider,
+    ILogger<BackupRetentionService>? logger = null)
 {
     public async Task<IReadOnlyList<BackupProblem>> ApplyAsync(Guid runId, CancellationToken cancellationToken = default)
     {
@@ -22,8 +23,9 @@ public sealed class BackupRetentionService(
         var run = await context.Runs.AsNoTracking().SingleAsync(item => item.Id == runId, cancellationToken);
         var warnings = new List<BackupProblem>();
         warnings.AddRange(await ReconcilePendingForJobAsync(run.JobId, cancellationToken));
+        var retries = await BeginRetriesAsync(runId, cancellationToken);
         var candidates = await BeginExcessDeletionsAsync(runId, cancellationToken);
-        warnings.AddRange(await ProcessAsync(candidates, cancellationToken));
+        warnings.AddRange(await ProcessAsync([.. retries, .. candidates], cancellationToken));
         await RefreshAggregatesAsync(run.JobId, cancellationToken);
         return warnings;
     }
@@ -69,7 +71,8 @@ public sealed class BackupRetentionService(
 
                 result = await effectiveDestinations.Adapter(destination.Type).ExecuteAsync(
                     effectiveDestinations.Configuration(destination),
-                    () => Task.FromResult(ownershipVerifier.Inspect(path, artifact, installationId, artifact.EffectivePath)));
+                    () => Task.FromResult(ownershipVerifier.Inspect(
+                        path, artifact, installationId, destination.Type, artifact.EffectivePath)));
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or
                 System.ComponentModel.Win32Exception or ArgumentException or NotSupportedException)
@@ -161,18 +164,30 @@ public sealed class BackupRetentionService(
                             var resolvedEffective = PathOverlap.ResolveExisting(artifact.EffectivePath);
                             if (!PathOverlap.IsSameOrDescendant(resolvedEffective, resolvedRoot) ||
                                 !PathOverlap.IsSameOrDescendant(Path.GetFullPath(path), Path.GetFullPath(artifact.EffectivePath)))
+                            {
+                                logger?.LogWarning(
+                                    "Retention refused {Path}: folder {EffectivePath} resolves outside destination root {RootPath}",
+                                    path, resolvedEffective, resolvedRoot);
                                 return OwnedArchiveResult.OwnershipMismatch;
+                            }
                             var marker = await ownershipMarkers.VerifyAsync(
                                 artifact.EffectivePath, installationId, artifact.Run!.JobId, cancellationToken);
-                            return marker.Result == OwnershipMarkerResult.Owned
-                                ? ownershipVerifier.DeleteIfOwned(path, artifact, installationId, artifact.EffectivePath)
-                                : OwnedArchiveResult.OwnershipMismatch;
+                            if (marker.Result != OwnershipMarkerResult.Owned)
+                            {
+                                logger?.LogWarning(
+                                    "Retention refused {Path}: the ownership marker in {EffectivePath} reported {MarkerResult}",
+                                    path, artifact.EffectivePath, marker.Result);
+                                return OwnedArchiveResult.OwnershipMismatch;
+                            }
+                            return ownershipVerifier.DeleteIfOwned(
+                                path, artifact, installationId, destination.Type, artifact.EffectivePath);
                         });
                 }
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or
                 System.ComponentModel.Win32Exception or ArgumentException or NotSupportedException)
             {
+                logger?.LogWarning(exception, "Retention could not reach {Path}", path);
                 result = OwnedArchiveResult.AccessFailed;
             }
 
@@ -211,6 +226,30 @@ public sealed class BackupRetentionService(
             SmbUsername = run.DestinationUsername,
             ProtectedPassword = current.ProtectedPassword
         };
+    }
+
+    /// <summary>
+    /// Returns every earlier deletion that failed or was refused to pending, so each successful run tries it
+    /// again. Nothing else revisits these archives: without a retry one stays on the destination and counted
+    /// in the job's totals forever, even after the share is reachable again, the file is removed by hand or the
+    /// ownership rules accept it. A deletion that still cannot proceed warns again on the requesting run.
+    /// </summary>
+    private async Task<List<BackupArtifact>> BeginRetriesAsync(Guid runId, CancellationToken cancellationToken)
+    {
+        return await mutationGate.ExecuteRunStateChangeAsync(async ct =>
+        {
+            await using var context = await contextFactory.CreateDbContextAsync(ct);
+            var run = await context.Runs.SingleAsync(item => item.Id == runId, ct);
+            var unfinished = await context.BackupArtifacts.Include(item => item.Run)
+                .Where(item => item.Run!.JobId == run.JobId && item.State == ArtifactState.Retained &&
+                    (item.RetentionState == RetentionOperationState.Failed ||
+                        item.RetentionState == RetentionOperationState.OwnershipRefused))
+                .ToListAsync(ct);
+            unfinished = unfinished.OrderBy(item => item.CreatedAtUtc).ThenBy(item => item.Id).ToList();
+            foreach (var artifact in unfinished) artifact.RetryRetentionDeletion(run.Id, timeProvider.GetUtcNow());
+            await context.SaveChangesAsync(ct);
+            return unfinished;
+        }, cancellationToken);
     }
 
     private async Task<List<BackupArtifact>> BeginExcessDeletionsAsync(Guid runId, CancellationToken cancellationToken)

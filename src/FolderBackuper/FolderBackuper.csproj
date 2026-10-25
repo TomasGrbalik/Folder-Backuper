@@ -49,6 +49,11 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" />
     <PackageReference Include="System.IO.FileSystem.AccessControl" />
+    <!-- Not used directly. Lifts the copy Microsoft.EntityFrameworkCore.Design brings in through MSBuild
+         (9.0.0, CVE-2026-70162 and CVE-2026-84008) to a patched release; it is copied to the output. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="System.Security.Cryptography.ProtectedData" />
     <PackageReference Include="System.ServiceProcess.ServiceController" />
     <PackageReference Include="MudBlazor" />

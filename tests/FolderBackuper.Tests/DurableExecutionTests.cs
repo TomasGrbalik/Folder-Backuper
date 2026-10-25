@@ -97,10 +97,52 @@ public sealed class DurableExecutionTests
             CreateZip(path, new(installationId, Guid.NewGuid()));
             Assert.Equal(artifact.OwnershipExpectedLength, new FileInfo(path).Length);
 
-            var result = new BackupArtifactOwnershipVerifier().DeleteIfOwned(path, artifact, installationId);
+            var result = new BackupArtifactOwnershipVerifier().DeleteIfOwned(path, artifact, installationId, DestinationType.Local);
 
             Assert.Equal(OwnedArchiveResult.OwnershipMismatch, result);
             Assert.True(File.Exists(path));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(DestinationType.Smb, OwnedArchiveResult.Deleted)]
+    [InlineData(DestinationType.Local, OwnedArchiveResult.OwnershipMismatch)]
+    public void ChangedFilesystemMetadata_IsEnforcedOnlyOnLocalDestinations(
+        DestinationType destinationType,
+        OwnedArchiveResult expected)
+    {
+        // A NAS can report a different creation time and file identity for the same archive after a restart.
+        var root = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "FolderBackuper.Tests", Guid.NewGuid().ToString("N"))).FullName;
+        try
+        {
+            var installationId = Guid.NewGuid();
+            var runId = Guid.NewGuid();
+            var path = Path.Combine(root, "archive.zip");
+            CreateZip(path, new(installationId, runId));
+            var original = new FileInfo(path);
+            var artifact = new BackupArtifact
+            {
+                RunId = runId,
+                DestinationName = "Destination",
+                DestinationRootPath = root,
+                EffectivePath = root,
+                FinalFileName = original.Name,
+                Size = original.Length,
+                CreatedAtUtc = DateTimeOffset.UtcNow,
+                OwnershipRunId = runId,
+                OwnershipExpectedLength = original.Length,
+                OwnershipCreatedAtUtc = new DateTimeOffset(original.CreationTimeUtc, TimeSpan.Zero).AddDays(-30),
+                OwnershipFileSystemIdentity = "0000000000000001:0000000000000001"
+            };
+
+            var result = new BackupArtifactOwnershipVerifier().DeleteIfOwned(path, artifact, installationId, destinationType);
+
+            Assert.Equal(expected, result);
+            Assert.Equal(expected != OwnedArchiveResult.Deleted, File.Exists(path));
         }
         finally
         {
@@ -167,7 +209,7 @@ public sealed class DurableExecutionTests
             Assert.True((WindowsFilesystemInterop.GetCreationTimeUtc(handle) -
                 pendingArtifact.OwnershipCreatedAtUtc!.Value).Duration() < TimeSpan.FromSeconds(2));
             Assert.Equal(OwnedArchiveResult.Owned,
-                new BackupArtifactOwnershipVerifier().Inspect(finalPath, pendingArtifact, setup.InstallationId));
+                new BackupArtifactOwnershipVerifier().Inspect(finalPath, pendingArtifact, setup.InstallationId, DestinationType.Local));
         }
 
         await Recovery(database).RecoverAsync();
@@ -295,6 +337,140 @@ public sealed class DurableExecutionTests
             problem => problem.RunId == run.Id && problem.Severity == BackupProblemSeverity.Warning);
         Assert.True(File.Exists(path));
     }
+
+    [Fact]
+    public async Task Retention_RetriesARefusedDeletionThatNowProvesOwnership()
+    {
+        await using var database = new TemporaryDatabase();
+        await database.Initializer.InitializeAsync();
+        var setup = await SetupOwnedJobAsync(database);
+        var refused = await SeedRefusedArtifactAsync(database, setup, ownedByItsRun: true);
+        var later = await SeedCompletedRunAsync(database, setup);
+
+        var warnings = await Retention(database).ApplyAsync(later.Id);
+
+        Assert.Empty(warnings);
+        Assert.False(File.Exists(refused.Path));
+        await using var inspection = await database.ContextFactory.CreateDbContextAsync();
+        var stored = await inspection.BackupArtifacts.SingleAsync();
+        Assert.Equal(ArtifactState.RemovedByRetention, stored.State);
+        Assert.Equal(RetentionOperationState.Completed, stored.RetentionState);
+        Assert.Equal(later.Id, stored.RetentionRequestedByRunId);
+        Assert.Equal(0, (await inspection.Jobs.SingleAsync()).ManagedArtifactCount);
+    }
+
+    [Fact]
+    public async Task Retention_WarnsAgainOnEveryRunWhileADeletionIsStillRefused()
+    {
+        await using var database = new TemporaryDatabase();
+        await database.Initializer.InitializeAsync();
+        var setup = await SetupOwnedJobAsync(database);
+        var refused = await SeedRefusedArtifactAsync(database, setup, ownedByItsRun: false);
+        var later = await SeedCompletedRunAsync(database, setup);
+        var latest = await SeedCompletedRunAsync(database, setup);
+        var retention = Retention(database);
+
+        Assert.Contains(await retention.ApplyAsync(later.Id),
+            warning => warning.Operation == BackupOperation.RetentionOwnershipVerification);
+        Assert.Contains(await retention.ApplyAsync(latest.Id),
+            warning => warning.Operation == BackupOperation.RetentionOwnershipVerification);
+
+        Assert.True(File.Exists(refused.Path));
+        await using var inspection = await database.ContextFactory.CreateDbContextAsync();
+        var stored = await inspection.BackupArtifacts.SingleAsync();
+        Assert.Equal(ArtifactState.Retained, stored.State);
+        Assert.Equal(RetentionOperationState.OwnershipRefused, stored.RetentionState);
+        Assert.Equal(latest.Id, stored.RetentionRequestedByRunId);
+    }
+
+    [Fact]
+    public async Task Retention_ForgetsARefusedArchiveThatWasRemovedByHand()
+    {
+        await using var database = new TemporaryDatabase();
+        await database.Initializer.InitializeAsync();
+        var setup = await SetupOwnedJobAsync(database);
+        var refused = await SeedRefusedArtifactAsync(database, setup, ownedByItsRun: false);
+        File.Delete(refused.Path);
+        var later = await SeedCompletedRunAsync(database, setup);
+
+        var warnings = await Retention(database).ApplyAsync(later.Id);
+
+        Assert.Empty(warnings);
+        await using var inspection = await database.ContextFactory.CreateDbContextAsync();
+        var stored = await inspection.BackupArtifacts.SingleAsync();
+        Assert.Equal(ArtifactState.RemovedByRetention, stored.State);
+        Assert.Equal(RetentionOperationState.Completed, stored.RetentionState);
+    }
+
+    /// <summary>
+    /// Seeds a kept archive whose earlier retention deletion was refused. When <paramref name="ownedByItsRun"/>
+    /// is false the file names another run, as a replacement would, so ownership keeps failing.
+    /// </summary>
+    private static async Task<(BackupArtifact Artifact, string Path)> SeedRefusedArtifactAsync(
+        TemporaryDatabase database,
+        (Destination Destination, BackupJob Job, string EffectivePath, Guid InstallationId) setup,
+        bool ownedByItsRun)
+    {
+        var run = CompletedRun(setup);
+        var now = DateTimeOffset.UtcNow;
+        var path = Path.Combine(setup.EffectivePath, $"archive-{run.Id:N}.zip");
+        CreateZip(path, new(setup.InstallationId, ownedByItsRun ? run.Id : Guid.NewGuid()));
+        var file = new FileInfo(path);
+        var artifact = new BackupArtifact
+        {
+            RunId = run.Id,
+            DestinationName = setup.Destination.Name,
+            DestinationRootPath = setup.Destination.RootPath,
+            EffectivePath = setup.EffectivePath,
+            FinalFileName = file.Name,
+            Size = file.Length,
+            CreatedAtUtc = now,
+            OwnershipRunId = run.Id,
+            OwnershipExpectedLength = file.Length,
+            OwnershipCreatedAtUtc = new DateTimeOffset(file.CreationTimeUtc, TimeSpan.Zero),
+            OwnershipFileSystemIdentity = WindowsFilesystemInterop.GetIdentity(path).ToString()
+        };
+        artifact.MarkRetained(now);
+        artifact.BeginRetentionDeletion(run.Id, now);
+        artifact.MarkRetentionFailed(ownershipRefused: true, now);
+        await using var context = await database.ContextFactory.CreateDbContextAsync();
+        context.AddRange(run, artifact);
+        await context.SaveChangesAsync();
+        return (artifact, path);
+    }
+
+    private static async Task<BackupRun> SeedCompletedRunAsync(
+        TemporaryDatabase database,
+        (Destination Destination, BackupJob Job, string EffectivePath, Guid InstallationId) setup)
+    {
+        var run = CompletedRun(setup);
+        await using var context = await database.ContextFactory.CreateDbContextAsync();
+        context.Add(run);
+        await context.SaveChangesAsync();
+        return run;
+    }
+
+    private static BackupRun CompletedRun(
+        (Destination Destination, BackupJob Job, string EffectivePath, Guid InstallationId) setup)
+    {
+        var run = PersistenceModelTests.Run(setup.Job, setup.Destination);
+        var now = DateTimeOffset.UtcNow;
+        run.AdvanceTo(RunPhase.Queued, now);
+        run.AdvanceTo(RunPhase.Scanning, now);
+        run.AdvanceTo(RunPhase.Compressing, now);
+        run.AdvanceTo(RunPhase.Transferring, now);
+        run.AdvanceTo(RunPhase.Finalizing, now);
+        run.BeginFinalCommit(now);
+        run.MarkFinalCommitted(now);
+        run.Complete(RunOutcome.Successful, now);
+        return run;
+    }
+
+    private static BackupRetentionService Retention(TemporaryDatabase database) =>
+        new(database.ContextFactory, database.MutationGate, database.RunPersistence,
+            new InstallationIdentityService(database.ContextFactory, TimeProvider.System),
+            new EffectiveDestinationService([new LocalDestinationAdapter()], new PassthroughProtector()),
+            new OwnershipMarkerService(), new BackupArtifactOwnershipVerifier(), TimeProvider.System);
 
     private static BackupRecoveryService Recovery(
         TemporaryDatabase database,

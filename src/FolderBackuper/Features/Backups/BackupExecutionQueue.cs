@@ -64,7 +64,8 @@ public sealed class BackupExecutionWorker(
     BackupRetentionService retention,
     BackupRecoveryService recovery,
     StartupRecoveryBarrier startupRecovery,
-    TimeProvider timeProvider) : BackgroundService
+    TimeProvider timeProvider,
+    ILogger<BackupExecutionWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -84,6 +85,7 @@ public sealed class BackupExecutionWorker(
                     var run = await runs.ClaimNextAsync(stoppingToken);
                     if (run is null) break;
                     var token = cancellations.Register(run.Id);
+                    logger.LogInformation("Started backup run {RunId} of job {JobName}", run.Id, run.JobName);
                     try
                     {
                         BackupEngineResult result;
@@ -92,8 +94,10 @@ public sealed class BackupExecutionWorker(
                             result = await engine.ExecuteAsync(
                                 new(run.Id, run.JobId, timeProvider.GetUtcNow()), token, stoppingToken);
                         }
-                        catch (FinalCommitRecoveryRequiredException)
+                        catch (FinalCommitRecoveryRequiredException exception)
                         {
+                            logger.LogWarning(exception,
+                                "Backup run {RunId} of job {JobName} needs final-commit recovery", run.Id, run.JobName);
                             await recovery.RecoverRunAsync(run.Id, CancellationToken.None);
                             continue;
                         }
@@ -105,6 +109,7 @@ public sealed class BackupExecutionWorker(
                                 result = result with { Outcome = RunOutcome.SuccessfulWithWarnings, Problems = result.Problems.Concat(warnings).ToArray() };
                             }
                         }
+                        LogResult(run.JobName, result);
                         await runs.RecordExecutionResultAsync(result, CancellationToken.None);
                         await runs.CompleteAsync(run.Id, result.Outcome,
                             result.Problems.FirstOrDefault(problem => problem.Severity == BackupProblemSeverity.Error)?.Message,
@@ -120,6 +125,22 @@ public sealed class BackupExecutionWorker(
             {
                 break;
             }
+        }
+    }
+
+    private void LogResult(string jobName, BackupEngineResult result)
+    {
+        logger.LogInformation(
+            "Backup run {RunId} of job {JobName} finished as {Outcome}: {FileCount} files, {ArchiveBytes} archive bytes, {ProblemCount} problems",
+            result.RunId, jobName, result.Outcome, result.FileCount, result.ArchiveBytes, result.Problems.Count);
+        foreach (var problem in result.Problems)
+        {
+            logger.Log(
+                problem.Severity == BackupProblemSeverity.Error ? LogLevel.Error : LogLevel.Warning,
+                "Backup run {RunId} {Severity} during {Phase}/{Operation}: {MessageKey} {MessageArguments} at {Path} (native error {NativeErrorCode})",
+                result.RunId, problem.Severity, problem.Phase, problem.Operation, problem.Message.Key,
+                problem.Message.Arguments.Select(argument => argument.Message?.Key ?? argument.Text ?? argument.Value.ToString()),
+                problem.Path, problem.NativeErrorCode);
         }
     }
 }

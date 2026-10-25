@@ -95,6 +95,9 @@ try
         .MinimumLevel.Information()
         .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
         .MinimumLevel.Override("Microsoft.AspNetCore.SignalR", LogEventLevel.Warning)
+        // Every SQL statement is logged at Information, which buried the application's own events and
+        // filled a day's log with nothing else. Failed commands are still logged as errors.
+        .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", LogEventLevel.Warning)
         .Enrich.FromLogContext()
         .WriteTo.Console()
         .WriteTo.File(

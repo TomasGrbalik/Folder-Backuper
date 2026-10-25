@@ -608,13 +608,15 @@ For each deletion:
 
 1. Persist a pending-retention-deletion intent.
 2. Resolve and revalidate physical destination containment.
-3. Open the candidate and verify its run-specific archive comment, expected length, creation metadata, and filesystem identity where available.
+3. Open the candidate and verify its run-specific archive comment, expected length, creation metadata, and filesystem identity where available. On an SMB destination the creation metadata and filesystem identity are logged when they differ but not enforced: the server synthesises both, and a NAS can report different values for the same file after a restart.
 4. Refuse deletion and record a warning if ownership cannot be proven.
 5. Delete the file.
 6. Mark the artifact as removed by retention.
 7. Preserve its run and artifact metadata permanently.
 
 Failure to delete an old artifact changes an otherwise successful run to Successful with warnings. It does not delete the newly created backup.
+
+A deletion that failed or was refused is retried by every later successful run of the same job, before new candidates are selected. A retry that deletes the file, or finds it already gone, marks the artifact removed by retention; one that still cannot proceed warns again on the requesting run. Without the retry such an artifact would stay on the destination and in the job's managed-storage totals indefinitely. Inventory refreshes never retry, because they never delete.
 
 ### 10.9 Orphan recovery
 
@@ -675,7 +677,7 @@ Containment combines conservative case-insensitive lexical comparison with handl
 
 ### 12.4 Windows filesystem interop
 
-`System.IO` remains the data-transfer API. A small isolated Windows interop component uses safe handles around `CreateFileW`, `GetFinalPathNameByHandleW`, and `GetFileInformationByHandleEx` to obtain final paths, volume identity, directory/file identity, and reparse information that public `System.IO` APIs do not expose completely. When an SMB server rejects `FileIdInfo` with unsupported-function errors, identity lookup falls back to `GetFileInformationByHandle`; Milestone 0 confirmed that fallback returns stable, distinct file and directory identities on the intended NAS.
+`System.IO` remains the data-transfer API. A small isolated Windows interop component uses safe handles around `CreateFileW`, `GetFinalPathNameByHandleW`, and `GetFileInformationByHandleEx` to obtain final paths, volume identity, directory/file identity, and reparse information that public `System.IO` APIs do not expose completely. When an SMB server rejects `FileIdInfo` with unsupported-function errors, identity lookup falls back to `GetFileInformationByHandle`; Milestone 0 confirmed that fallback returns stable, distinct file and directory identities on the intended NAS. That probe covered close, reopen, and rename within a short window only, so archive ownership does not rely on SMB file identity persisting across server restarts (section 10.8).
 
 Interop accepts only validated absolute paths, owns every native handle through `SafeFileHandle`, maps native errors to structured categories, and has Windows-specific tests. No general native filesystem abstraction is introduced.
 
