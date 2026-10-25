@@ -38,7 +38,8 @@ public sealed class BackupEngine(
     ApplicationPaths applicationPaths,
     TimeProvider timeProvider,
     RunPersistenceService? runPersistence = null,
-    IBackupFaultInjector? faultInjector = null)
+    IBackupFaultInjector? faultInjector = null,
+    ILogger<BackupEngine>? logger = null)
 {
     public async Task<BackupEngineResult> ExecuteAsync(
         BackupEngineRequest request,
@@ -269,6 +270,8 @@ public sealed class BackupEngine(
         }
         catch (Exception exception)
         {
+            // The run problem keeps only the native error code, so the log is the one place the exception survives.
+            logger?.LogError(exception, "Backup run {RunId} failed unexpectedly", request.RunId);
             problems.Add(Error(BackupProblemCategory.GeneralIo, CurrentPhase(request.RunId),
                 BackupOperation.ExecuteBackup, BackupProblemMessage.UnexpectedFailure, exception.HResult & 0xFFFF));
         }
