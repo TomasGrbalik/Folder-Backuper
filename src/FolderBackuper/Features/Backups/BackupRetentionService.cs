@@ -14,7 +14,8 @@ public sealed class BackupRetentionService(
     EffectiveDestinationService effectiveDestinations,
     OwnershipMarkerService ownershipMarkers,
     BackupArtifactOwnershipVerifier ownershipVerifier,
-    TimeProvider timeProvider)
+    TimeProvider timeProvider,
+    ILogger<BackupRetentionService>? logger = null)
 {
     public async Task<IReadOnlyList<BackupProblem>> ApplyAsync(Guid runId, CancellationToken cancellationToken = default)
     {
@@ -69,7 +70,8 @@ public sealed class BackupRetentionService(
 
                 result = await effectiveDestinations.Adapter(destination.Type).ExecuteAsync(
                     effectiveDestinations.Configuration(destination),
-                    () => Task.FromResult(ownershipVerifier.Inspect(path, artifact, installationId, artifact.EffectivePath)));
+                    () => Task.FromResult(ownershipVerifier.Inspect(
+                        path, artifact, installationId, destination.Type, artifact.EffectivePath)));
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or
                 System.ComponentModel.Win32Exception or ArgumentException or NotSupportedException)
@@ -161,18 +163,30 @@ public sealed class BackupRetentionService(
                             var resolvedEffective = PathOverlap.ResolveExisting(artifact.EffectivePath);
                             if (!PathOverlap.IsSameOrDescendant(resolvedEffective, resolvedRoot) ||
                                 !PathOverlap.IsSameOrDescendant(Path.GetFullPath(path), Path.GetFullPath(artifact.EffectivePath)))
+                            {
+                                logger?.LogWarning(
+                                    "Retention refused {Path}: folder {EffectivePath} resolves outside destination root {RootPath}",
+                                    path, resolvedEffective, resolvedRoot);
                                 return OwnedArchiveResult.OwnershipMismatch;
+                            }
                             var marker = await ownershipMarkers.VerifyAsync(
                                 artifact.EffectivePath, installationId, artifact.Run!.JobId, cancellationToken);
-                            return marker.Result == OwnershipMarkerResult.Owned
-                                ? ownershipVerifier.DeleteIfOwned(path, artifact, installationId, artifact.EffectivePath)
-                                : OwnedArchiveResult.OwnershipMismatch;
+                            if (marker.Result != OwnershipMarkerResult.Owned)
+                            {
+                                logger?.LogWarning(
+                                    "Retention refused {Path}: the ownership marker in {EffectivePath} reported {MarkerResult}",
+                                    path, artifact.EffectivePath, marker.Result);
+                                return OwnedArchiveResult.OwnershipMismatch;
+                            }
+                            return ownershipVerifier.DeleteIfOwned(
+                                path, artifact, installationId, destination.Type, artifact.EffectivePath);
                         });
                 }
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or
                 System.ComponentModel.Win32Exception or ArgumentException or NotSupportedException)
             {
+                logger?.LogWarning(exception, "Retention could not reach {Path}", path);
                 result = OwnedArchiveResult.AccessFailed;
             }
 

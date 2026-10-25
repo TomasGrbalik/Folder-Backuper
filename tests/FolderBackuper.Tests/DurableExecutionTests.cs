@@ -97,10 +97,52 @@ public sealed class DurableExecutionTests
             CreateZip(path, new(installationId, Guid.NewGuid()));
             Assert.Equal(artifact.OwnershipExpectedLength, new FileInfo(path).Length);
 
-            var result = new BackupArtifactOwnershipVerifier().DeleteIfOwned(path, artifact, installationId);
+            var result = new BackupArtifactOwnershipVerifier().DeleteIfOwned(path, artifact, installationId, DestinationType.Local);
 
             Assert.Equal(OwnedArchiveResult.OwnershipMismatch, result);
             Assert.True(File.Exists(path));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(DestinationType.Smb, OwnedArchiveResult.Deleted)]
+    [InlineData(DestinationType.Local, OwnedArchiveResult.OwnershipMismatch)]
+    public void ChangedFilesystemMetadata_IsEnforcedOnlyOnLocalDestinations(
+        DestinationType destinationType,
+        OwnedArchiveResult expected)
+    {
+        // A NAS can report a different creation time and file identity for the same archive after a restart.
+        var root = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "FolderBackuper.Tests", Guid.NewGuid().ToString("N"))).FullName;
+        try
+        {
+            var installationId = Guid.NewGuid();
+            var runId = Guid.NewGuid();
+            var path = Path.Combine(root, "archive.zip");
+            CreateZip(path, new(installationId, runId));
+            var original = new FileInfo(path);
+            var artifact = new BackupArtifact
+            {
+                RunId = runId,
+                DestinationName = "Destination",
+                DestinationRootPath = root,
+                EffectivePath = root,
+                FinalFileName = original.Name,
+                Size = original.Length,
+                CreatedAtUtc = DateTimeOffset.UtcNow,
+                OwnershipRunId = runId,
+                OwnershipExpectedLength = original.Length,
+                OwnershipCreatedAtUtc = new DateTimeOffset(original.CreationTimeUtc, TimeSpan.Zero).AddDays(-30),
+                OwnershipFileSystemIdentity = "0000000000000001:0000000000000001"
+            };
+
+            var result = new BackupArtifactOwnershipVerifier().DeleteIfOwned(path, artifact, installationId, destinationType);
+
+            Assert.Equal(expected, result);
+            Assert.Equal(expected != OwnedArchiveResult.Deleted, File.Exists(path));
         }
         finally
         {
@@ -167,7 +209,7 @@ public sealed class DurableExecutionTests
             Assert.True((WindowsFilesystemInterop.GetCreationTimeUtc(handle) -
                 pendingArtifact.OwnershipCreatedAtUtc!.Value).Duration() < TimeSpan.FromSeconds(2));
             Assert.Equal(OwnedArchiveResult.Owned,
-                new BackupArtifactOwnershipVerifier().Inspect(finalPath, pendingArtifact, setup.InstallationId));
+                new BackupArtifactOwnershipVerifier().Inspect(finalPath, pendingArtifact, setup.InstallationId, DestinationType.Local));
         }
 
         await Recovery(database).RecoverAsync();

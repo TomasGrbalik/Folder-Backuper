@@ -114,7 +114,8 @@ public sealed class BackupRecoveryService(
                     if (!PathOverlap.IsSameOrDescendant(resolvedEffective, resolvedRoot) ||
                         !PathOverlap.IsSameOrDescendant(Path.GetFullPath(path), Path.GetFullPath(artifact.EffectivePath)))
                         return OwnedArchiveResult.OwnershipMismatch;
-                    return ownershipVerifier.Inspect(path, artifact, installationId, artifact.EffectivePath);
+                    return ownershipVerifier.Inspect(
+                        path, artifact, installationId, destination.Type, artifact.EffectivePath);
                 });
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or
